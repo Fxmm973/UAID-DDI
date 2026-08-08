@@ -10,7 +10,7 @@ def read_options():
     parser.add_argument("--random_embed", default=False, type=bool)#	True=不用预训练 TransE，全部随机初始化；False=先 TransE 预训练 200 epoch。
     parser.add_argument("--train_few", default=10, type=int)
     parser.add_argument("--lr", default=0.001, type=float)
-    parser.add_argument("--max_batches", default=10000, type=int)
+    parser.add_argument("--max_batches", default=40000, type=int)
     parser.add_argument("--dropout", default=0.2, type=float)
     parser.add_argument("--log_every", default=50, type=int)#日志，	每 50 个 batch 打印一次 loss
     parser.add_argument("--eval_every", default=1000, type=int) #每 1 000 batch 在验证集测一次 AUC，用来早停
