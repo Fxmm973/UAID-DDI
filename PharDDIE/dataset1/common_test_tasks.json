@@ -1,0 +1,618 @@
+{
+  "The absorption of #Drug2 can be decreased when combined with #Drug1.": [
+    [
+      "DB01188",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01141",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00525",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00520",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB02513",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB09041",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB09031",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB08943",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB06820",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00936",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB06697",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00793",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01099",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00362",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01243",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01157",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01110",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00196",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01422",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00826",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00681",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00646",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB09040",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01007",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00857",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00251",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01167",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB03793",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB04794",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00877",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01153",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00091",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01034",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00582",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB08958",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01263",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00257",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01091",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01127",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00639",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00735",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00239",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00738",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB00400",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ],
+    [
+      "DB01026",
+      "The absorption of #Drug2 can be decreased when combined with #Drug1.",
+      "DB00396"
+    ]
+  ],
+  "#Drug1 may increase the ulcerogenic activities of #Drug2.": [
+    [
+      "DB00332",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00657",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00572",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01062",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00810",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01199",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01591",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00670",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00462",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00245",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00517",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01173",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB06702",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00940",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00387",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00340",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00908",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00732",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01409",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00424",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00782",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01036",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01090",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00483",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01116",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00809",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01337",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00376",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01338",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00209",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB09076",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB08897",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00496",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB09300",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00967",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00219",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00804",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB12278",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00392",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00747",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB01339",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB11315",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ],
+    [
+      "DB00979",
+      "#Drug1 may increase the ulcerogenic activities of #Drug2.",
+      "DB00761"
+    ]
+  ],
+  "#Drug1 may increase the myelosuppressive activities of #Drug2.": [
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01348"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00492"
+    ],
+    [
+      "DB01033",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00993"
+    ],
+    [
+      "DB06772",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00515"
+    ],
+    [
+      "DB01248",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00526"
+    ],
+    [
+      "DB01229",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00515"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00881"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00519"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01180"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00691"
+    ],
+    [
+      "DB01248",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00958"
+    ],
+    [
+      "DB00262",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00501"
+    ],
+    [
+      "DB01248",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB13145"
+    ],
+    [
+      "DB01033",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00440"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01340"
+    ],
+    [
+      "DB06772",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00526"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00584"
+    ],
+    [
+      "DB00363",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00564"
+    ],
+    [
+      "DB00495",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01211"
+    ],
+    [
+      "DB01229",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00526"
+    ],
+    [
+      "DB01248",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00515"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00440"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01015"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00722"
+    ],
+    [
+      "DB06772",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00958"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01197"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB09477"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00542"
+    ],
+    [
+      "DB01033",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB01015"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00790"
+    ],
+    [
+      "DB06772",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB13145"
+    ],
+    [
+      "DB00993",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00178"
+    ],
+    [
+      "DB01229",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB13145"
+    ],
+    [
+      "DB01229",
+      "#Drug1 may increase the myelosuppressive activities of #Drug2.",
+      "DB00958"
+    ]
+  ]
+}
