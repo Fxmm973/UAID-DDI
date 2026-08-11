@@ -1,0 +1,29 @@
+# UAID-DDI Environment Lock
+# Generated: 2026-08-10
+# ============================================
+
+Python: 3.9
+PyTorch: 2.0.1+cu118
+PyTorch Geometric: 2.6.1
+RDKit: 2025.03.5
+DGL: 2.1.0
+NumPy: 1.24.3
+CUDA: 11.8
+GPU: NVIDIA RTX 4090 (24 GB VRAM)
+
+# SHA256 of environment.yml
+environment.yml SHA256: <run: certutil -hashfile environment.yml SHA256>
+
+# DRKG TransE embedding source:
+# Pre-trained DRKG TransE entity embeddings (~200 MB)
+# Available at: https://doi.org/10.5281/zenodo.XXXXXXX (to be activated upon acceptance)
+# Or regenerate via: https://github.com/gnn4dr/DRKG
+
+# BioSentVec model:
+# PubMed-MIMIC-III BioSentVec model
+# Available at: https://github.com/ncbi-nlp/BioSentVec
+# Pre-computed event embeddings: EviDDIE/dataset*/event_embedding2.json
+
+# To reproduce the full environment:
+# conda env create -f environment.yml
+# conda activate PharDDIE
