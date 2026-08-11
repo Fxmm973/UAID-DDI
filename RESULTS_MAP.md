@@ -142,6 +142,19 @@
 | 2026-08-08 | `EviDDIE/eviddie_eval_ablation.py` | Fixed `IndentationError` |
 | 2026-08-08 | `EviDDIE/eviddie_verify_ckpt.py` | Fixed indentation in checkpoint loop |
 | 2026-08-08 | `PharDDIE/pharddie_matcher.py` | Removed `.cuda()` hardcoding; PAD mask in ACI softmax |
+| 2026-08-10 | `EviDDIE/eviddie_export_zs_v2.py` | Made v2 canonical (fixed manifests); removed `_v2` suffix from output CSV |
+| 2026-08-10 | `EviDDIE/eviddie_export_zs.py` | Deprecated (dynamic sampling); redirects to v2 |
+| 2026-08-10 | `PharDDIE/pharddie_table3.py` | Replaced with `pharddie_table3_complete.py` (canonical); old -> `_simple.py` |
+| 2026-08-10 | `EviDDIE/eviddie_case_study.py` | Fixed DrugBank evidence loader: now loads event-specific DDI records from task JSONs + e1rel_e2 |
+| 2026-08-10 | `PharDDIE/pharddie_export_full.py` | Multi-training-seed support: TRAINING_SEEDS + fixed EVAL_MANIFEST_SEED |
+| 2026-08-10 | `PharDDIE/pharddie_table2.py` | Group by `train_seed` when available; clarified +/- semantics in notes |
+| 2026-08-10 | `PharDDIE/pharddie_table4_paper.py` | Added matched-coverage risk-coverage analysis + entropy clarification |
+| 2026-08-10 | `EviDDIE/eviddie_table_discrimination.py` | **NEW**: Zero-shot discrimination table (AUC/ACC/F1) for EviDDIE |
+| 2026-08-10 | `shared/audit_logger.py` | **NEW**: Audit trail utility with SHA256 + git commit logging |
+| 2026-08-10 | `shared/audit_drug_overlap.py` | **NEW**: Drug overlap audit between train/dev/test splits |
+| 2026-08-10 | `reproduce.ps1` | **NEW**: Full reproduction pipeline script |
+| 2026-08-10 | `audit/` | **NEW**: Audit directory structure with logs, predictions, manifests |
+| 2026-08-10 | `fyx_8_8(4) (1).tex` | Paper restructured around RQ1-RQ3; new EviDDIE disc. table; updated Discussion |
 
 ---
 
@@ -159,10 +172,11 @@
 
 ## Known Limitations
 
-1. **Checkpoint availability**: Trained checkpoints not in repo due to size; can be regenerated (~8-12h on RTX 4090).
-2. **Single-seed results**: Paper Table 2 reflects available experimental outputs; further independent runs would better characterize variability.
+1. **Checkpoint availability**: Trained checkpoints not in repo due to size; can be regenerated (~8-12h on RTX 4090). Per-training-seed checkpoints (5 seeds x 3 shots = 15 checkpoints) require ~15-20h total on RTX 4090.
+2. **Training-seed results**: Paper now supports five independent training seeds. Table 2 +/- values represent training-seed std when per-seed checkpoints are available, or negative-sampling std otherwise (noted in table caption).
 3. **EviDDIE encoder**: Uses standard `TransformerConv` (no MME/ACI), by design for zero-shot setting.
-4. **Table 3 SD semantics**: SDs capture negative-sampling variation (one checkpoint), not training-seed variation.
-5. **Case study**: Retrospective analysis of held-out positives, not independent external validation.
-6. **DRKG entity embeddings**: Not included (file size). Relation embeddings are provided for symbol initialization.
+4. **Table 3 SD semantics**: SDs capture negative-sampling variation (one checkpoint) unless re-generated with per-training-seed checkpoints.
+5. **Case study**: Retrospective analysis of held-out positives, not independent external validation. DrugBank evidence now verified at event level (drug pair + event type).
+6. **DRKG entity embeddings**: Not included (file size). Relation embeddings are provided for symbol initialization. DRKG entity-overlap audit pending.
 7. **BioSentVec weights**: Download separately from [BioSentVec repository](https://github.com/ncbi-nlp/BioSentVec). Pre-computed 700-dim embeddings are in `event_embedding2.json`.
+8. **Drug overlap**: Most test-set drugs appear in training set. Claims limited to "unseen-event generalization," not "novel-compound generalization." See `shared/audit_drug_overlap.py`.
