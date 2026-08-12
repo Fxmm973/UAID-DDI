@@ -1,0 +1,107 @@
+========================================================================================================================
+Table 4: Agent-Assisted Prioritization on Held-Out DDI Candidates
+Comparison: Probability-only ranking vs Uncertainty-aware ranking r = p(1-u)
+Both use VAE evidential model predictions; thresholds from common validation set.
+========================================================================================================================
+
+--- Setting: Fewer-shot (test) ---
+Shot   Strategy                       P@10         P@20         P@50         Recall@50    Referral     Coverage     Sel_Risk    
+-------------------------------------------------------------------------------------------------------------------
+1      Random ranking                 0.5400       0.4400       0.4800       0.0608       --           --           --          
+1      Probability only               0.9000       0.9500       0.9680       0.1225       0.0000       1.0000       0.2863      
+1      Probability + uncertainty      0.9000       0.9500       0.9680       0.1225       0.4149       0.5851       0.1208      
+  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 57.8%
+5      Random ranking                 0.4800       0.4900       0.4800       0.0700       --           --           --          
+5      Probability only               1.0000       1.0000       0.9960       0.1452       0.0000       1.0000       0.1708      
+5      Probability + uncertainty      1.0000       1.0000       0.9880       0.1440       0.5350       0.4650       0.1371      
+  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 19.8%
+10     Random ranking                 0.4600       0.4600       0.4960       0.0892       --           --           --          
+10     Probability only               1.0000       1.0000       0.9800       0.1763       0.0000       1.0000       0.2590      
+10     Probability + uncertainty      1.0000       1.0000       0.9800       0.1763       0.5108       0.4892       0.1838      
+  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 29.0%
+-------------------------------------------------------------------------------------------------------------------
+
+--- Setting: Rare-event (test2) ---
+Shot   Strategy                       P@10         P@20         P@50         Recall@50    Referral     Coverage     Sel_Risk    
+-------------------------------------------------------------------------------------------------------------------
+1      Random ranking                 0.5400       0.5500       0.5120       0.2612       --           --           --          
+1      Probability only               0.9800       0.9800       0.9360       0.4776       0.0000       1.0000       0.3031      
+1      Probability + uncertainty      0.9800       0.9800       0.9360       0.4776       0.4439       0.5561       0.0768      
+  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 74.7%
+5      Random ranking                 0.4000       0.4500       0.5160       0.4448       --           --           --          
+5      Probability only               1.0000       1.0000       0.9800       0.8448       0.0000       1.0000       0.1207      
+5      Probability + uncertainty      1.0000       0.9900       0.9640       0.8310       0.5534       0.4466       0.0686      
+  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 43.2%
+10     Random ranking                 0.5400       0.4900       0.5000       1.0000       --           --           --          
+10     Probability only               0.9000       0.7500       0.5000       1.0000       0.0000       1.0000       0.2333      
+10     Probability + uncertainty      0.9000       0.7000       0.5000       1.0000       0.7000       0.3000       0.1111      
+  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 52.4%
+-------------------------------------------------------------------------------------------------------------------
+
+Notes:
+  - Both strategies use the SAME VAE evidential model predictions.
+  - "Probability only" ranks by p; "Probability + uncertainty" ranks by r = p(1-u).
+  - tau_p and tau_u selected on common validation set via max-F1 / min-selective-risk.
+  - Referral = fraction sent to Expert Review (p>=tau_p AND u>tau_u).
+  - Coverage = fraction auto-decided = 1 - Referral (NOT 1 - Expert Review rate).
+  - Selective Risk = error rate among auto-decided predictions.
+  - For shot=1: entropy H(p) used as CONFIDENCE-DERIVED baseline (NOT epistemic).
+    VAE variance is unreliable with only K=1 support example.
+  - For shot>=5: normalized VAE latent variance used as uncertainty.
+  - Per-seed metrics averaged over 3 seeds (2024, 2025, 2026).
+========================================================================================================================
+
+========================================================================================================================
+MATCHED-COVERAGE RISK-COVERAGE ANALYSIS
+Compares selective risk at matched coverage levels for fair comparison.
+Recall: "deferred review" IS a referral action - it is NOT automatic coverage.
+========================================================================================================================
+
+--- Fewer-shot (test) ---
+Shot   Coverage   Prob-only Risk   UA Risk          Risk Reduction  
+----------------------------------------------------------------------
+1      0.30       0.0776+/-0.0182   0.0275+/-0.0086   +64.6%
+1      0.50       0.2390+/-0.0135   0.0908+/-0.0244   +62.0%
+1      0.70       0.3349+/-0.0261   0.1643+/-0.0458   +50.9%
+1      0.90       0.3170+/-0.0267   0.2598+/-0.0258   +18.1%
+1      1.00       0.2863+/-0.0252   0.2863+/-0.0252   +0.0%
+5      0.30       0.0400+/-0.0236   0.1598+/-0.0221   -299.4%
+5      0.50       0.1650+/-0.0190   0.1637+/-0.0149   +0.8%
+5      0.70       0.2108+/-0.0172   0.1704+/-0.0068   +19.2%
+5      0.90       0.1880+/-0.0175   0.1682+/-0.0102   +10.5%
+5      1.00       0.1708+/-0.0147   0.1708+/-0.0147   +0.0%
+10     0.30       0.0783+/-0.0000   0.2554+/-0.0000   -226.1%
+10     0.50       0.2050+/-0.0000   0.2554+/-0.0000   -24.6%
+10     0.70       0.3136+/-0.0000   0.2714+/-0.0000   +13.5%
+10     0.90       0.2840+/-0.0000   0.2724+/-0.0000   +4.1%
+10     1.00       0.2590+/-0.0000   0.2590+/-0.0000   +0.0%
+----------------------------------------------------------------------
+
+--- Rare-event (test2) ---
+Shot   Coverage   Prob-only Risk   UA Risk          Risk Reduction  
+----------------------------------------------------------------------
+1      0.30       0.0690+/-0.0154   0.0436+/-0.0226   +36.8%
+1      0.50       0.1653+/-0.0269   0.0811+/-0.0139   +51.0%
+1      0.70       0.3255+/-0.0099   0.1350+/-0.0370   +58.5%
+1      0.90       0.3295+/-0.0407   0.2688+/-0.0315   +18.4%
+1      1.00       0.3031+/-0.0383   0.3031+/-0.0383   +0.0%
+5      0.30       0.0059+/-0.0118   0.1638+/-0.0557   -2685.4%
+5      0.50       0.0828+/-0.0129   0.1601+/-0.0565   -93.4%
+5      0.70       0.1580+/-0.0458   0.1398+/-0.0431   +11.5%
+5      0.90       0.1327+/-0.0324   0.1238+/-0.0283   +6.7%
+5      1.00       0.1207+/-0.0294   0.1207+/-0.0294   +0.0%
+10     0.30       0.1111+/-0.0000   0.3333+/-0.0000   -200.0%
+10     0.50       0.0667+/-0.0000   0.2000+/-0.0000   -200.0%
+10     0.70       0.2857+/-0.0000   0.2857+/-0.0000   +0.0%
+10     0.90       0.2593+/-0.0000   0.2222+/-0.0000   +14.3%
+10     1.00       0.2333+/-0.0000   0.2333+/-0.0000   +0.0%
+----------------------------------------------------------------------
+
+Matched-Coverage Notes:
+  - "Coverage" = fraction of candidates auto-decided (NOT referred).
+  - At matched coverage, we compare selective risk FAIRLY.
+  - For shot=1: "uncertainty" = entropy H(p) - a CONFIDENCE-DERIVED
+    baseline, NOT epistemic uncertainty. VAE variance is unreliable at K=1.
+  - For shot>=5: uncertainty = normalized VAE latent variance.
+  - Deferred review (p<tau_p, u>=tau_u) IS a referral action.
+========================================================================================================================
