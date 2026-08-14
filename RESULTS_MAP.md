@@ -1,7 +1,7 @@
 # RESULTS_MAP.md — Paper Results Source Audit Trail
 
 ## Version Info
-- Last updated: 2026-08-08
+- Last updated: 2026-08-14
 - Paper: `fyx_8_13.tex`
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI)
 
@@ -89,7 +89,9 @@
 
 ## Figure 4 — EviDDIE Ablation
 
-- **Training**: `EviDDIE/eviddie_train_ablation.py` (3 variants: softmax / w/o EVI / full EviDDIE)
+- **Training**: `EviDDIE/eviddie_train_ablation.py` (variants: softmax / w/o EVI / full EviDDIE)
+- **Ablation type**: frozen-backbone semantic/evidential-head ablation — a pre-trained PharDDIE encoder and SRAE are loaded and frozen; only the semantic/evidential head is trained per variant. This is NOT an end-to-end module ablation.
+- **Formal training entry**: `EviDDIE/eviddie_trainer.py` (GAN + native dual-output EDL head; per-seed independent matcher/generator checkpoints at `models/{prefix}_seed{seed}bestmodel[,_G]`; inference uses raw BioSentVec embeddings without semantic noise)
 - **Plotting**: `EviDDIE/eviddie_plot_figure4.py`
 - **Data**: `EviDDIE/results/ablation_curves.csv`
 - Curves from validation events only; held-out events evaluated after checkpoint selection
@@ -147,7 +149,7 @@
 | 2026-08-08 | `EviDDIE/eviddie_verify_ckpt.py` | Fixed indentation in checkpoint loop |
 | 2026-08-08 | `PharDDIE/pharddie_matcher.py` | Removed `.cuda()` hardcoding; PAD mask in ACI softmax |
 | 2026-08-10 | `EviDDIE/eviddie_export_zs_v2.py` | Made v2 canonical (fixed manifests); removed `_v2` suffix from output CSV |
-| 2026-08-10 | `EviDDIE/eviddie_export_zs.py` | Deprecated (dynamic sampling); redirects to v2 |
+| 2026-08-14 | `EviDDIE/eviddie_export_zs.py` | **P0-7**: removed (superseded by `eviddie_export_zs_v2.py`) |
 | 2026-08-10 | `PharDDIE/pharddie_table3.py` | Replaced with `pharddie_table3_complete.py` (canonical); old -> `_simple.py` |
 | 2026-08-10 | `EviDDIE/eviddie_case_study.py` | Fixed DrugBank evidence loader: now loads event-specific DDI records from task JSONs + e1rel_e2 |
 | 2026-08-10 | `PharDDIE/pharddie_export_full.py` | Multi-training-seed support: TRAINING_SEEDS + fixed EVAL_MANIFEST_SEED |
@@ -159,6 +161,9 @@
 | 2026-08-10 | `reproduce.ps1` | **NEW**: Full reproduction pipeline script |
 | 2026-08-10 | `audit/` | **NEW**: Audit directory structure with logs, predictions, manifests |
 | 2026-08-10 | `fyx_8_13.tex` | Paper restructured around RQ1-RQ3; new EviDDIE disc. table; updated Discussion |
+| 2026-08-14 | `EviDDIE/eviddie_matcher.py` | **P0-7**: canonical forward renamed (removed "No-NAI Ablation" label); MoseDTI/EviDTI remnants and dead code paths removed |
+| 2026-08-14 | `EviDDIE/eviddie_trainer.py` | **P0-7**: per-seed checkpoint prefix `models/{prefix}_seed{seed}`; training-time semantic noise documented as augmentation only |
+| 2026-08-14 | `EviDDIE/*export*/case/eval/tester` | **P0-7**: inference semantic noise removed; legacy 1-output checkpoints refused (native dual-output EDL required) |
 
 ---
 

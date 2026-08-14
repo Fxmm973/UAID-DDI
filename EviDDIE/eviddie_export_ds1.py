@@ -9,7 +9,7 @@ from eviddie_args import read_options
 from eviddie_dataloader import *
 from eviddie_matcher import *
 from sklearn import metrics
-from shared.checkpoint import convert_fc_1to2, load_state_dict_safe, log_seed_checkpoint_note
+from shared.checkpoint import load_state_dict_safe, log_seed_checkpoint_note
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
@@ -34,11 +34,10 @@ class EviDDIEExport(object):
         else:
             self.use_pretrain = True
 
-        # 加载 semantic task embedding
+        # 加载 semantic task embedding（P0-7：推理使用原始 BioSentVec 嵌入，不加噪声）
         self.semantic_task = json.load(open(f'{arg.dataset}/{arg.semantic}'))
         for task in list(self.semantic_task.keys()):
-            self.semantic_task[task] = np.array(self.semantic_task[task]) + 0.3 * np.random.normal(loc=0, scale=1,
-                                                                        size=(len(self.semantic_task[task]), 1))
+            self.semantic_task[task] = np.array(self.semantic_task[task])
         self.task_ebmedding = []
         self.task2id = {}
         for num, i in enumerate(list(self.semantic_task.keys())):
@@ -111,8 +110,13 @@ class EviDDIEExport(object):
     def load_models(self, matcher_path, g_path):
         ms = torch.load(matcher_path, map_location=self.device)
 
-        # ---- Convert 1-output fc to 2-output EDL head (WITH WARNING) ----
-        convert_fc_1to2(ms)
+        # P0-7: native dual-output EDL head required — refuse legacy
+        # 1-output checkpoints instead of converting them.
+        if 'fc.5.weight' in ms and ms['fc.5.weight'].shape[0] != 2:
+            raise RuntimeError(
+                'Legacy 1-output checkpoint detected (fc.5.weight shape != 2). '
+                'EviDDIE requires native dual-output EDL checkpoints; '
+                'retrain with eviddie_trainer.py (see README).')
 
         # 清理不兼容 keys
         for k in list(ms.keys()):

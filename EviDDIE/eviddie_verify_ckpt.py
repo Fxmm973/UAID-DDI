@@ -23,9 +23,9 @@ class VerifyCheckpoint:
 
         # ---- 完全复刻 ExportVariants.__init__ ----
         self.semantic_task = json.load(open(f'{arg.dataset}/{arg.semantic}'))
+        # P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
         for task in list(self.semantic_task.keys()):
-            self.semantic_task[task] = np.array(self.semantic_task[task]) + \
-                0.3*np.random.normal(0,1,size=(len(self.semantic_task[task]),1))
+            self.semantic_task[task] = np.array(self.semantic_task[task])
         self.task_ebmedding = []
         self.task2id = {}
         for num,i in enumerate(list(self.semantic_task.keys())):

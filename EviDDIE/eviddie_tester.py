@@ -62,12 +62,9 @@ class Trainer(object):
         self.use_pretrain = use_pretrain
 
         self.semantic_task = json.load(open(f'{args.dataset}/{args.semantic}'))
-
+        # P0-7: evaluation uses the raw BioSentVec embeddings (no semantic noise).
         for task in tqdm(list(self.semantic_task.keys())):
-            self.semantic_task[task] = np.array(self.semantic_task[task]) + 0.3 * np.random.normal(loc=0, scale=1,
-                                                                                                   size=(len(
-                                                                                                       self.semantic_task[
-                                                                                                           task]), 1))
+            self.semantic_task[task] = np.array(self.semantic_task[task])
 
         self.task_ebmedding = []
         self.task2id = {}

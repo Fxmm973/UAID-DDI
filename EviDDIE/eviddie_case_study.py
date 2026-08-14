@@ -14,7 +14,7 @@ from collections import defaultdict
 from eviddie_args import read_options
 from eviddie_dataloader import DrugDataset, DrugDataLoader
 from eviddie_matcher import EmbedMatcher, Generate_Model
-from shared.checkpoint import convert_fc_1to2, load_state_dict_safe
+from shared.checkpoint import load_state_dict_safe
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,8 +32,9 @@ arg.dataset = DATASET
 arg.semantic = 'event_embedding2.json'
 
 sm = json.load(open(f'{DATASET}/{arg.semantic}'))
+# P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
 for t in sm:
-    sm[t] = np.array(sm[t]) + 0.3 * np.random.normal(0, 1, size=(len(sm[t]), 1))
+    sm[t] = np.array(sm[t])
 te_list, t2id = [], {}
 for num, i in enumerate(list(sm.keys())):
     t2id[i] = num
@@ -66,7 +67,12 @@ matcher = EmbedMatcher(128, len(sid) - 1, use_pretrain=True, embed=sv, dropout=0
                         task_emb=te).to(device).eval()
 
 ckpt = torch.load(CKPT, map_location=device)
-convert_fc_1to2(ckpt)
+# P0-7: the case-study conclusions must come from native dual-output EDL
+# checkpoints; legacy 1-output checkpoints are refused instead of converted.
+if 'fc.5.weight' in ckpt and ckpt['fc.5.weight'].shape[0] != 2:
+    raise RuntimeError(
+        'Legacy 1-output checkpoint detected (fc.5.weight shape != 2). '
+        'Retrain with eviddie_trainer.py (native dual-output EDL head; see README).')
 for k in list(ckpt.keys()):
     if any(x in k for x in ['symbol_emb', 'gcn_w', 'gcn_b', 'Bilinear', 'Linear_self',
                              'Linear_nei', 'Linear_weak_rel', 'NeighborAggregator',

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""EviDDIE 消融训练 v3：直接用 PharDDIE matcher 加载预训练编码器，不经过 EviDDIE matcher"""
+"""EviDDIE frozen-backbone ablation (Figure 4): loads a pre-trained PharDDIE
+molecular encoder and SRAE, freezes both, and trains only the semantic/evidential
+head per variant (softmax / w/o BSA / w/o EVI / full). This is NOT an end-to-end
+module ablation."""
 import json, logging, numpy as np, torch, torch.nn as nn, torch.nn.functional as F
 import random, os, sys, csv
 from collections import defaultdict, deque

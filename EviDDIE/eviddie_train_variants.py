@@ -35,6 +35,8 @@ class Trainer(object):
 
         # Task embeddings
         self.semantic = json.load(open(f'{arg.dataset}/{arg.semantic}'))
+        # P0-7: training-time semantic augmentation only; inference paths
+        # use the raw BioSentVec embeddings without noise.
         for t in list(self.semantic.keys()):
             self.semantic[t] = np.array(self.semantic[t]) + 0.3*np.random.normal(0,1,size=(len(self.semantic[t]),1))
         self.task_emb_list = []; self.task2id = {}

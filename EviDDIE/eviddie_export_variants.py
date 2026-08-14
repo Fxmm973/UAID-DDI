@@ -22,8 +22,9 @@ class ExportEviDDIE(object):
         logging.info(f"Device: {self.device} | {METHODS[variant]}")
 
         self.semantic = json.load(open(f'{arg.dataset}/{arg.semantic}'))
+        # P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
         for t in list(self.semantic.keys()):
-            self.semantic[t] = np.array(self.semantic[t]) + 0.3*np.random.normal(0,1,size=(len(self.semantic[t]),1))
+            self.semantic[t] = np.array(self.semantic[t])
         self.task_emb_list=[]; self.task2id={}
         for n,i in enumerate(list(self.semantic.keys())):
             self.task2id[i]=n; self.task_emb_list.append(self.semantic[i])

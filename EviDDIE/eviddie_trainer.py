@@ -46,11 +46,8 @@ class Trainer(object):
     def __init__(self, arg):
         super(Trainer, self).__init__()
         for k, v in vars(arg).items(): setattr(self, k, v)
-        # =====新增 zero-shot flag (safe default) =====
         if not hasattr(self, "zero_shot"):
             self.zero_shot = False
-
-            ###########新增结束
         self.meta = not self.no_meta
 
         if self.random_embed:
@@ -68,6 +65,9 @@ class Trainer(object):
 
         self.semantic_task = json.load(open(f'{args.dataset}/{args.semantic}'))
 
+        # P0-7: training-time semantic augmentation only. Prototypes are
+        # perturbed during training for robustness; all inference/export
+        # paths use the raw BioSentVec embeddings without noise.
         for task in tqdm(list(self.semantic_task.keys())):
             self.semantic_task[task] = np.array(self.semantic_task[task]) + 0.3 * np.random.normal(loc=0, scale=1,
                                                                                                    size=(len(
@@ -833,18 +833,10 @@ class Trainer(object):
         self.recorder.finalize()
 
 
-#######################old#######################
-# class SigmoidLoss(nn.Module):
-#
-#     def forward(self, p_scores, n_scores):
-#         p_loss = - F.logsigmoid(p_scores).mean()
-#         n_loss = - F.logsigmoid(-n_scores).mean()
-#
-#         return (p_loss + n_loss) / 2, p_loss, n_loss
-###########################new######################3
 class EvidentialLoss(nn.Module):
     """
-    EviDTI 核心损失函数：基于狄利克雷分布的深度证据学习损失
+    EviDDIE evidential loss: expected mean-squared error plus an annealed
+    KL regularizer over the Dirichlet evidence distribution.
     """
 
     def __init__(self, annealing_step=500):
@@ -885,6 +877,10 @@ class EvidentialLoss(nn.Module):
 
 if __name__ == '__main__':
     args = read_options()
+    # P0-7: per-seed independent checkpoints — the checkpoint prefix always
+    # encodes the training seed, so the matcher (bestmodel) and generator
+    # (bestmodel_G) checkpoints are never shared across seeds.
+    args.save_path = f'models/{args.prefix}_seed{args.seed}'
 
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
@@ -906,9 +902,7 @@ if __name__ == '__main__':
     # torch.cuda.manual_seed_all(args.seed)
 
     device = DEVICE
-    # loss_fn = SigmoidLoss()原始
     loss_fn = EvidentialLoss(annealing_step=10000)
-    ###################new
     trainer = Trainer(args)
     if args.test:
         trainer.test_()

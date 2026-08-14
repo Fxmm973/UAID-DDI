@@ -20,34 +20,7 @@ from torch_geometric.utils import degree
 from eviddie_models import MVN_DDI
 
 
-# ================= [MoseDTI 修改] 新增门控网络 =================
-class SynergisticGating(nn.Module):
-    """
-    MoseDTI 论文核心：自适应门控网络
-    输入：Intrinsic (结构) 特征 和 Extrinsic (邻居/KG) 特征
-    输出：融合权重 alpha (0~1)
-    """
-
-    def __init__(self, embed_dim):
-        super(SynergisticGating, self).__init__()
-        # 接收两个向量拼接，维度是 2 * embed_dim
-        self.gate_fc = nn.Sequential(
-            nn.Linear(embed_dim * 2, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1),
-            nn.Sigmoid()  # 限制输出在 0-1 之间
-        )
-
-    def forward(self, h_intrinsic, h_extrinsic):
-        # 拼接结构特征和邻居特征
-        combined = torch.cat([h_intrinsic, h_extrinsic], dim=-1)
-        # 计算权重 w
-        w = self.gate_fc(combined)
-        # 加权融合: w * 结构 + (1-w) * 邻居
-        return w, w * h_intrinsic + (1 - w) * h_extrinsic
-
-
-# ============================================================
+# (P0-7 cleanup: SynergisticGating and other MoseDTI remnants removed)
 
 
 class Generate_Model(torch.nn.Module):
@@ -711,30 +684,18 @@ class EmbedMatcher(nn.Module):
         rel_total = 0
         self.model = MVN_DDI([n_atom_feats, 2048, 200], 17, kge_dim, kge_dim, rel_total, [64, 64],
                              [2, 2], 64, 0.0)
-###############old$######################
-        # self.fc = nn.Sequential(
-        #     nn.Linear(64, 128),
-        #     nn.ReLU(),
-        #     CustomDropout(dropout),
-        #     nn.Linear(128, 64),
-        #     nn.ReLU(),
-        #     nn.Linear(64, 1)
-        # )
-###################new###############
-        # EviDTI 创新点：证据层输出，使用 Softplus 保证证据量非负
+        # Dual-output evidential head: raw evidence scores for the two classes;
+        # Softplus is applied in forward() to guarantee non-negative evidence.
         self.fc = nn.Sequential(
             nn.Linear(64, 128),
             nn.ReLU(),
             CustomDropout(dropout),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 2)  # 输出维度改为 2 (类 0 和 类 1)
+            nn.Linear(64, 2)  # dual-output evidential head
         )
-        ##########################33
 
-        # self.NeighborAggregator = AttentionSelectContext(dim=kge_dim, dropout=0.0)
         self.pad_idx = num_symbols
-        # self.pad_tensor = torch.tensor([self.pad_idx], requires_grad=False).to('cuda')
         self.fc_struc_net = nn.Sequential(
             nn.Linear(256, 128),
             nn.ReLU(),
@@ -742,11 +703,6 @@ class EmbedMatcher(nn.Module):
             nn.LayerNorm(128),
             nn.Linear(128, 128)
         )
-
-        # self.Bilinear = nn.Bilinear(embed_dim, embed_dim, 1, bias=False)
-        # self.Linear_self = nn.Linear(embed_dim, embed_dim, bias=False)
-        # self.Linear_nei = nn.Linear(embed_dim, embed_dim, bias=False)
-        # self.Linear_weak_rel = nn.Linear(embed_dim, embed_dim, bias=False)
 
         self.num_transformer_layers = 2
         self.num_transformer_heads = 1
@@ -761,34 +717,6 @@ class EmbedMatcher(nn.Module):
                                                               dropout_rate=self.dropout_layers)
 
         self.vaemodel = VAE(emb_dim=embed_dim * 2)
-
-        # ================= [MoseDTI 修改] 初始化门控 =================
-        # self.fusion_gate = SynergisticGating(embed_dim=128)
-        # # ============================================================
-    #
-    # def neighbor_encoder(self, connections, num_neighbors, self_feature, weak_rel):
-    #     '''
-    #     connections: (batch, 200, 2)
-    #     num_neighbors: (batch,)
-    #     '''
-    #     num_neighbors = num_neighbors.unsqueeze(1)
-    #     relations = connections[:, :, 0].squeeze(-1)
-    #     entities = connections[:, :, 1].squeeze(-1)
-    #     rel_embeds = self.dropout(self.symbol_emb(relations))
-    #     ent_embeds = self.dropout(self.symbol_emb(entities))
-    #
-    #     concat_embeds = torch.cat((rel_embeds, ent_embeds), dim=-1)
-    #
-    #     out = self.gcn_w(concat_embeds)
-    #
-    #     weak_rel = self.Linear_weak_rel(weak_rel.unsqueeze(1).repeat(1, out.size(1), 1))
-    #     score = self.Bilinear(weak_rel, out).squeeze(2)
-    #     att = torch.softmax(score, dim=1).unsqueeze(dim=1)
-    #     out = torch.bmm(att, out).squeeze(1)
-    #
-    #     out = out * num_neighbors.bool().int()
-    #     out = self.Linear_nei(out) + self.Linear_self(self_feature)
-    #     return F.elu(out)
 
     def structure_encoder(self, batch):
         qdrug_data_origin, qunique_drug_pair, qrels, qdrug_pair_indices, qnode_j_for_pairs, qnode_i_for_pairs, qdrug_pair_list, qdrug_node_num_pair_list = batch
@@ -815,35 +743,6 @@ class EmbedMatcher(nn.Module):
                                              qdrug_pair_indices]], dim=-1))
         return query_pair
 
-    # def neighbor_encoder_soft_select(self, connections_left, connections_right, head_left, head_right):
-    #     """
-    #     :param connections_left: [b, max, 2]
-    #     :param connections_right:
-    #     :param head_left:
-    #     :param head_right:
-    #     :return:
-    #     """
-    #     relations_left = connections_left[:, :, 0].squeeze(-1)
-    #     entities_left = connections_left[:, :, 1].squeeze(-1)
-    #     rel_embeds_left = self.dropout(self.symbol_emb(relations_left))
-    #     ent_embeds_left = self.dropout(self.symbol_emb(entities_left))
-    #
-    #     pad_matrix_left = self.pad_tensor.expand_as(relations_left)
-    #     mask_matrix_left = torch.eq(relations_left, pad_matrix_left).squeeze(-1)
-    #
-    #     relations_right = connections_right[:, :, 0].squeeze(-1)
-    #     entities_right = connections_right[:, :, 1].squeeze(-1)
-    #     rel_embeds_right = self.dropout(self.symbol_emb(relations_right))
-    #     ent_embeds_right = self.dropout(self.symbol_emb(entities_right))
-    #
-    #     pad_matrix_right = self.pad_tensor.expand_as(relations_right)
-    #     mask_matrix_right = torch.eq(relations_right, pad_matrix_right).squeeze(-1)  # [b, max]
-    #
-    #     left = [self.dropout(self.symbol_emb(head_left)), rel_embeds_left, ent_embeds_left]
-    #     right = [self.dropout(self.symbol_emb(head_right)), rel_embeds_right, ent_embeds_right]
-    #     output = self.NeighborAggregator(left, right, mask_matrix_left, mask_matrix_right)
-    #     return output
-
     def vae_loss(self, x_reconstructed, x, z_mean, z_logvar):
         mse_loss = F.mse_loss(input=x_reconstructed, target=x, reduction='mean')
         kl_loss = -0.5 * torch.sum(1 + z_logvar - z_mean.pow(2) - z_logvar.exp())
@@ -852,49 +751,36 @@ class EmbedMatcher(nn.Module):
     def forward(self, task_proto, query, support, query_meta=None, support_meta=None, query_batch=None,
                 support_batch=None, optim_VAE=None, is_eval=False, trainGAN=False):
         '''
-        No-NAI Ablation Forward:
-        CSE -> Concat -> VAE -> Comparator
+        EviDDIE forward (canonical): molecular CSE features -> pair
+        concatenation -> SRAE latent -> dual-output evidential comparator.
         '''
 
         if trainGAN == True:
-            # GAN 训练部分：只使用 Support 的 CSE 特征
+            # GAN step: support-set CSE features only
             support_left_, support_right_ = self.model(support_batch)
-
-            # --- [修改] 直接拼接，不使用 neighbor_encoder ---
-            # 原来是: support_left = self.neighbor_encoder(...)
             support_neighbor = torch.cat((support_left_, support_right_), dim=-1)
 
             output_s, z_mean_s, z_logvar_s, zs = self.vaemodel(support_neighbor, is_support=True, is_eval=is_eval)
             return zs
 
         else:
-            # ----------------- Query 计算 -----------------
-            # (A) Intrinsic (结构) 特征 - CSE
+            # Query branch: CSE features only (EviDDIE uses no KG neighbor
+            # aggregation or gating, by design)
             query_left_, query_right_ = self.model(query_batch)
-
-            # --- [修改] 去掉 Extrinsic (邻居) 和 Gate 融合 ---
-            # 直接使用 CSE 特征进行拼接
             query_neighbor = torch.cat((query_left_, query_right_), dim=-1)
-            # ---------------------------------------------
 
             if is_eval == False:
-                # (A) Intrinsic - CSE
                 support_left_, support_right_ = self.model(support_batch)
-
-                # --- [修改] 去掉 Extrinsic (邻居) 和 Gate 融合 ---
                 support_neighbor = torch.cat((support_left_, support_right_), dim=-1)
-
                 support = support_neighbor
 
             query = query_neighbor
 
-            # 后续逻辑保持不变 (VAE + Evidence/Loss)
             if is_eval == False:
                 output_s, z_mean_s, z_logvar_s, zs = self.vaemodel(support, is_support=True, is_eval=is_eval)
 
             output_q, z_mean_q, z_logvar_q, zq = self.vaemodel(query, is_support=False, is_eval=is_eval)
 
-            # EviDTI 逻辑保持不变
             evidence = F.softplus(self.fc(torch.abs(task_proto.expand_as(zq) - zq)))
             alpha = evidence + 1
 
@@ -906,87 +792,6 @@ class EmbedMatcher(nn.Module):
             else:
                 prob = alpha / torch.sum(alpha, dim=1, keepdim=True)
                 return prob[:, 1], 0
-
-    # def forward(self, task_proto, query, support, query_meta=None, support_meta=None, query_batch=None,
-    #             support_batch=None, optim_VAE=None, is_eval=False, trainGAN=False):
-    #     '''
-    #     query: (batch_size, 2)
-    #     support: (few, 2)
-    #     return: (batch_size, )
-    #     '''
-    #
-    #     if trainGAN == True:
-    #         support_left_connections, support_left_degrees, support_right_connections, support_right_degrees = support_meta
-    #         support_left_, support_right_ = self.model(support_batch)
-    #         support_left = self.neighbor_encoder(support_left_connections, support_left_degrees, support_left_,
-    #                                              support_right_ - support_left_)
-    #         support_right = self.neighbor_encoder(support_right_connections, support_right_degrees, support_right_,
-    #                                               support_right_ - support_left_)
-    #         support_neighbor = torch.cat((support_left, support_right), dim=-1)
-    #         output_s, z_mean_s, z_logvar_s, zs = self.vaemodel(support_neighbor, is_support=True, is_eval=is_eval)
-    #         return zs
-    #
-    #     else:
-    #         query_left_connections, query_left_degrees, query_right_connections, query_right_degrees = query_meta
-    #
-    #         # ----------------- Query 计算开始 -----------------
-    #         # (A) Intrinsic (结构) 特征
-    #         query_left_, query_right_ = self.model(query_batch)
-    #
-    #         # (B) Extrinsic (邻居) 特征
-    #         query_left_ext = self.neighbor_encoder(query_left_connections, query_left_degrees, query_left_,
-    #                                                query_right_ - query_left_)
-    #         query_right_ext = self.neighbor_encoder(query_right_connections, query_right_degrees, query_right_,
-    #                                                 query_right_ - query_left_)
-    #
-    #         # (C) [MoseDTI] 自适应门控融合
-    #         _, query_left_fused = self.fusion_gate(query_left_, query_left_ext)
-    #         _, query_right_fused = self.fusion_gate(query_right_, query_right_ext)
-    #
-    #         query_neighbor = torch.cat((query_left_fused, query_right_fused), dim=-1)
-    #         # ----------------- Query 计算结束 -----------------
-    #
-    #         if is_eval == False:
-    #             support_left_connections, support_left_degrees, support_right_connections, support_right_degrees = support_meta
-    #
-    #             # (A) Intrinsic
-    #             support_left_, support_right_ = self.model(support_batch)
-    #
-    #             # (B) Extrinsic
-    #             support_left_ext = self.neighbor_encoder(support_left_connections, support_left_degrees, support_left_,
-    #                                                      support_right_ - support_left_)
-    #             support_right_ext = self.neighbor_encoder(support_right_connections, support_right_degrees,
-    #                                                       support_right_, support_right_ - support_left_)
-    #
-    #             # (C) [MoseDTI] 融合
-    #             _, support_left_fused = self.fusion_gate(support_left_, support_left_ext)
-    #             _, support_right_fused = self.fusion_gate(support_right_, support_right_ext)
-    #
-    #             support_neighbor = torch.cat((support_left_fused, support_right_fused), dim=-1)
-    #
-    #             support = support_neighbor
-    #
-    #         query = query_neighbor
-    #
-    #         if is_eval == False:
-    #             output_s, z_mean_s, z_logvar_s, zs = self.vaemodel(support, is_support=True, is_eval=is_eval)
-    #         output_q, z_mean_q, z_logvar_q, zq = self.vaemodel(query, is_support=False, is_eval=is_eval)
-
-            # new  EviDTI 创新点：计算 alpha 参数 (alpha = evidence + 1)
-            # evidence = F.softplus(self.fc(torch.abs(task_proto.expand_as(zq) - zq)))
-            # alpha = evidence + 1
-            #
-            # if is_eval == False:
-            #     ls = F.mse_loss(input=output_s, target=support.detach(), reduction='mean')
-            #     lq = F.mse_loss(input=output_q, target=query.detach(), reduction='mean')
-            #     mse_loss = (ls + lq) / 2
-            #     # 训练模式返回 alpha 供 EDL 损失函数使用
-            #     return alpha, 0.2 * mse_loss
-            # else:
-            #     # 评估模式返回类 1 的期望概率: p = alpha_1 / (alpha_0 + alpha_1)
-            #     prob = alpha / torch.sum(alpha, dim=1, keepdim=True)
-            #     return prob[:, 1], 0
-            ###################################
 
     def forward_(self, query_meta, support_meta):
         query_left_connections, query_left_degrees, query_right_connections, query_right_degrees = query_meta

@@ -84,7 +84,7 @@ UAID-DDI/
     ├── eviddie_recorder.py         # Experiment result logging
     ├── eviddie_retriever.py        # Bio-text retrieval & embedding
     ├── eviddie_export_ds1.py       # Export predictions (dataset 1)
-    ├── eviddie_export_zs.py        # Export zero-shot predictions
+    ├── eviddie_export_zs_v2.py     # Export zero-shot predictions (manifest-based)
     ├── eviddie_export_zs_v2.py     # Export zero-shot predictions v2
     ├── eviddie_export_variants.py  # Export ablation variant predictions
     ├── eviddie_eval_ablation.py    # Evaluate ablated checkpoints
@@ -160,19 +160,35 @@ python pharddie_trainer.py \
     --prefix pharddie_1shot
 ```
 
-### 3. EviDDIE Ablation (Zero-Shot)
+### 3. Train EviDDIE (Zero-Shot, Formal Entry)
 
 ```bash
 cd EviDDIE
 
-# Requires PharDDIE encoder checkpoint trained first
+# Formal training: GAN (BSA) + evidential head with a native dual-output
+# EDL comparator. Per-seed independent matcher/generator checkpoints are
+# written to models/{prefix}_seed{seed}bestmodel / ...bestmodel_G.
+python eviddie_trainer.py --dataset dataset1 --few 10 --train_few 10 \
+    --batch_size 256 --max_batches 20000 --seed 19940419 --prefix eviddie
+
+# Repeat for seeds 20230801, 20240115, 20240520, 20240910
+```
+
+### 4. EviDDIE Ablation (Zero-Shot, Frozen Backbone)
+
+```bash
+cd EviDDIE
+
+# Frozen-backbone semantic/evidential-head ablation (Figure 4): a
+# pre-trained PharDDIE encoder + SRAE are loaded and frozen, and only the
+# semantic/evidential head is (re)trained per variant.
 python eviddie_train_ablation.py
 
 # Generate Figure 4
 python eviddie_plot_figure4.py
 ```
 
-### 4. Reproduce Paper Tables
+### 5. Reproduce Paper Tables
 
 ```bash
 # Table 2 — Main results
@@ -186,7 +202,7 @@ python pharddie_table3_complete.py
 python pharddie_table4_paper.py
 ```
 
-### 5. Case Study (Table 5)
+### 6. Case Study (Table 5)
 
 ```bash
 cd EviDDIE
@@ -194,7 +210,7 @@ python eviddie_run_case.py
 python eviddie_case_study.py
 ```
 
-### 6. Generate Negative Manifests
+### 7. Generate Negative Manifests
 
 ```bash
 cd shared

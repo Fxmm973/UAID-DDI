@@ -1,11 +1,10 @@
 #!/usr/bin/env Python
 # coding=utf-8
 """
-EviDDIE zero-shot 四变体消融训练：冻结编码器 + 只训 fc 头。
-变体1: Softmax baseline
-变体2: w/o BSA (Linear projection 替代 GAN)
-变体3: w/o EVI (EDL结构 + MSE loss, 无KL)
-变体4: Full EviDDIE (EDL + KL)
+DEPRECATED (P0-7 cleanup): superseded by eviddie_trainer.py (formal zero-shot
+entry with a native dual-output EDL head) and eviddie_train_ablation.py
+(frozen-backbone head ablation, Figure 4). Kept for reference only; do not
+use to produce paper results.
 """
 import torch.nn as nn, torch.nn.functional as F
 import csv

@@ -6,7 +6,7 @@ from eviddie_args import read_options
 from eviddie_dataloader import DrugDataset, DrugDataLoader
 from eviddie_matcher import EmbedMatcher, Generate_Model
 from sklearn import metrics
-from shared.checkpoint import convert_fc_1to2, load_state_dict_safe
+from shared.checkpoint import load_state_dict_safe
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,7 +31,8 @@ class DirectEval:
         arg.fine_tune = True; arg.aggregate = 'max'; arg.dropout = 0.2; arg.max_neighbor = 30
 
         sm = json.load(open(f'{arg.dataset}/{arg.semantic}'))
-        for t in sm: sm[t] = np.array(sm[t]) + 0.3*np.random.normal(0,1,size=(len(sm[t]),1))
+        # P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
+        for t in sm: sm[t] = np.array(sm[t])
         self.te = torch.tensor(np.vstack([sm[k] for k in sm])).float().to(device)
         self.t2id = {k:i for i,k in enumerate(sm)}  # preserve insertion order, same as export scripts
 
@@ -53,11 +54,12 @@ class DirectEval:
         ckpt_path = 'models/dataset1/bestmodels'
         ckpt = torch.load(ckpt_path, map_location=device)
         logging.info(f'Checkpoint keys: {list(ckpt.keys())[:10]}...')
-        # Check fc output dim
-        if 'fc.5.weight' in ckpt:
-            logging.info(f'fc.5.weight shape: {ckpt["fc.5.weight"].shape}')
-
-        convert_fc_1to2(ckpt)
+        # P0-7: native dual-output EDL head required — refuse legacy
+        # 1-output checkpoints instead of converting them.
+        if 'fc.5.weight' in ckpt and ckpt['fc.5.weight'].shape[0] != 2:
+            raise RuntimeError(
+                'Legacy 1-output checkpoint detected (fc.5.weight shape != 2). '
+                'Retrain with eviddie_trainer.py (native dual-output EDL head; see README).')
         for k in list(ckpt.keys()):
             if any(x in k for x in ['symbol_emb','gcn_w','gcn_b','Bilinear','Linear_self',
                 'Linear_nei','Linear_weak_rel','NeighborAggregator','siamese','support_encoder','query_encoder']):
