@@ -1,63 +1,126 @@
-================================================================================================================
+========================================================================================================================
 Table 4: Agent-Assisted Prioritization on Held-Out DDI Candidates
-Comparison: Probability-only ranking vs Uncertainty-aware ranking r = p(1-u)
-Both strategies use the same PharDDIE predictions; uncertainty proxy = prediction entropy (1-shot) or normalized SRAE latent dispersion score (5-shot); thresholds from common validation set.
-================================================================================================================
+Unified triage semantics (automatic = high-priority + low-priority;
+referred = expert referral + deferred review), so coverage = P(u <= tau_u).
+Uncertainty signal: u_entropy = H(p) for 1-shot;
+u_latent = SRAE latent dispersion score for 5-shot.
+Both signals are mapped to percentile ranks in [0,1] (robust to heavy tails);
+test scores are mapped through the validation empirical CDF so tau_u transfers.
+========================================================================================================================
 
 --- Setting: Fewer-shot (test) ---
-Shot   Strategy                       P@10         P@20         P@50         Recall@50    Referral     Coverage     Sel_Risk    
--------------------------------------------------------------------------------------------------------------
-1      Random ranking                 0.5400       0.4400       0.4800       0.0608       --           --           --          
-1      Probability only               0.9000       0.9500       0.9680       0.1225       0.0000       1.0000       0.2863      
-1      Probability + uncertainty      0.9000       0.9500       0.9680       0.1225       0.4149       0.5851       0.1208      
-  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 57.8%
--------------------------------------------------------------------------------------------------------------
+Shot   Strategy                     P@10       P@20       P@50       Recall@50    Referral   Coverage   Sel_Risk  
+----------------------------------------------------------------------------------------------------------------
+  [thresholds] shot=1: tau_p=0.250, tau_u=0.350 (selected on validation)
+1      Random ranking               0.5400     0.4400     0.4800     0.0608       0.5848     0.4152     0.4119    
+1      Probability only             1.0000     0.9800     0.9840     0.1246       0.0000     1.0000     0.2939    
+1      Probability + uncertainty    1.0000     0.9800     0.9840     0.1246       0.5848     0.4152     0.0620    
+  [counts] shot=1: mean automatic=328, referred=462 of 790.0 candidates per seed
+  [thresholds] shot=5: tau_p=0.400, tau_u=0.950 (selected on validation)
+5      Random ranking               0.4800     0.4900     0.4800     0.0700       0.0563     0.9437     0.4877    
+5      Probability only             1.0000     1.0000     0.9960     0.1452       0.0000     1.0000     0.1781    
+5      Probability + uncertainty    0.9600     0.9600     0.9520     0.1388       0.0563     0.9437     0.1778    
+  [counts] shot=5: mean automatic=647, referred=39 of 686.0 candidates per seed
+----------------------------------------------------------------------------------------------------------------
 
 --- Setting: Rare-event (test2) ---
-Shot   Strategy                       P@10         P@20         P@50         Recall@50    Referral     Coverage     Sel_Risk    
--------------------------------------------------------------------------------------------------------------
-1      Random ranking                 0.5400       0.5500       0.5120       0.2612       --           --           --          
-1      Probability only               0.9800       0.9800       0.9360       0.4776       0.0000       1.0000       0.3031      
-1      Probability + uncertainty      0.9800       0.9800       0.9360       0.4776       0.4439       0.5561       0.0768      
-  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 74.7%
-5      Random ranking                 0.4000       0.4500       0.5160       0.4448       --           --           --          
-5      Probability only               1.0000       1.0000       0.9800       0.8448       0.0000       1.0000       0.1207      
-5      Probability + uncertainty      1.0000       0.9900       0.9640       0.8310       0.5534       0.4466       0.0686      
-  -> P@10 delta: 0.0000  |  Sel_Risk reduction: 43.2%
--------------------------------------------------------------------------------------------------------------
+Shot   Strategy                     P@10       P@20       P@50       Recall@50    Referral   Coverage   Sel_Risk  
+----------------------------------------------------------------------------------------------------------------
+  [thresholds] shot=1: tau_p=0.250, tau_u=0.350 (selected on validation)
+1      Random ranking               0.5400     0.5500     0.5120     0.2612       0.5776     0.4224     0.2840    
+1      Probability only             1.0000     1.0000     0.9800     0.5000       0.0000     1.0000     0.2949    
+1      Probability + uncertainty    1.0000     1.0000     0.9800     0.5000       0.5776     0.4224     0.0474    
+  [counts] shot=1: mean automatic=83, referred=113 of 196.0 candidates per seed
+  [thresholds] shot=5: tau_p=0.400, tau_u=0.950 (selected on validation)
+5      Random ranking               0.4000     0.4500     0.5160     0.4448       0.0483     0.9517     0.4841    
+5      Probability only             1.0000     1.0000     0.9640     0.8310       0.0000     1.0000     0.1466    
+5      Probability + uncertainty    0.9600     0.8600     0.7880     0.6793       0.0483     0.9517     0.1463    
+  [counts] shot=5: mean automatic=110, referred=6 of 116.0 candidates per seed
+----------------------------------------------------------------------------------------------------------------
 
 Notes:
-  - Both strategies use the SAME PharDDIE model predictions.
-  - "Probability only" ranks by p; "Probability + uncertainty" ranks by r = p(1-u).
-  - tau_p and tau_u selected on common validation set via max-F1 / min-selective-risk.
-  - Referral = fraction sent to Expert Review (p>=tau_p AND u>tau_u).
-  - Coverage = fraction auto-decided = 1 - Referral (NOT 1 - Expert Review rate).
-  - Selective Risk = error rate among auto-decided predictions.
-  - For shot=1: entropy H(p) used as CONFIDENCE-DERIVED baseline (NOT epistemic).
-    The SRAE latent dispersion score is not used at K=1.
-  - For shot>=5: uncertainty proxy = normalized SRAE latent dispersion score.
+  - Unified semantics: automatic = {high-priority, low-priority} (u <= tau_u);
+    referred = {expert referral, deferred review} (u > tau_u).
+  - u values are percentile ranks in [0,1]; test scores use the validation CDF.
+  - Random rows use the same referral mask as the UA strategy;
+    its selective risk is the random-guessing error on the automatic set.
+  - 1-shot signal u_entropy = H(p): confidence-derived baseline, NOT epistemic.
+  - 5-shot signal u_latent = SRAE latent dispersion score
+    (reconstruction-derived proxy; no KL-based posterior interpretation).
   - Per-seed metrics averaged over 5 training seeds.
-================================================================================================================
 
-================================================================================================================
-MATCHED-COVERAGE RISK-COVERAGE ANALYSIS (rare 1-shot; the setting claimed in the paper)
-Compares selective risk at matched coverage levels for fair comparison.
-Recall: "deferred review" IS a referral action - it is NOT automatic coverage.
-================================================================================================================
+========================================================================================================================
+RISK-COVERAGE CURVES AND AURC (threshold sensitivity over tau_u)
+========================================================================================================================
 
---- Rare-event (test2), 1-shot ---
-Shot   Coverage   Prob-only Risk   UA Risk          Risk Reduction  
-----------------------------------------------------------------------
-1      0.30       0.0690+/-0.0154   0.0436+/-0.0226   +36.8%
-1      0.50       0.1653+/-0.0269   0.0811+/-0.0139   +51.0%
-1      0.70       0.3255+/-0.0099   0.1350+/-0.0370   +58.5%
-1      0.90       0.3295+/-0.0407   0.2688+/-0.0315   +18.4%
-1      1.00       0.3031+/-0.0383   0.3031+/-0.0383   +0.0%
-----------------------------------------------------------------------
+--- Fewer-shot (test) ---
+  shot=1: AURC=0.1019
+    coverage=0.003  selective_risk=0.0000
+    coverage=0.241  selective_risk=0.0263
+    coverage=0.489  selective_risk=0.0984
+    coverage=0.682  selective_risk=0.1224
+    coverage=0.835  selective_risk=0.2197
+    coverage=0.977  selective_risk=0.2604
+  shot=5: AURC=0.1803
+    coverage=0.000  selective_risk=0.0000
+    coverage=0.178  selective_risk=0.1475
+    coverage=0.418  selective_risk=0.1812
+    coverage=0.625  selective_risk=0.1655
+    coverage=0.859  selective_risk=0.1732
+    coverage=1.000  selective_risk=0.2055
 
-Matched-Coverage Notes:
-  - "Coverage" = fraction of candidates auto-decided (NOT referred).
-  - At matched coverage, we compare selective risk FAIRLY.
-  - For shot=1: "uncertainty" = entropy H(p) - a CONFIDENCE-DERIVED
-    baseline, NOT epistemic uncertainty. The SRAE latent dispersion score is not used at K=1.
-================================================================================================================
+--- Rare-event (test2) ---
+  shot=1: AURC=0.0876
+    coverage=0.000  selective_risk=0.0000
+    coverage=0.235  selective_risk=0.0435
+    coverage=0.464  selective_risk=0.0769
+    coverage=0.653  selective_risk=0.1016
+    coverage=0.827  selective_risk=0.2284
+    coverage=1.000  selective_risk=0.3112
+  shot=5: AURC=0.1835
+    coverage=0.000  selective_risk=0.0000
+    coverage=0.181  selective_risk=0.2857
+    coverage=0.388  selective_risk=0.2556
+    coverage=0.569  selective_risk=0.2020
+    coverage=0.767  selective_risk=0.1742
+    coverage=1.000  selective_risk=0.1589
+
+========================================================================================================================
+MATCHED-COVERAGE COMPARISON (same automatic coverage for both strategies)
+========================================================================================================================
+
+--- Fewer-shot (test) ---
+  shot=1 coverage=0.30: prob-only risk=0.0574, UA risk=0.0277, reduction=+51.8%
+  shot=1 coverage=0.50: prob-only risk=0.2349, UA risk=0.0875, reduction=+62.8%
+  shot=1 coverage=0.70: prob-only risk=0.3342, UA risk=0.1653, reduction=+50.5%
+  shot=5 coverage=0.30: prob-only risk=0.0302, UA risk=0.1743, reduction=-476.2%
+  shot=5 coverage=0.50: prob-only risk=0.1528, UA risk=0.1901, reduction=-24.4%
+  shot=5 coverage=0.70: prob-only risk=0.2200, UA risk=0.1853, reduction=+15.8%
+
+--- Rare-event (test2) ---
+  shot=1 coverage=0.30: prob-only risk=0.0310, UA risk=0.0332, reduction=-7.1%
+  shot=1 coverage=0.50: prob-only risk=0.1286, UA risk=0.0548, reduction=+57.4%
+  shot=1 coverage=0.70: prob-only risk=0.3197, UA risk=0.1023, reduction=+68.0%
+  shot=5 coverage=0.30: prob-only risk=0.0059, UA risk=0.2003, reduction=-3304.6%
+  shot=5 coverage=0.50: prob-only risk=0.1103, UA risk=0.1881, reduction=-70.5%
+  shot=5 coverage=0.70: prob-only risk=0.1975, UA risk=0.1699, reduction=+14.0%
+
+========================================================================================================================
+FIXED REFERRAL BUDGET COMPARISON (same automatic size for both strategies)
+========================================================================================================================
+
+--- Fewer-shot (test) ---
+  shot=1 budget=10%: UA risk=0.2643, prob-only risk=0.3247
+  shot=1 budget=30%: UA risk=0.1653, prob-only risk=0.3351
+  shot=1 budget=50%: UA risk=0.0875, prob-only risk=0.2381
+  shot=5 budget=10%: UA risk=0.1785, prob-only risk=0.1953
+  shot=5 budget=30%: UA risk=0.1853, prob-only risk=0.2192
+  shot=5 budget=50%: UA risk=0.1901, prob-only risk=0.1558
+
+--- Rare-event (test2) ---
+  shot=1 budget=10%: UA risk=0.2450, prob-only risk=0.3183
+  shot=1 budget=30%: UA risk=0.1023, prob-only risk=0.3256
+  shot=1 budget=50%: UA risk=0.0548, prob-only risk=0.1302
+  shot=5 budget=10%: UA risk=0.1537, prob-only risk=0.1613
+  shot=5 budget=30%: UA risk=0.1699, prob-only risk=0.1941
+  shot=5 budget=50%: UA risk=0.1881, prob-only risk=0.1126

@@ -7,6 +7,7 @@
 """
 import torch.nn as nn
 import csv
+import hashlib
 from torch.autograd import Variable
 from pharddie_args import read_options
 from pharddie_dataloader import *
@@ -235,13 +236,14 @@ class ExportFull(object):
 
 
 if __name__ == '__main__':
+    import hashlib  # 种子/清单 SHA256 验证
     args = read_options()
     # ---- 训练种子（独立训练运行）vs 负样本种子（固定评估） ----
     # 训练种子：每次从头训练产生不同模型 -> 捕捉训练不稳定性
     # 负样本种子：固定为 19940419，使跨训练种子的比较不受负样本波动干扰
     TRAINING_SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
     EVAL_MANIFEST_SEED = 19940419  # 固定负样本种子用于评估
-    SHOTS = [1, 5, 10]
+    SHOTS = [1, 5]  # 论文只报道 1/5-shot；10-shot 没有完整的 5 种子 checkpoint，不导出
     MODES = ['dev', 'test', 'test2']
     DATASET = 'dataset1'
 
@@ -259,7 +261,6 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
     output_csv = os.path.join(output_dir, 'predictions_dataset1_PharDDIE.csv')
 
-    import hashlib  # 种子独立性验证
     ckpt_records = {}  # (shot, train_seed) -> checkpoint sha256
 
     with open(output_csv, 'w', newline='', encoding='utf-8') as f:

@@ -67,6 +67,9 @@ def fmt(mean_val, std_val):
 
 def process_dataframe(df, method_col='method'):
     """Group by seed, setting, shot, method and compute calibration metrics per seed."""
+    # 兼容两种表头：新导出写 train_seed，旧导出写 seed
+    if 'train_seed' in df.columns and 'seed' not in df.columns:
+        df = df.rename(columns={'train_seed': 'seed'})
     all_metrics = []
     for (seed, setting, shot, method), group in df.groupby(['seed', 'setting', 'shot', method_col]):
         y_true = group['y_true'].values
