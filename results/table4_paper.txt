@@ -36,7 +36,7 @@ Notes:
   - For shot=1: entropy H(p) used as CONFIDENCE-DERIVED baseline (NOT epistemic).
     The SRAE latent dispersion score is not used at K=1.
   - For shot>=5: uncertainty proxy = normalized SRAE latent dispersion score.
-  - Per-seed metrics averaged over 3 seeds (2024, 2025, 2026).
+  - Per-seed metrics averaged over 5 training seeds.
 ================================================================================================================
 
 ================================================================================================================

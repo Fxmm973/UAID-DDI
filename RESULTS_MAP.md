@@ -2,7 +2,7 @@
 
 ## Version Info
 - Last updated: 2026-08-08
-- Paper: `fyx_8_8.tex`
+- Paper: `fyx_8_13.tex`
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI)
 
 ---
@@ -42,21 +42,23 @@
 ### Evaluation Protocol
 - Event-level splits: train (58 events / 189,287 samples), dev (5 / 2,005), test (13 / 408), test2 (10 / 108)
 - Negative-sample manifests with SHA256 hashes ensure reproducible evaluation
-- Five manifest seeds: 19940419, 20230801, 20240115, 20240520, 20240910
+- Five training seeds: 19940419, 20230801, 20240115, 20240520, 20240910 (evaluation uses the fixed manifest seed 19940419)
 - Event-level overlap audit confirms no leakage across splits
 
 ---
 
 ## Table 3 — Calibration
 
-- **PharDDIE**: Computed from prediction CSVs (rare-event, single fixed checkpoint, seed 19940419)
+- **PharDDIE**: Computed from per-seed prediction CSVs (rare-event, five training seeds)
 - **EviDDIE**: Computed from zero-shot prediction CSVs
 - **Compute script**: `PharDDIE/pharddie_table3_complete.py`
-- **Important**: Results are mean ± SD over 5 negative-sampling replicates using one fixed checkpoint. They do NOT represent 5 independent training runs. This distinction is noted in the paper.
+- **Important**: PharDDIE rows are mean ± SD over the five independent training seeds (evaluated with the fixed manifest seed 19940419). Zero-shot rows are mean ± SD over 5 negative-sampling replicates on a fixed checkpoint. This distinction is noted in the paper.
 - **Paper values**:
+  - Zero-shot Softmax baseline: ECE 0.2226, Brier 0.3332, NLL 1.1868, high-conf error 0.5277
+  - Zero-shot EviDDIE w/o EVI: ECE 0.2375, Brier 0.3243, NLL 0.9323, high-conf error 0.4372
   - Zero-shot EviDDIE: ECE 0.1163, Brier 0.2737, NLL 0.7575, high-conf error 0.3229
-  - Rare-event PharDDIE: ECE 0.1343, Brier 0.1454, NLL 0.4864, high-conf error 0.1111
-  - Rare-event PharDDIE + uncertainty: ECE 0.1387, Brier 0.1037, NLL 0.3225, high-conf error 0.0317
+  - Rare-event PharDDIE (1-shot): ECE 0.0555, Brier 0.1332, NLL 0.4222, high-conf error 0.0611
+  - Rare-event PharDDIE (5-shot): ECE 0.0561, Brier 0.0771, NLL 0.2498, high-conf error 0.0131
 
 ---
 
@@ -64,12 +66,14 @@
 
 - **Source**: PharDDIE prediction CSVs
 - **Compute script**: `PharDDIE/pharddie_table4_paper.py`
-- Uncertainty by VAE latent variance (5/10-shot) or entropy fallback (1-shot)
+- Uncertainty: entropy $H(p)$ for 1-shot (confidence-derived baseline); normalized SRAE latent dispersion score for $K\ge 5$
 - Triage thresholds: $\tau_p \in [0.70, 0.85]$, $\tau_u \in [0.30, 0.55]$, selected on validation
 - The paper presents these as an illustration of the referral-coverage trade-off
-- **Paper values**:
-  - Fewer: prob+unc P@10=1.0000, referral=0.6579, selective risk=0.1817
-  - Rare: prob+unc P@10=0.9333, referral=0.4885, selective risk=0.2151
+- **Paper values** (probability + uncertainty ranking):
+  - Fewer 1-shot: P@10=0.9000, referral=0.4149, selective risk=0.1208
+  - Rare 1-shot: P@10=0.9800, referral=0.4439, selective risk=0.0768
+  - Rare 5-shot: P@10=1.0000, referral=0.5534, selective risk=0.0686
+  - Matched-coverage risk reduction at 50% coverage (rare 1-shot): 51.0%
 
 ---
 
@@ -154,7 +158,7 @@
 | 2026-08-10 | `shared/audit_drug_overlap.py` | **NEW**: Drug overlap audit between train/dev/test splits |
 | 2026-08-10 | `reproduce.ps1` | **NEW**: Full reproduction pipeline script |
 | 2026-08-10 | `audit/` | **NEW**: Audit directory structure with logs, predictions, manifests |
-| 2026-08-10 | `fyx_8_8(4) (1).tex` | Paper restructured around RQ1-RQ3; new EviDDIE disc. table; updated Discussion |
+| 2026-08-10 | `fyx_8_13.tex` | Paper restructured around RQ1-RQ3; new EviDDIE disc. table; updated Discussion |
 
 ---
 
