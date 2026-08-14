@@ -11,4 +11,5 @@ Rare-event     PharDDIE (5-shot)        0.0561±0.0175        0.0771±0.0128    
 --------------------------------------------------------------------------------------------------------------
 PharDDIE rows: mean ± SD over 5 independent training seeds (19940419, 20230801, 20240115, 20240520, 20240910),
 each evaluated with the fixed negative-sampling manifest. Zero-shot rows: mean ± SD over 5 negative-sampling
-replicates on a fixed checkpoint. Source: results/table3_complete_detail.csv (per-seed detail).
+replicates on a fixed checkpoint. PharDDIE rows: aggregated from results/table3_complete_detail.csv (per-seed detail).
+Zero-shot rows: single fixed checkpoint evaluated with 5 negative-sampling replicates.

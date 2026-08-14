@@ -41,3 +41,8 @@ and `EviDDIE/neg_manifests/manifest_hashes.json`.
 - seed 20240115: main `d7bc70db46c9b861d2aaa0fe4040a7b19be4faa14939df384d353558c5f7720d` (16445317 bytes); generator `ce5b5f9bd81e833c936a2197a0ded2994f300be880ec5a6c27a45f7def21f328` (1379447 bytes)
 - seed 20240520: main `cef85baa2df0893bc2964a3d3f36b9277e37b3c2f393a1c5de9d6dd48b09782c` (16445317 bytes); generator `1e32659680926664cb1917af6363a468888ab3e528488320fb4483b48f227380` (1379447 bytes)
 - seed 20240910: main `f35e02ba46327c8eeae98a7dc4c30e07cf11ace88ec8cff9f275a5102ef402a0` (16445317 bytes); generator `3c5c5538a3d2ebc7efe9ef463e93476ef413646e4adb72165e00f367aeea5757` (1379447 bytes)
+
+## BioSentVec Event Embedding Files (precomputed; keys are the event description templates)
+
+- `EviDDIE/dataset1/event_embedding2.json`: `5f343b64a720eaa6ba6413a6a8b52edc3315f08528ee16460a0d7766b4e6631c` (1386481 bytes)
+- `EviDDIE/dataset2/event_embedding2.json`: `b45bfe49a9c1a87a2c90e3878e8754a9819f8bde4717653d6fb44fa920ff1e90` (1583492 bytes)
