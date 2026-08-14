@@ -12,11 +12,12 @@ CUDA: 11.8
 GPU: NVIDIA RTX 4090 (24 GB VRAM)
 
 # SHA256 of environment.yml
-environment.yml SHA256: <run: certutil -hashfile environment.yml SHA256>
+environment.yml SHA256: b24b6789d84fd0d277abdcc86f8e331ed624ef60b39ee979e1aaaa997f506bf5
 
 # DRKG TransE embedding source:
 # Pre-trained DRKG TransE entity embeddings (~200 MB)
-# Available at: https://doi.org/10.5281/zenodo.XXXXXXX (to be activated upon acceptance)
+# Available from the corresponding author upon request; will be deposited
+# in a public Zenodo repository upon acceptance.
 # Or regenerate via: https://github.com/gnn4dr/DRKG
 
 # BioSentVec model:

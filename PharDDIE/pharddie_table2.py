@@ -29,7 +29,10 @@ def compute_metrics(y_true, y_prob, group_by_event):
 # the comparison is an external reference.
 #
 # 格式: BASELINES[method][setting][metric][shot] = (mean, std)
-# 注: 这些 baseline 只有 1-shot 和 5-shot，无 10-shot；无 AUPR
+# 注: 这些 baseline 只有 1-shot 和 5-shot，无 10-shot；无 AUPR。
+#     META-DDIE/RareDDIE 转录了 common/fewer/rare 三个 setting 的值；
+#     其余 6 个方法只转录论文 Table 2 使用的 rare 测试值
+#     （common/fewer 行输出 '—'，见文末 Notes）。
 # ============================================================
 BASELINES = {
     'META-DDIE': {
@@ -53,6 +56,36 @@ BASELINES = {
         'rare':   {'AUC':{1:(0.9392,0.0273),5:(0.9879,0.0096)},
                    'ACC':{1:(0.8408,0.0202),5:(0.9328,0.0234)},
                    'F1': {1:(0.8507,0.0186),5:(0.9370,0.0206)}},
+    },
+    'GMatching': {
+        'rare': {'AUC':{1:(0.8711,0.0263),5:(0.9366,0.0212)},
+                 'ACC':{1:(0.8000,0.0367),5:(0.8448,0.0289)},
+                 'F1': {1:(0.8099,0.0384),5:(0.8494,0.0290)}},
+    },
+    'MRCGNN': {
+        'rare': {'AUC':{1:(0.8528,0.0246),5:(0.9561,0.0128)},
+                 'ACC':{1:(0.8122,0.0307),5:(0.8448,0.0196)},
+                 'F1': {1:(0.8155,0.0304),5:(0.8610,0.0151)}},
+    },
+    'MetaR-Pre': {
+        'rare': {'AUC':{1:(0.7938,0.0449),5:(0.7862,0.0186)},
+                 'ACC':{1:(0.7162,0.0541),5:(0.6964,0.0209)},
+                 'F1': {1:(0.7294,0.0616),5:(0.7082,0.0249)}},
+    },
+    'MetaR-In': {
+        'rare': {'AUC':{1:(0.7318,0.0638),5:(0.8674,0.0332)},
+                 'ACC':{1:(0.6786,0.0644),5:(0.7758,0.0329)},
+                 'F1': {1:(0.6892,0.0622),5:(0.7814,0.0344)}},
+    },
+    'KnowDDI': {
+        'rare': {'AUC':{1:(0.7282,0.0034),5:(0.9130,0.0017)},
+                 'ACC':{1:(0.6183,0.0088),5:(0.8586,0.0253)},
+                 'F1': {1:(0.4296,0.0209),5:(0.8343,0.0343)}},
+    },
+    'DSN-DDI': {
+        'rare': {'AUC':{1:(0.6174,0.0653),5:(0.7176,0.0584)},
+                 'ACC':{1:(0.6000,0.0537),5:(0.6483,0.0611)},
+                 'F1': {1:(0.5293,0.0721),5:(0.5857,0.0758)}},
     },
 }
 
@@ -157,7 +190,7 @@ def main():
     lines.append('=' * 135)
     lines.append('Table 2: Main Prediction Performance under Different Rare-DDI Settings.')
     lines.append('PharDDIE & ablation rows: mean ± std computed from per-seed prediction CSVs.')
-    lines.append('Baseline values (META-DDIE, RareDDIE): transcribed from Ren et al.')
+    lines.append('External baseline values (8 methods): transcribed from Ren et al.')
     lines.append('  Nat. Commun. 2025 source data — NOT regenerated in this study.')
     lines.append('=' * 135)
     H = (f"{'Setting':<10} {'Shot':<6} {'Method':<28} "
@@ -172,13 +205,13 @@ def main():
             # ====================================================
             mean_s, std_s = _compute_rows_from_csv(df_phar, s_key, shot, ['seed'])
             if mean_s is not None:
-                lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE":<28} '
+                lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE (Ours)":<28} '
                              f'{fmt(mean_s["AUC"], std_s["AUC"]):<22} '
                              f'{fmt(mean_s["AUPR"], std_s["AUPR"]):<22} '
                              f'{fmt(mean_s["ACC"], std_s["ACC"]):<22} '
                              f'{fmt(mean_s["Macro-F1"], std_s["Macro-F1"]):<22}')
             else:
-                lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE":<28} '
+                lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE (Ours)":<28} '
                              f'{"— (no CSV rows)":<22} {"—":<22} {"—":<22} {"—":<22}')
 
             # ====================================================
@@ -187,7 +220,7 @@ def main():
             if has_wo:
                 mean_w, std_w = _compute_rows_from_csv(df_wo, s_key, shot, ['seed'])
                 if mean_w is not None:
-                    lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE w/o SRAE":<28} '
+                    lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE w/o SRAE (Ablation)":<28} '
                                  f'{fmt(mean_w["AUC"], std_w["AUC"]):<22} '
                                  f'{fmt(mean_w["AUPR"], std_w["AUPR"]):<22} '
                                  f'{fmt(mean_w["ACC"], std_w["ACC"]):<22} '
@@ -208,13 +241,13 @@ def main():
             # ====================================================
             # External baselines (transcribed, not re-trained)
             # ====================================================
-            for bm in ['META-DDIE', 'RareDDIE']:
+            for bm in ['META-DDIE', 'RareDDIE', 'GMatching', 'MRCGNN', 'MetaR-Pre', 'MetaR-In', 'KnowDDI', 'DSN-DDI']:
                 if shot not in [1, 5]:
-                    lines.append(f'{s_label:<10} {shot:<6} {bm:<28} '
+                    lines.append(f'{s_label:<10} {shot:<6} {bm + " (Reported)":<28} '
                                  f'{"— (no 10-shot in paper)":<22} '
                                  f'{"—":<22} {"—":<22} {"—":<22}')
                 else:
-                    lines.append(f'{s_label:<10} {shot:<6} {bm:<28} '
+                    lines.append(f'{s_label:<10} {shot:<6} {bm + " (Reported)":<28} '
                                  f'{baseline_fmt(bm, s_key, "AUC", shot):<22} '
                                  f'{"—":<22} '
                                  f'{baseline_fmt(bm, s_key, "ACC", shot):<22} '
@@ -229,9 +262,11 @@ def main():
     lines.append('    present) or negative-sampling seeds (legacy mode, if only seed column).')
     lines.append('  - When per-training-seed checkpoints are available, std = training variability.')
     lines.append('  - When only one checkpoint exists, std = negative-sampling variability (5 fixed manifests).')
-    lines.append('  - META-DDIE & RareDDIE: transcribed from Ren et al. (Nat. Commun. 2025) source data;')
-    lines.append('    these baselines were NOT re-trained or re-evaluated in this study.')
-    lines.append('  - META-DDIE & RareDDIE only published 1/5-shot results; no 10-shot or AUPR reported.')
+    lines.append('  - All external baselines: transcribed from Ren et al. (Nat. Commun. 2025) source data;')
+    lines.append('    none of them were re-trained or re-evaluated in this study.')
+    lines.append('  - Transcribed baselines only published 1/5-shot results; no 10-shot or AUPR reported.')
+    lines.append('  - META-DDIE and RareDDIE include common/fewer/rare transcribed values; the other six')
+    lines.append('    methods embed only the rare-test values used in the paper Table 2 (common/fewer = \'—\').')
     lines.append('  - "PharDDIE w/o SRAE" = frozen encoder + fc_direct head (no uncertainty).')
     lines.append('  - EviDDIE is zero-shot; shown in all rows for comparison convenience.')
     lines.append('  - If any PharDDIE/ablation row shows "— (no CSV rows)", the corresponding')

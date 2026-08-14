@@ -128,8 +128,8 @@ conda env create -f environment.yml
 conda activate PharDDIE
 
 # Or install manually
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-pip install torch-geometric rdkit-pypi numpy pandas scikit-learn tqdm tensorboardX
+pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+pip install torch-geometric==2.6.1 rdkit-pypi==2025.03.5 numpy==1.24.3 pandas scikit-learn tqdm tensorboardX
 ```
 
 ---
