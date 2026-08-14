@@ -1,0 +1,3 @@
+AUDIT 3: ordered-triple cross-split overlap
+===========================================
+PASS: no directed triple appears in two splits.

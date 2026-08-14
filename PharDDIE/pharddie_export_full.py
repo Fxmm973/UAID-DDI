@@ -62,6 +62,14 @@ class ExportFull(object):
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
+        # ---- 固定负样本 manifest（正式评估路径：禁止现场抽样）----
+        self.neg_manifests = {}
+        for split in ['dev', 'test', 'test2']:
+            mp = f'{self.dataset}/neg_manifests/{split}_seed{self.eval_seed}_negatives.json'
+            if not os.path.exists(mp):
+                raise FileNotFoundError(f'Evaluation manifest not found: {mp}. '
+                                        'Run shared/neg_manifest.py first.')
+            self.neg_manifests[split] = json.load(open(mp))
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
 
@@ -155,8 +163,6 @@ class ExportFull(object):
             for query_ in test_tasks.keys():
                 if len(test_tasks[query_]) < few + 1:
                     continue
-                candidates = self.rel2candidates[query_]
-
                 # ---- 支持集编码 ----
                 support_triples = test_tasks[query_][:few]
                 support_triples_rel2id = [[t[0], t[2], rel2id[t[1]]] for t in support_triples]
@@ -177,15 +183,22 @@ class ExportFull(object):
                 _, _, _, s_z = self.matcher.vaemodel(s_pair, is_support=True, is_eval=True)
                 s_proto = s_z.mean(dim=0, keepdim=True)  # [1, 64]
 
-                # ---- 查询集编码 ----
+                # ---- 查询集编码：负样本直接读取固定 manifest（按 event/正样本/索引精确匹配）----
                 query_triples = test_tasks[query_][few:]
+                manifest_entries = self.neg_manifests[mode].get(query_, [])
+                expected = manifest_entries[few:]
+                if len(expected) != len(query_triples):
+                    raise RuntimeError(
+                        f'[{mode}] {query_}: manifest has {len(expected)} query negatives '
+                        f'but task has {len(query_triples)} query positives.')
                 false_triples = []
-                for t in query_triples:
-                    while True:
-                        noise = random.choice(candidates)
-                        if (noise not in self.e1rel_e2[t[0] + t[1]]) and noise != t[2]:
-                            break
-                    false_triples.append([t[0], t[1], noise])
+                for t, entry in zip(query_triples, expected):
+                    d_i, d_j, d_k, rel = entry
+                    if not (d_i == t[0] and d_j == t[2] and rel == t[1]):
+                        raise RuntimeError(
+                            f'[{mode}] {query_}: manifest entry {entry} does not match '
+                            f'positive query triple {t} at the same index.')
+                    false_triples.append([t[0], t[1], d_k])
 
                 all_triples = query_triples + false_triples
                 all_rel2id = [[t[0], t[2], rel2id[t[1]]] for t in all_triples]
@@ -232,6 +245,16 @@ if __name__ == '__main__':
     MODES = ['dev', 'test', 'test2']
     DATASET = 'dataset1'
 
+    # ---- 运行前核验评估 manifest 的 SHA256（与 manifest_hashes.json 比对，不一致立即终止）----
+    hash_log = json.load(open(f'{DATASET}/neg_manifests/manifest_hashes.json'))
+    for split in MODES:
+        mf = f'{DATASET}/neg_manifests/{split}_seed{EVAL_MANIFEST_SEED}_negatives.json'
+        actual = hashlib.sha256(open(mf, 'rb').read()).hexdigest()
+        recorded = hash_log.get(f'{split}_seed{EVAL_MANIFEST_SEED}', {}).get('sha256')
+        if recorded is None or actual != recorded:
+            raise RuntimeError(f'Manifest hash mismatch: {mf} (recorded={recorded}, actual={actual})')
+        logging.info(f'[MANIFEST-CHAIN] {mf}: SHA256 verified.')
+
     output_dir = 'results/predictions'
     os.makedirs(output_dir, exist_ok=True)
     output_csv = os.path.join(output_dir, 'predictions_dataset1_PharDDIE.csv')
@@ -270,6 +293,7 @@ if __name__ == '__main__':
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed_all(eval_seed)
 
+                args.eval_seed = eval_seed
                 ex = ExportFull(args)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed)

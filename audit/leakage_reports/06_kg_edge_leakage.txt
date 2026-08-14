@@ -1,0 +1,4 @@
+AUDIT 6: KG-edge leakage (informational; see paper Limitations on DRKG coverage)
+================================================================================
+held-out drug pairs checked: 1032; DRKG path_graph edges: 68763
+held-out drug pairs that are also path_graph edges (ACI neighbour source): 0

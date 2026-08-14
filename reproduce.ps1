@@ -1,7 +1,7 @@
 # reproduce.ps1 — UAID-DDI Full Reproduction Pipeline
+# 任何一步失败（非零退出码）立即终止整个流水线，绝不继续生成表格。
 param(
     [switch]$SkipTraining = $false,
-    [switch]$SkipHashCheck = $false,
     [string]$GpuId = "0"
 )
 
@@ -24,38 +24,39 @@ function Write-Report {
     Write-Host $Line
 }
 
+function Run-Step {
+    param([string]$StepName, [string]$Command)
+    Write-Host "=== $StepName ===" -ForegroundColor Green
+    Invoke-Expression $Command
+    if ($LASTEXITCODE -ne 0) {
+        Write-Report "FAIL: $StepName (exit code $LASTEXITCODE)"
+        Write-Host "ABORTING: $StepName failed. Pipeline stopped." -ForegroundColor Red
+        exit 1
+    }
+    Write-Report "PASS: $StepName"
+}
+
 Write-Host "=== Step 0: Environment Snapshot ===" -ForegroundColor Green
-$GitCommit = (git rev-parse HEAD 2>$null) -replace '.*', 'unknown'
+$GitCommit = (git rev-parse HEAD 2>$null)
 Write-Report "Git commit: $GitCommit"
 Write-Report "Timestamp: $Timestamp"
 Write-Report "Python: $(python --version 2>&1)"
 
-Write-Host "=== Step 1: Negative Manifests ===" -ForegroundColor Green
-try {
-    python shared/neg_manifest.py --dataset PharDDIE/dataset1
-    python shared/neg_manifest.py --dataset EviDDIE/dataset1
-    Write-Report "PASS: Negative manifests generated"
-} catch {
-    Write-Report "FAIL: Negative manifests - $_"
-}
+# Step 1: 校验固定负样本 manifest（SHA256 + 条目数量），不一致立即终止
+Run-Step "Step 1a: Verify PharDDIE manifests (SHA256 + entry counts)" "python shared/verify_manifests.py --hash-log PharDDIE/dataset1/neg_manifests/manifest_hashes.json --manifest-dir PharDDIE/dataset1/neg_manifests --dataset PharDDIE/dataset1"
+Run-Step "Step 1b: Verify EviDDIE manifests (SHA256 + entry counts)" "python shared/verify_manifests.py --hash-log EviDDIE/neg_manifests/manifest_hashes.json --manifest-dir EviDDIE/neg_manifests --dataset EviDDIE/dataset1"
+Run-Step "Step 1c: Six-part leakage audit" "python shared/audit_leakage.py --dataset PharDDIE/dataset1"
 
-Write-Host "=== Step 2: Prediction CSVs ===" -ForegroundColor Green
-try { python PharDDIE/pharddie_export_full.py
-    Write-Report "PASS: PharDDIE full export" } catch { Write-Report "FAIL: PharDDIE - $_" }
-try { python PharDDIE/pharddie_export.py
-    Write-Report "PASS: PharDDIE w/o uncertainty" } catch { Write-Report "FAIL: PharDDIE w/o - $_" }
-try { python EviDDIE/eviddie_export_zs_v2.py
-    Write-Report "PASS: EviDDIE zero-shot" } catch { Write-Report "FAIL: EviDDIE - $_" }
+# Step 2: 导出逐样本预测（全部直接读取固定 manifest）
+Run-Step "Step 2a: PharDDIE full export (manifest-based)" "python PharDDIE/pharddie_export_full.py"
+Run-Step "Step 2b: PharDDIE w/o uncertainty export (manifest-based)" "python PharDDIE/pharddie_export.py"
+Run-Step "Step 2c: EviDDIE zero-shot export (manifest-based)" "python EviDDIE/eviddie_export_zs_v2.py"
 
-Write-Host "=== Step 3: Paper Tables ===" -ForegroundColor Green
-try { python PharDDIE/pharddie_table2.py
-    Write-Report "PASS: Table 2" } catch { Write-Report "FAIL: Table 2 - $_" }
-try { python PharDDIE/pharddie_table3.py
-    Write-Report "PASS: Table 3" } catch { Write-Report "FAIL: Table 3 - $_" }
-try { python PharDDIE/pharddie_table4_paper.py
-    Write-Report "PASS: Table 4" } catch { Write-Report "FAIL: Table 4 - $_" }
-try { python EviDDIE/eviddie_case_study.py
-    Write-Report "PASS: Table 5" } catch { Write-Report "FAIL: Table 5 - $_" }
+# Step 3: 论文表格
+Run-Step "Step 3a: Table 2" "python PharDDIE/pharddie_table2.py"
+Run-Step "Step 3b: Table 3" "python PharDDIE/pharddie_table3_complete.py"
+Run-Step "Step 3c: Table 4" "python PharDDIE/pharddie_table4_paper.py"
+Run-Step "Step 3d: Table 5" "python EviDDIE/eviddie_case_study.py"
 
 Write-Host "=== REPRODUCTION COMPLETE ===" -ForegroundColor Green
 Write-Report "Full report: $ReportPath"

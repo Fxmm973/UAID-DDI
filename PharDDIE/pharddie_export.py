@@ -66,6 +66,14 @@ class ExportWOUncertainty(object):
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
+        # ---- 固定负样本 manifest（正式评估路径：禁止现场抽样）----
+        self.neg_manifests = {}
+        for split in ['dev', 'test', 'test2']:
+            mp = f'{self.dataset}/neg_manifests/{split}_seed{self.eval_seed}_negatives.json'
+            if not os.path.exists(mp):
+                raise FileNotFoundError(f'Evaluation manifest not found: {mp}. '
+                                        'Run shared/neg_manifest.py first.')
+            self.neg_manifests[split] = json.load(open(mp))
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
 
@@ -136,7 +144,6 @@ class ExportWOUncertainty(object):
             for query_ in test_tasks.keys():
                 if len(test_tasks[query_]) < few + 1:
                     continue
-                candidates = self.rel2candidates[query_]
                 support_triples = test_tasks[query_][:few]
                 support_triples_rel2id = [[t[0], t[2], rel2id[t[1]]] for t in support_triples]
                 support_pairs = [[symbol2id[t[0]], symbol2id[t[2]]] for t in support_triples]
@@ -151,13 +158,21 @@ class ExportWOUncertainty(object):
                 s_mean = s_emb.mean(dim=0, keepdim=True)
 
                 query_triples = test_tasks[query_][few:]
+                # ---- 负样本直接读取固定 manifest（按 event/正样本/索引精确匹配）----
+                manifest_entries = self.neg_manifests[mode].get(query_, [])
+                expected = manifest_entries[few:]
+                if len(expected) != len(query_triples):
+                    raise RuntimeError(
+                        f'[{mode}] {query_}: manifest has {len(expected)} query negatives '
+                        f'but task has {len(query_triples)} query positives.')
                 false_triples = []
-                for t in query_triples:
-                    while True:
-                        noise = random.choice(candidates)
-                        if (noise not in self.e1rel_e2[t[0]+t[1]]) and noise != t[2]:
-                            break
-                    false_triples.append([t[0], t[1], noise])
+                for t, entry in zip(query_triples, expected):
+                    d_i, d_j, d_k, rel = entry
+                    if not (d_i == t[0] and d_j == t[2] and rel == t[1]):
+                        raise RuntimeError(
+                            f'[{mode}] {query_}: manifest entry {entry} does not match '
+                            f'positive query triple {t} at the same index.')
+                    false_triples.append([t[0], t[1], d_k])
 
                 all_triples = query_triples + false_triples
                 all_rel2id = [[t[0], t[2], rel2id[t[1]]] for t in all_triples]
@@ -191,10 +206,23 @@ class ExportWOUncertainty(object):
 
 if __name__ == '__main__':
     args = read_options()
-    SEEDS = [2024, 2025, 2026, 2027, 2028]
+    import hashlib
+    # 评估负样本 manifest 种子：固定检查点 x 5 次负样本复现（种子与仓库 manifest 一致）
+    SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
     SHOTS = [1, 5, 10]
     MODES = ['dev', 'test', 'test2']
     DATASET = 'dataset1'
+
+    # ---- 运行前核验所有评估 manifest 的 SHA256（不一致立即终止）----
+    hash_log = json.load(open(f'{DATASET}/neg_manifests/manifest_hashes.json'))
+    for split in MODES:
+        for seed in SEEDS:
+            mf = f'{DATASET}/neg_manifests/{split}_seed{seed}_negatives.json'
+            actual = hashlib.sha256(open(mf, 'rb').read()).hexdigest()
+            recorded = hash_log.get(f'{split}_seed{seed}', {}).get('sha256')
+            if recorded is None or actual != recorded:
+                raise RuntimeError(f'Manifest hash mismatch: {mf} (recorded={recorded}, actual={actual})')
+    logging.info('[MANIFEST-CHAIN] All evaluation manifest SHA256 verified.')
 
     output_dir = 'results/predictions'
     os.makedirs(output_dir, exist_ok=True)
@@ -205,13 +233,13 @@ if __name__ == '__main__':
         w.writerow(['seed', 'setting', 'shot', 'method', 'event_type',
                      'drug_a', 'drug_b', 'y_true', 'y_pred', 'prob', 'uncertainty'])
 
-        
-        log_seed_checkpoint_note(MATCHER_PATH, SEEDS)
+        logging.info('Evaluating w/o-uncertainty variant on the fixed (non-seed) checkpoint '
+                     'with the five fixed negative manifests.')
         for seed in SEEDS:
-            logging.info(f'=== SEED {seed} ===')
-            random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
+            logging.info(f'=== EVAL SEED {seed} ===')
             for few in SHOTS:
                 args.few = few; args.train_few = few; args.dataset = DATASET
+                args.eval_seed = seed
                 args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str/bestmodel'
                 args.fc_direct_path = f'models/dataset1/models_wo_uncertainty_{few}shot/bestmodel'
                 if not os.path.exists(args.fc_direct_path):

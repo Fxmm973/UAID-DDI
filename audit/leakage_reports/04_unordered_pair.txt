@@ -1,0 +1,4 @@
+AUDIT 4: unordered-pair cross-split overlap
+===========================================
+PASS: no event-conditioned unordered-pair leakage across splits.
+[info] train_tasks x dev_tasks: 2 unordered drug pairs shared across splits (different events; expected under event-level splits)
