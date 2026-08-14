@@ -99,7 +99,7 @@ def fmt(x):
 
 def main():
     settings = ['fewer', 'rare']
-    shots = [1, 5]  # 10-shot is not reported in the paper
+    shots = [1]  # 论文只报告 1-shot 分诊结果；5/10-shot 不报告
 
     lines = []
     lines.append('=' * 120)
