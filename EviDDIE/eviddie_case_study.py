@@ -102,7 +102,7 @@ logging.info(f'Loaded {len(all_pairs)} unique drug pairs from train/dev/test spl
 # DrugBank 是基准标签的来源，因此从任务 JSON 和 e1rel_e2 中加载所有已知正例
 db_pairwise = set()       # (drug_a, drug_b) — 药物对级别匹配
 db_event_specific = set() # (drug_a, event, drug_b) — 事件级别匹配
-for split_name in ['train_tasks', 'dev_tasks', 'test_tasks', 'test2_tasks']:
+for split_name in ['train_tasks', 'dev_tasks', 'test_tasks']:
     path = f'{DATASET}/{split_name}.json'
     if not os.path.exists(path):
         continue

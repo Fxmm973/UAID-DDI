@@ -40,7 +40,7 @@ SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]  # 扩展到5个
 
 def load_neg_manifest(dataset, split, seed):
     """Load pre-generated negative manifest."""
-    path = f'{dataset}/neg_manifests/{split}_seed{seed}_negatives.json'
+    path = f'neg_manifests/{split}_seed{seed}_negatives.json'
     with open(path) as f:
         return json.load(f)
 
@@ -144,10 +144,10 @@ class ExportVariants(object):
         self.matcher.eval()
         logging.info(f'Loaded fc head: {variant}')
 
-    def export(self, mode, csv_writer, seed, method_name, variant):
+    def export(self, mode, csv_writer, train_seed, eval_seed, method_name, variant):
         setting_map = {'dev':'common','test':'fewer','test2':'rare'}
         setting = setting_map.get(mode, mode)
-        logging.info(f'[{method_name}] {mode.upper()} (seed={seed})')
+        logging.info(f'[{method_name}] {mode.upper()} (train_seed={train_seed})')
 
         if mode=='dev': test_tasks=json.load(open(self.dataset+'/dev_tasks.json'))
         elif mode=='test': test_tasks=json.load(open(self.dataset+'/test_tasks.json'))
@@ -155,7 +155,7 @@ class ExportVariants(object):
         rel2id=json.load(open(self.dataset+'/relation2ids'))
 
         # 读取预生成的固定负样本
-        neg_manifest = self.neg_manifests[mode][seed]
+        neg_manifest = self.neg_manifests[mode][eval_seed]
 
         with torch.no_grad():
             for query_ in test_tasks.keys():
@@ -206,7 +206,7 @@ class ExportVariants(object):
                 gt = np.concatenate([np.ones(n_pos), np.zeros(len(all_triples)-n_pos)])
 
                 for idx, (t, p, u) in enumerate(zip(all_triples, probs_np, unc_np)):
-                    csv_writer.writerow([seed, setting, 0, method_name, query_,
+                    csv_writer.writerow([train_seed, eval_seed, setting, 0, method_name, query_,
                                          t[0], t[2], int(gt[idx]), 1 if p>=0.5 else 0,
                                          round(float(p),8), round(float(u),8)])
 
@@ -216,10 +216,10 @@ if __name__ == '__main__':
     args.dataset = 'dataset1'
     args.no_meta = False
     args.random_embed = False
-    args.pretrained_model = 'models/dataset1/bestmodels'
-    args.g_model_path = 'models/dataset1/bestmodels_G'
     args.save_dir = 'models/dataset1'
 
+    TRAINING_SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
+    EVAL_MANIFEST_SEED = 19940419  # 固定负样本种子
     MODES = ['dev', 'test', 'test2']
 
     out_dir = 'results/predictions'
@@ -228,20 +228,27 @@ if __name__ == '__main__':
 
     with open(out_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
-        w.writerow(['seed','setting','shot','method','event_type','drug_a','drug_b',
+        w.writerow(['train_seed','eval_seed','setting','shot','method','event_type','drug_a','drug_b',
                      'y_true','y_pred','prob','uncertainty'])
 
-        for variant in ['softmax', 'evi_no_evi', 'full_evi']:
-            method = METHOD_MAP[variant]
-            logging.info(f'===== Exporting {method} (v2: fixed manifests) =====')
-            ex = ExportVariants(args)
-            ex.load_head(variant)
+        for train_seed in TRAINING_SEEDS:
+            args.pretrained_model = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel'
+            args.g_model_path = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel_G'
+            if not os.path.exists(args.pretrained_model):
+                logging.warning(f'Checkpoint not found: {args.pretrained_model}, skipping')
+                continue
 
-            for seed in SEEDS:
-                random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
-                if torch.cuda.is_available(): torch.cuda.manual_seed_all(seed)
+            eval_seed = EVAL_MANIFEST_SEED
+            random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
+            if torch.cuda.is_available(): torch.cuda.manual_seed_all(eval_seed)
+
+            for variant in ['softmax', 'evi_no_evi', 'full_evi']:
+                method = METHOD_MAP[variant]
+                logging.info(f'===== train_seed={train_seed} {method} =====')
+                ex = ExportVariants(args)
+                ex.load_head(variant)
                 for mode in MODES:
-                    ex.export(mode, w, seed, method, variant)
+                    ex.export(mode, w, train_seed, eval_seed, method, variant)
 
     logging.info(f'Done! Saved to {out_csv}')
-    logging.info(f'Uses fixed negative manifests from dataset1/neg_manifests/')
+    logging.info(f'Training seeds: {TRAINING_SEEDS}, Fixed eval manifest: {EVAL_MANIFEST_SEED}')
