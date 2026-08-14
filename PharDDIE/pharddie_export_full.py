@@ -236,6 +236,9 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
     output_csv = os.path.join(output_dir, 'predictions_dataset1_PharDDIE.csv')
 
+    import hashlib  # 种子独立性验证
+    ckpt_records = {}  # (shot, train_seed) -> checkpoint sha256
+
     with open(output_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['train_seed', 'eval_seed', 'setting', 'shot', 'method', 'event_type',
@@ -251,17 +254,15 @@ if __name__ == '__main__':
             for few in SHOTS:
                 args.few = few; args.train_few = few; args.dataset = DATASET
                 # 每个训练种子对应独立 checkpoint
+                # 每个训练种子必须使用对应种子训练出的独立 checkpoint；
+                # 缺失时直接报错，绝不回退到其他检查点（避免把同一模型的重复推理误记为不同种子）
                 args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
-                # 回退：如果 per-seed checkpoint 不存在，尝试原始路径（向后兼容）
                 if not os.path.exists(args.pretrained_model):
-                    fallback = f'models/dataset1/models_drugbank_{few}shot_str/bestmodel'
-                    if os.path.exists(fallback):
-                        logging.warning(f'Per-seed checkpoint not found, using fallback: {fallback}')
-                        logging.warning(f'  SD will reflect negative-sampling variation, not training-seed variation')
-                        args.pretrained_model = fallback
-                    else:
-                        logging.warning(f'Checkpoint not found: {args.pretrained_model}, skipping')
-                        continue
+                    raise FileNotFoundError(
+                        f'Per-seed checkpoint not found: {args.pretrained_model}. '
+                        f'Per-seed exports must use the checkpoint of the corresponding training seed.')
+                ckpt_records[(few, train_seed)] = hashlib.sha256(
+                    open(args.pretrained_model, 'rb').read()).hexdigest()
 
                 # 使用固定负样本种子进行确定性评估
                 eval_seed = EVAL_MANIFEST_SEED
@@ -272,6 +273,18 @@ if __name__ == '__main__':
                 ex = ExportFull(args)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed)
+
+        # ---- 种子独立性验证：5 train_seed -> 5 不同 checkpoint 路径 -> 5 不同哈希 ----
+        for few in SHOTS:
+            hashes = [ckpt_records[(few, s)] for s in TRAINING_SEEDS]
+            if len(set(hashes)) != len(hashes):
+                raise RuntimeError(
+                    f'{few}-shot: checkpoint hashes are not unique across training seeds: '
+                    f'{len(set(hashes))} distinct of {len(hashes)}')
+            logging.info(f'[SEED-CHAIN] {few}-shot: {len(set(hashes))} distinct checkpoint hashes '
+                         f'across {len(hashes)} training seeds (OK).')
+        logging.info(f'[SEED-CHAIN] Evaluation manifest seed fixed to {EVAL_MANIFEST_SEED} '
+                     f'for all seeds (identical manifest hash across seeds).')
 
     logging.info(f'Done! Saved to {output_csv}')
     logging.info('NOTE: train_seed column identifies independent training runs.')

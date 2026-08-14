@@ -106,6 +106,17 @@ def main():
     if os.path.exists(phar_path):
         dfs['PharDDIE'] = pd.read_csv(phar_path)
         print(f'Loaded PharDDIE: {len(dfs["PharDDIE"])} samples')
+        # ---- 种子独立性验证：校准表 PharDDIE 行必须覆盖 5 个训练种子 ----
+        ph = dfs['PharDDIE']
+        if 'train_seed' in ph.columns and 'seed' not in ph.columns:
+            ph['seed'] = ph['train_seed']
+        n_seeds = ph['seed'].nunique()
+        print(f'[SEED-CHAIN] PharDDIE calibration CSV: {n_seeds} distinct seeds.')
+        if n_seeds != 5:
+            raise RuntimeError(
+                f'Expected 5 training seeds in PharDDIE prediction CSV, found {n_seeds}. '
+                f'Re-export with pharddie_export_full.py '
+                f'(5 independent checkpoints required; no fallback allowed).')
 
     # 2. PharDDIE w/o uncertainty (VAE)
     wo_path = os.path.join(BASE, 'results/predictions/predictions_dataset1_wo_uncertainty.csv')

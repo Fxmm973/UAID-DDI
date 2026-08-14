@@ -104,6 +104,18 @@ def main():
     phar_csv = 'results/predictions/predictions_dataset1_PharDDIE.csv'
     df_phar = _require_csv(phar_csv, 'PharDDIE predictions CSV')
 
+    # ---- 种子独立性验证：逐样本 CSV 必须覆盖 5 个训练种子 ----
+    seed_col = ('train_seed' if 'train_seed' in df_phar.columns
+                else ('seed' if 'seed' in df_phar.columns else None))
+    if seed_col is not None:
+        n_seeds = df_phar[seed_col].nunique()
+        print(f'[SEED-CHAIN] PharDDIE predictions CSV: {n_seeds} distinct {seed_col} values.')
+        if n_seeds != 5:
+            print(f'FATAL: expected 5 training seeds in {phar_csv}, found {n_seeds}. '
+                  f'Re-export with pharddie_export_full.py '
+                  f'(5 independent checkpoints required; no fallback allowed).')
+            sys.exit(1)
+
     wo_path = 'results/predictions/predictions_dataset1_wo_uncertainty.csv'
     has_wo = os.path.exists(wo_path)
     if has_wo:

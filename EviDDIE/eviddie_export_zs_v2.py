@@ -226,6 +226,9 @@ if __name__ == '__main__':
     os.makedirs(out_dir, exist_ok=True)
     out_csv = os.path.join(out_dir, 'predictions_dataset1_zero_shot_variants.csv')
 
+    import hashlib  # 种子独立性验证
+    ckpt_hashes = []
+
     with open(out_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['train_seed','eval_seed','setting','shot','method','event_type','drug_a','drug_b',
@@ -235,8 +238,10 @@ if __name__ == '__main__':
             args.pretrained_model = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel'
             args.g_model_path = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel_G'
             if not os.path.exists(args.pretrained_model):
-                logging.warning(f'Checkpoint not found: {args.pretrained_model}, skipping')
-                continue
+                raise FileNotFoundError(
+                    f'Per-seed checkpoint not found: {args.pretrained_model}. '
+                    f'Per-seed exports must use the checkpoint of the corresponding training seed.')
+            ckpt_hashes.append(hashlib.sha256(open(args.pretrained_model, 'rb').read()).hexdigest())
 
             eval_seed = EVAL_MANIFEST_SEED
             random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
@@ -249,6 +254,16 @@ if __name__ == '__main__':
                 ex.load_head(variant)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed, method, variant)
+
+        # ---- 种子独立性验证：5 train_seed -> 5 不同 checkpoint 路径 -> 5 不同哈希 ----
+        if len(set(ckpt_hashes)) != len(ckpt_hashes):
+            raise RuntimeError(
+                f'EviDDIE zero-shot: checkpoint hashes are not unique across training seeds: '
+                f'{len(set(ckpt_hashes))} distinct of {len(ckpt_hashes)}')
+        logging.info(f'[SEED-CHAIN] {len(set(ckpt_hashes))} distinct checkpoint hashes across '
+                     f'{len(ckpt_hashes)} training seeds (OK).')
+        logging.info(f'[SEED-CHAIN] Evaluation manifest seed fixed to {EVAL_MANIFEST_SEED} '
+                     f'for all seeds (identical manifest hash across seeds).')
 
     logging.info(f'Done! Saved to {out_csv}')
     logging.info(f'Training seeds: {TRAINING_SEEDS}, Fixed eval manifest: {EVAL_MANIFEST_SEED}')
