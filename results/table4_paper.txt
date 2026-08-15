@@ -16,6 +16,7 @@ Shot   Strategy                     P@10       P@20       P@50       Recall@50  
 1      Probability only             1.0000     0.9800     0.9840     0.1246       0.0000     1.0000     0.2939    
 1      Probability + uncertainty    1.0000     0.9800     0.9840     0.1246       0.5848     0.4152     0.0620    
   [counts] shot=1: mean automatic=328, referred=462 of 790.0 candidates per seed
+  [action counts] High-Priority=184.2 Expert-Referral=362.2 Deferred-Review=99.8 Low-Priority=143.8 (mean per seed; fractions 23.3%/45.8%/12.6%/18.2%)
 ----------------------------------------------------------------------------------------------------------------
 
 --- Setting: Rare-event (test2) ---
@@ -26,6 +27,7 @@ Shot   Strategy                     P@10       P@20       P@50       Recall@50  
 1      Probability only             1.0000     1.0000     0.9800     0.5000       0.0000     1.0000     0.2949    
 1      Probability + uncertainty    1.0000     1.0000     0.9800     0.5000       0.5776     0.4224     0.0474    
   [counts] shot=1: mean automatic=83, referred=113 of 196.0 candidates per seed
+  [action counts] High-Priority=57.8 Expert-Referral=90.0 Deferred-Review=23.2 Low-Priority=25.0 (mean per seed; fractions 29.5%/45.9%/11.8%/12.8%)
 ----------------------------------------------------------------------------------------------------------------
 
 Notes:
