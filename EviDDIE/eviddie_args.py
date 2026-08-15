@@ -4,6 +4,8 @@ def read_options():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="dataset1", type=str)
     parser.add_argument("--semantic", type=str,help="event_embedding.json,event_embedding2.json", default="event_embedding2.json")
+    parser.add_argument("--semantic_noise", default=0.3, type=float,
+                        help="训练期语义向量高斯噪声标准差（仅训练用；推理/导出不使用）")
     parser.add_argument("--embed_dim", default=128, type=int)
     parser.add_argument("--few", default=10, type=int)
     parser.add_argument("--batch_size", default=256, type=int)
@@ -28,6 +30,8 @@ def read_options():
     parser.add_argument("--prefix", default='intial', type=str)
 
     parser.add_argument("--seed", default='19940419', type=int)
+    parser.add_argument("--eval_manifest_seed", default=19940419, type=int,
+                        help="dev checkpoint 选择与最终评估使用的固定负样本 manifest 种子（P0-4）")
 
     ############新增###############
 

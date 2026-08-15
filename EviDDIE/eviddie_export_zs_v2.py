@@ -8,6 +8,12 @@
 - 负样本固定后跨方法一致
 """
 import sys
+import os
+import hashlib
+
+# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+
 # 旧模块名 → 新模块名映射（兼容旧 checkpoint 的 pickle 路径）
 import eviddie_matcher
 import eviddie_modules
@@ -36,6 +42,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(mes
 
 METHOD_MAP = {'softmax': 'Softmax baseline', 'evi_no_evi': 'EviDDIE w/o EVI', 'full_evi': 'EviDDIE'}
 SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]  # 扩展到5个
+# fc 输出通道约定：0 = 负类 (negative)，1 = 正类 (positive)；prob = alpha[:,1]/S。
+CLASS_ORDER = ('negative', 'positive')
 
 
 def load_neg_manifest(dataset, split, seed):
@@ -53,11 +61,16 @@ class ExportVariants(object):
 
         self.semantic_task = json.load(open(f'{arg.dataset}/{arg.semantic}'))
         # P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
-        for task in list(self.semantic_task.keys()):
-            self.semantic_task[task] = np.array(self.semantic_task[task])
+        # P0-2 审计：显式形状检查（700 维）+ 固定 key 排序，防止原型错位。
+        ordered_keys = sorted(list(self.semantic_task.keys()))
+        for task in ordered_keys:
+            vector = np.asarray(self.semantic_task[task], dtype=np.float32).reshape(-1)
+            if vector.shape != (700,):
+                raise ValueError(f'{task}: expected 700-d BioSentVec vector, got {vector.shape}')
+            self.semantic_task[task] = vector
         self.task_ebmedding = []
         self.task2id = {}
-        for num,i in enumerate(list(self.semantic_task.keys())):
+        for num,i in enumerate(ordered_keys):
             self.task2id[i]=num; self.task_ebmedding.append(self.semantic_task[i])
         self.task_ebmedding = torch.tensor(np.vstack(self.task_ebmedding)).float().to(self.device)
 
@@ -74,11 +87,16 @@ class ExportVariants(object):
         self.matcher.eval()
 
         ckpt = torch.load(arg.pretrained_model, map_location=self.device)
-        if 'fc.5.weight' in ckpt and ckpt['fc.5.weight'].shape[0] == 1:
-            logging.info('Converting old 1-output fc to 2-output...')
-            ow, ob = ckpt['fc.5.weight'], ckpt['fc.5.bias']
-            ckpt['fc.5.weight'] = torch.cat([ow, -ow], dim=0)
-            ckpt['fc.5.bias'] = torch.cat([ob, -ob], dim=0)
+        # P0-3 (GPT 4.1)：禁止旧单输出检查点的 1->2 拼接转换——该转换未经 EDL 损失训练，
+        # 不能产生可信的双类 Dirichlet evidence。旧检查点直接硬失败，提示重训。
+        head_weight = ckpt.get('fc.5.weight')
+        head_bias = ckpt.get('fc.5.bias')
+        if head_weight is None or head_bias is None:
+            raise RuntimeError('Checkpoint does not contain the evidential head (fc.5.*)')
+        if head_weight.shape[0] != 2 or head_bias.shape[0] != 2:
+            raise RuntimeError(
+                'Legacy single-output checkpoint is unsupported. '
+                'Retrain EviDDIE with the native two-class evidential head.')
         for k in list(ckpt.keys()):
             if any(x in k for x in ['symbol_emb','gcn_w','gcn_b','Bilinear','Linear_self',
                                      'Linear_nei','Linear_weak_rel','NeighborAggregator','siamese',
@@ -140,9 +158,11 @@ class ExportVariants(object):
 
     def load_head(self, variant):
         path = f'{self.save_dir}/fc_{variant}.pt'
-        self.matcher.fc.load_state_dict(torch.load(path, map_location=self.device))
+        head = torch.load(path, map_location=self.device)
+        self.matcher.fc.load_state_dict(head)
         self.matcher.eval()
-        logging.info(f'Loaded fc head: {variant}')
+        w = next(iter(head.values()))
+        logging.info(f'Loaded fc head: {variant} (first weight mean_abs={w.float().abs().mean().item():.5f})')
 
     def export(self, mode, csv_writer, train_seed, eval_seed, method_name, variant):
         setting_map = {'dev':'common','test':'fewer','test2':'rare'}
@@ -205,10 +225,23 @@ class ExportVariants(object):
                 unc_np = unc.cpu().numpy()
                 gt = np.concatenate([np.ones(n_pos), np.zeros(len(all_triples)-n_pos)])
 
+                # ---- P0-2 审计断言：类别顺序、标签拼接与概率范围 ----
+                # fc 输出通道约定：0 = 负类 (negative)，1 = 正类 (positive)
+                assert CLASS_ORDER == ('negative', 'positive'), 'class order convention changed'
+                assert int(gt[:n_pos].sum()) == n_pos, 'positive labels must fill the first n_pos rows'
+                assert int(gt[n_pos:].sum()) == 0, 'negative labels must fill the remaining rows'
+                assert np.all((probs_np >= 0.0) & (probs_np <= 1.0)), 'probs out of [0,1]'
+
+                rm = getattr(self, 'run_meta', {})
                 for idx, (t, p, u) in enumerate(zip(all_triples, probs_np, unc_np)):
-                    csv_writer.writerow([train_seed, eval_seed, setting, 0, method_name, query_,
-                                         t[0], t[2], int(gt[idx]), 1 if p>=0.5 else 0,
-                                         round(float(p),8), round(float(u),8)])
+                    csv_writer.writerow([rm.get('run_id', ''), train_seed, eval_seed, setting, 0,
+                                         method_name, query_, t[0], t[2], int(gt[idx]),
+                                         1 if p >= 0.5 else 0,
+                                         round(float(p), 8), round(float(u), 8),
+                                         rm.get('checkpoint_sha256', ''),
+                                         rm.get('eval_manifest_hashes', {}).get(mode, ''),
+                                         rm.get('event_embedding_sha256', ''),
+                                         rm.get('git_commit', '')])
 
 
 if __name__ == '__main__':
@@ -222,6 +255,25 @@ if __name__ == '__main__':
     EVAL_MANIFEST_SEED = 19940419  # 固定负样本种子
     MODES = ['dev', 'test', 'test2']
 
+    # ---- P0-3 / GPT 4.4：逐样本 CSV 元数据 ----
+    def sha256_file(p):
+        return hashlib.sha256(open(p, 'rb').read()).hexdigest()
+
+    eval_manifest_hashes = {
+        split: sha256_file(f'neg_manifests/{split}_seed{EVAL_MANIFEST_SEED}_negatives.json')
+        for split in MODES
+    }
+    embedding_sha = sha256_file(f'{args.dataset}/event_embedding2.json')
+    try:
+        import subprocess
+        git_commit = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'],
+                                             stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        git_commit = 'unknown'
+    logging.info(f'[META] eval manifest hashes: {eval_manifest_hashes}')
+    logging.info(f'[META] event embedding sha256: {embedding_sha}')
+    logging.info(f'[META] git commit: {git_commit}')
+
     out_dir = 'results/predictions'
     os.makedirs(out_dir, exist_ok=True)
     out_csv = os.path.join(out_dir, 'predictions_dataset1_zero_shot_variants.csv')
@@ -231,8 +283,9 @@ if __name__ == '__main__':
 
     with open(out_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
-        w.writerow(['train_seed','eval_seed','setting','shot','method','event_type','drug_a','drug_b',
-                     'y_true','y_pred','prob','uncertainty'])
+        w.writerow(['run_id','train_seed','eval_seed','setting','shot','method','event_type','drug_a','drug_b',
+                     'y_true','y_pred','prob','uncertainty','checkpoint_sha256','eval_manifest_sha256',
+                     'event_embedding_sha256','git_commit'])
 
         for train_seed in TRAINING_SEEDS:
             args.pretrained_model = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel'
@@ -242,8 +295,16 @@ if __name__ == '__main__':
                     f'Per-seed checkpoint not found: {args.pretrained_model}. '
                     f'Per-seed exports must use the checkpoint of the corresponding training seed.')
             ckpt_hashes.append(hashlib.sha256(open(args.pretrained_model, 'rb').read()).hexdigest())
-
             eval_seed = EVAL_MANIFEST_SEED
+            # P0-3 / GPT 4.4：每个 CSV 行携带完整元数据
+            args.run_meta = {
+                'run_id': f'eviddie-{train_seed}-{eval_seed}',
+                'checkpoint_sha256': ckpt_hashes[-1],
+                'eval_manifest_hashes': eval_manifest_hashes,
+                'event_embedding_sha256': embedding_sha,
+                'git_commit': git_commit,
+            }
+
             random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
             if torch.cuda.is_available(): torch.cuda.manual_seed_all(eval_seed)
 
@@ -251,7 +312,12 @@ if __name__ == '__main__':
                 method = METHOD_MAP[variant]
                 logging.info(f'===== train_seed={train_seed} {method} =====')
                 ex = ExportVariants(args)
-                ex.load_head(variant)
+                if variant == 'full_evi':
+                    # 正式模型：直接使用 per-seed checkpoint 自带的原生双输出 EDL 头，
+                    # 绝不用共享的冻结骨干消融头覆盖（这是此前导出概率恒为 0.5 的原因）
+                    logging.info('[HEAD] full_evi: keeping the checkpoint native EDL head.')
+                else:
+                    ex.load_head(variant)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed, method, variant)
 
