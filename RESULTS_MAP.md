@@ -16,7 +16,6 @@
 | Zero-shot discrimination | `EviDDIE/eviddie_table_discrimination.py` | Held-out fewer/rare events; source CSV in `EviDDIE/results/predictions/` |
 | Calibration | `PharDDIE/pharddie_table3_complete.py` | PharDDIE per-seed rows + zero-shot fixed-checkpoint rows |
 | Uncertainty-aware prioritization | `PharDDIE/pharddie_table4_paper.py` | Unified triage semantics, 1-shot settings; AURC / risk-coverage / matched-coverage / fixed-referral budgets |
-| Internal consistency check | `EviDDIE/eviddie_case_study.py` | DrugBank post-hoc annotation of held-out candidates |
 | Framework schematic | — | `kuangjiatu.jpg` |
 | Proxy-weight selection | — | `fig_1shot_weight_selection.jpg` / `fig_5shot_weight_selection.jpg` |
 | PharDDIE component ablation | — | `1-shot-ablation.jpg` / `5-shot-ablation.jpg` (PPNR / ACI / SRAE removed) |
@@ -75,15 +74,6 @@
 
 ---
 
-## Internal Consistency Check (Case Study)
-
-- **Source**: EviDDIE inference on Dataset 2 test2 held-out positive instances.
-- **Scripts**: `EviDDIE/eviddie_run_case.py` (inference), `EviDDIE/eviddie_case_study.py` (table).
-- Candidates are the held-out rare-split positives themselves; candidates appearing in the training/validation/test splits are excluded from the cross-split filter (test2 is the target candidate pool by design).
-- DrugBank (version 5.x) is used exclusively for post-hoc annotation, not training; 7 of 8 retained candidates consistent with DrugBank.
-- This is a retrospective descriptive analysis, not independent external validation.
-
----
 
 ## Figure 4 — EviDDIE Frozen-Backbone Ablation
 
@@ -149,4 +139,3 @@
 4. **Main-table reproducibility note**: the printed Table 2/3 PharDDIE values were produced under the evaluation protocol in effect at the time of writing; the current manifest-based export reproduces the evaluation exactly for the fixed manifest (seed 19940419), but regenerated aggregates can differ from the printed values if any protocol detail (e.g., negative-manifest content) changed between runs. Both the printed values and the scripts are provided for transparency.
 5. **Drug overlap**: most test-set drugs appear in the training set, and all evaluation drugs exist in DRKG. Claims are limited to "unseen-event generalization," not "novel-compound generalization" (see `shared/audit_drug_overlap.py`).
 6. **DRKG entity embeddings**: not included (file size); relation embeddings are provided for symbol initialization.
-7. **Case study**: retrospective analysis of held-out positives, not independent external validation. DrugBank evidence verified at the event level (drug pair + event type).

@@ -89,8 +89,6 @@ UAID-DDI/
 │   ├── eviddie_table_discrimination.py  # Zero-shot discrimination table (main text)
 │   ├── eviddie_plot_figure4.py     # Figure 4 (frozen-backbone ablation curves)
 │   ├── eviddie_plot_bar.py         # Bar plot utilities
-│   ├── eviddie_run_case.py         # Case study inference
-│   ├── eviddie_case_study.py       # Case study table (DrugBank consistency check)
 │   ├── eviddie_debug.py            # Debugging utilities
 │   ├── eviddie_verify_ckpt.py      # Checkpoint integrity verification
 │   ├── train_tasks.json            # EviDDIE training tasks
@@ -219,14 +217,6 @@ python pharddie_table4_paper.py
 ```
 
 All table scripts abort if the underlying prediction CSVs do not cover the five training seeds, and the export scripts verify checkpoint-hash uniqueness and manifest SHA256 before writing any output.
-
-### 6. Case Study (Table: internal consistency check)
-
-```bash
-cd EviDDIE
-python eviddie_run_case.py
-python eviddie_case_study.py
-```
 
 ### 7. Generate Negative Manifests
 

@@ -57,7 +57,6 @@ Run-Step "Step 2c: EviDDIE zero-shot export (manifest-based)" "python EviDDIE/ev
 Run-Step "Step 3a: Table 2" "python PharDDIE/pharddie_table2.py"
 Run-Step "Step 3b: Table 3" "python PharDDIE/pharddie_table3_complete.py"
 Run-Step "Step 3c: Table 4" "python PharDDIE/pharddie_table4_paper.py"
-Run-Step "Step 3d: Table 5" "python EviDDIE/eviddie_case_study.py"
 Run-Step "Step 3e: Audit real evaluation episodes (P0-5)" "python shared/audit_leakage.py --dataset PharDDIE/dataset1 --episode-manifests PharDDIE/results/predictions/episode_manifests"
 
 Write-Host "=== REPRODUCTION COMPLETE ===" -ForegroundColor Green
