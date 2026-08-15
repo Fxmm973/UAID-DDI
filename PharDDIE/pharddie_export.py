@@ -6,6 +6,12 @@
 """
 import torch.nn as nn
 import csv
+import sys
+import os
+
+# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+
 from torch.autograd import Variable
 from pharddie_args import read_options
 from pharddie_dataloader import *
@@ -99,7 +105,7 @@ class ExportWOUncertainty(object):
     def build_connection(self, max_=100):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list); self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph') as f:
+        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图（移除 held-out 药物对直连边）
             for line in tqdm(f.readlines()):
                 e1, rel, e2 = line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel], self.symbol2id[e2]))

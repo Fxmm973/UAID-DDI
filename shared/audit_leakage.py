@@ -53,6 +53,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dataset', default='PharDDIE/dataset1')
     ap.add_argument('--few', type=int, default=1, help='support size used in few-shot evaluation')
+    ap.add_argument('--episode-manifests', default=None,
+                    help='P0-5：真实评估 episode manifest 目录（导出脚本生成）。存在时审计实际 '
+                         'support/query/neg 交叉，替代静态前 K 切分。')
     args = ap.parse_args()
     ds = args.dataset
     out = 'audit/leakage_reports'
@@ -64,17 +67,48 @@ def main():
     allt = {n: all_triples(evt[n]) for n in SPLITS}
 
     # ---- 1. support-query overlap ----
+    # P0-5：优先审计真实评估 episode manifest（导出脚本生成）；否则回退到静态前 K 切分。
     lines, ok1 = [], True
-    for n in SPLITS:
-        for e, lst in evt[n].items():
-            sup, qry = set(lst[:few]), set(lst[few:])
-            ov = sup & qry
-            if ov:
-                ok1 = False
-                lines.append(f'[{n}] {e}: {len(ov)} overlapping triples between support and query')
+    em_dir = args.episode_manifests
+    if em_dir and os.path.isdir(em_dir):
+        audited = 0
+        for fn in sorted(os.listdir(em_dir)):
+            if not fn.endswith('.json'):
+                continue
+            payload = json.load(open(os.path.join(em_dir, fn), encoding='utf-8'))
+            for key, ep in payload.get('episodes', {}).items():
+                sup = {tuple(x) for x in ep.get('support', [])}
+                qpos = {tuple(x) for x in ep.get('query_positives', [])}
+                qneg = {tuple(x) for x in ep.get('query_negatives', [])}
+                if sup & qpos:
+                    ok1 = False
+                    lines.append(f'{fn} {key}: {len(sup & qpos)} support-query overlaps')
+                if qpos & qneg:
+                    ok1 = False
+                    lines.append(f'{fn} {key}: {len(qpos & qneg)} positive-negative overlaps')
+                audited += 1
+        if lines:
+            lines.insert(0, f'Audited {audited} real evaluation episodes from {em_dir}.')
+        else:
+            lines = [f'PASS: audited {audited} real evaluation episodes from {em_dir}; '
+                     f'no support-query or positive-negative overlap.']
+    else:
+        for n in SPLITS:
+            for e, lst in evt[n].items():
+                sup, qry = set(lst[:few]), set(lst[few:])
+                ov = sup & qry
+                if ov:
+                    ok1 = False
+                    lines.append(f'[{n}] {e}: {len(ov)} overlapping triples between support and query')
+        if lines:
+            lines.insert(0, 'NOTE: --episode-manifests not provided; static first-K check only '
+                            '(runtime assertions cover training episodes).')
+        else:
+            lines = ['PASS: no static support-query overlap in any split. '
+                     '(NOTE: --episode-manifests not provided; runtime assertions cover training episodes.)']
     write(os.path.join(out, '01_support_query.txt'),
           'AUDIT 1: support-query overlap',
-          lines if lines else ['PASS: no support-query overlap in any split.'])
+          lines)
     if not ok1:
         fail = True
 
@@ -185,14 +219,17 @@ def main():
     if not ok5:
         fail = True
 
-    # ---- 6. KG-edge leakage (informational report) ----
+    # ---- 6. KG-edge leakage (HARD check per P0-5) ----
+    # ACI 应读取净化图 path_graph_train_only；任何 held-out 药物对直连边都是硬失败。
     lines, ok6 = [], True
     held = allt['test_tasks'] | allt['test2_tasks']
     held_pairs = set()
     for (a, r, b) in held:
         held_pairs.add((a, b))
         held_pairs.add((b, a))
-    pg = os.path.join(ds, 'path_graph')
+    pg = os.path.join(ds, 'path_graph_train_only')
+    if not os.path.exists(pg):
+        pg = os.path.join(ds, 'path_graph')  # 兼容未净化的旧目录
     if os.path.exists(pg):
         edges = set()
         with open(pg) as f:
@@ -201,15 +238,28 @@ def main():
                 if len(parts) >= 3:
                     edges.add((parts[0][-7:], parts[2][-7:]))
         leaks = held_pairs & edges
-        lines.append(f'held-out drug pairs checked: {len(held_pairs)}; DRKG path_graph edges: {len(edges)}')
-        lines.append(f'held-out drug pairs that are also path_graph edges (ACI neighbour source): {len(leaks)}')
+        lines.append(f'held-out drug pairs checked: {len(held_pairs)}; graph edges: {len(edges)} (source: {pg})')
+        lines.append(f'held-out drug pairs that are also graph edges (ACI neighbour source): {len(leaks)}')
         for p in sorted(leaks)[:100]:
             lines.append(f'  {p[0]} -- {p[1]}')
+        if leaks:
+            ok6 = False
+            lines.append('HARD FAIL: held-out drug pairs appear as ACI neighbour edges. '
+                         'Run shared/build_sanitized_path_graph.py and rebuild the ACI index.')
+        else:
+            lines.append('PASS: 0 held-out drug-pair edges in the ACI neighbour graph.')
     else:
         ok6 = False
-        lines.append('path_graph not found; check skipped')
+        lines.append('graph file not found; check skipped')
+    sm = 'audit/sanitized_graph_manifest.json'
+    if os.path.exists(sm):
+        import json as _json
+        m = _json.load(open(sm, encoding='utf-8'))
+        lines.append(f'sanitized graph manifest: original={m.get("original_edges")} '
+                     f'removed={m.get("removed_edges")} kept={m.get("kept_edges")} '
+                     f'sha256={m.get("path_graph_train_only_sha256", "")[:16]}...')
     write(os.path.join(out, '06_kg_edge_leakage.txt'),
-          'AUDIT 6: KG-edge leakage (informational; see paper Limitations on DRKG coverage)',
+          'AUDIT 6: KG-edge leakage (HARD check; ACI reads the sanitized path_graph_train_only)',
           lines)
     if not ok6:
         fail = True

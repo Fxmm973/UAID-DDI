@@ -112,7 +112,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph') as f:
+        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图
             for line in tqdm(f.readlines(), desc='Building connections'):
                 e1, rel, e2 = line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel], self.symbol2id[e2]))

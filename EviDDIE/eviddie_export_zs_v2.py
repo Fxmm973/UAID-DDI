@@ -115,6 +115,8 @@ class ExportVariants(object):
         self.e1rel_e2 = json.load(open(self.dataset+'/e1rel_e2.json'))
 
         # ---- 加载负样本 manifest（关键改动）----
+        # P0-5 (6.1.3)：收集真实评估 episode，导出结束后存档
+        self.episode_manifest = {}
         self.neg_manifests = {}
         for split in ['dev', 'test', 'test2']:
             self.neg_manifests[split] = {}
@@ -193,6 +195,12 @@ class ExportVariants(object):
                 if len(false_triples) != len(query_triples):
                     logging.warning(f'{query_}: manifest has {len(false_triples)} negs but {len(query_triples)} queries, skipping')
                     continue
+
+                # P0-5 (6.1.3)：记录真实评估 episode（零样本：无 support）
+                self.episode_manifest[f'{mode}:{query_}'] = {
+                    'query_positives': [list(x) for x in query_triples],
+                    'query_negatives': [list(x) for x in false_triples],
+                }
 
                 all_triples = query_triples + false_triples
                 all_rel2id = [[t[0],t[2],rel2id[t[1]]] for t in all_triples]
@@ -320,6 +328,21 @@ if __name__ == '__main__':
                     ex.load_head(variant)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed, method, variant)
+                # P0-5 (6.1.3)：保存真实评估 episode manifest（每个 (train_seed, variant) 一份）
+                if variant == 'full_evi':
+                    em_dir = 'results/predictions/episode_manifests'
+                    os.makedirs(em_dir, exist_ok=True)
+                    em_path = os.path.join(em_dir, f'episode_manifest_0shot_seed{train_seed}.json')
+                    payload = {
+                        'shot': 0,
+                        'train_seed': train_seed,
+                        'eval_manifest_seed': eval_seed,
+                        'episodes': ex.episode_manifest,
+                    }
+                    with open(em_path, 'w', encoding='utf-8') as ef:
+                        json.dump(payload, ef, ensure_ascii=False)
+                    logging.info(f'[P0-5] Episode manifest saved: {em_path} '
+                                 f'({len(ex.episode_manifest)} episodes)')
 
         # ---- 种子独立性验证：5 train_seed -> 5 不同 checkpoint 路径 -> 5 不同哈希 ----
         if len(set(ckpt_hashes)) != len(ckpt_hashes):

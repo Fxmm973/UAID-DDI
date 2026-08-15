@@ -8,6 +8,12 @@
 import torch.nn as nn
 import csv
 import hashlib
+import sys
+import os
+
+# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+
 from torch.autograd import Variable
 from pharddie_args import read_options
 from pharddie_dataloader import *
@@ -73,6 +79,8 @@ class ExportFull(object):
             self.neg_manifests[split] = json.load(open(mp))
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
+        # P0-5 (6.1.3)：收集真实评估 episode（support/query_pos/query_neg），导出结束后存档
+        self.episode_manifest = {}
 
     def load_embed(self):
         symbol_id = {}; rel2id = json.load(open(self.dataset + '/relation2ids'))
@@ -98,7 +106,7 @@ class ExportFull(object):
     def build_connection(self, max_=100):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list); self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph') as f:
+        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图（移除 held-out 药物对直连边）
             for line in tqdm(f.readlines()):
                 e1, rel, e2 = line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel], self.symbol2id[e2]))
@@ -201,6 +209,13 @@ class ExportFull(object):
                             f'positive query triple {t} at the same index.')
                     false_triples.append([t[0], t[1], d_k])
 
+                # P0-5 (6.1.3)：记录真实评估 episode
+                self.episode_manifest[f'{mode}:{query_}'] = {
+                    'support': [list(x) for x in support_triples],
+                    'query_positives': [list(x) for x in query_triples],
+                    'query_negatives': [list(x) for x in false_triples],
+                }
+
                 all_triples = query_triples + false_triples
                 all_rel2id = [[t[0], t[2], rel2id[t[1]]] for t in all_triples]
                 q_left = [self.ent2id[t[0]] for t in all_triples]
@@ -298,6 +313,20 @@ if __name__ == '__main__':
                 ex = ExportFull(args)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed)
+                # P0-5 (6.1.3)：保存真实评估 episode manifest
+                em_dir = 'results/predictions/episode_manifests'
+                os.makedirs(em_dir, exist_ok=True)
+                em_path = os.path.join(em_dir, f'episode_manifest_{few}shot_seed{train_seed}.json')
+                payload = {
+                    'shot': few,
+                    'train_seed': train_seed,
+                    'eval_manifest_seed': eval_seed,
+                    'episodes': ex.episode_manifest,
+                }
+                with open(em_path, 'w', encoding='utf-8') as ef:
+                    json.dump(payload, ef, ensure_ascii=False)
+                logging.info(f'[P0-5] Episode manifest saved: {em_path} '
+                             f'({len(ex.episode_manifest)} episodes)')
 
         # ---- 种子独立性验证：5 train_seed -> 5 不同 checkpoint 路径 -> 5 不同哈希 ----
         for few in SHOTS:

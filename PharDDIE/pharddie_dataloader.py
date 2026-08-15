@@ -26,7 +26,7 @@ class PairData(Data):
             # In case of "TypeError: __inc__() takes 3 positional arguments but 4 were given"
             # Replace with "return super().__inc__(self, key, value, args, kwargs)"
 
-def train_generate_simple(dataset, batch_size, few, symbol2id):
+def train_generate_simple(dataset, batch_size, few, symbol2id, seed=19940419):
 
 
     logging.info('LOADING TRAINING DATA')
@@ -36,24 +36,25 @@ def train_generate_simple(dataset, batch_size, few, symbol2id):
     task_pool = list(train_tasks.keys())
     num_tasks = len(task_pool)
     rel_idx = 0
-
+    # P0-5 (6.1.1)：局部随机数生成器
+    rng = random.Random(seed)
     while True:
 
         if rel_idx % num_tasks == 0:
-            random.shuffle(task_pool)
+            rng.shuffle(task_pool)
         query = task_pool[rel_idx % num_tasks]
         rel_idx += 1
         candidates = rel2candidates[query]
-        train_and_test = train_tasks[query]
-        random.shuffle(train_and_test)
+        train_and_test = list(train_tasks[query])
+        rng.shuffle(train_and_test)
         support_triples = train_and_test[:few]
         support_pairs = [[symbol2id[triple[0]], symbol2id[triple[2]]] for triple in support_triples]  
 
         all_test_triples = train_and_test[few:]
         if len(all_test_triples) < batch_size:
-            query_triples = [random.choice(all_test_triples) for _ in range(batch_size)]
+            query_triples = [rng.choice(all_test_triples) for _ in range(batch_size)]
         else:
-            query_triples = random.sample(all_test_triples, batch_size)
+            query_triples = rng.sample(all_test_triples, batch_size)
         query_pairs = [[symbol2id[triple[0]], symbol2id[triple[2]]] for triple in query_triples]
 
         false_pairs = []
@@ -61,10 +62,18 @@ def train_generate_simple(dataset, batch_size, few, symbol2id):
             e_h = triple[0]
             e_t = triple[2]
             while True:
-                noise = random.choice(candidates)
+                noise = rng.choice(candidates)
                 if noise != e_t:
                     break
             false_pairs.append([symbol2id[e_h], symbol2id[noise]])
+
+        # P0-5 (6.1.2)：运行时 episode 断言——support/query 无交叉、正负无交叉
+        support_set = {tuple(x) for x in support_triples}
+        query_set = {tuple(x) for x in query_triples}
+        if support_set & query_set:
+            raise RuntimeError('Support/query overlap detected in training episode')
+        if set(map(tuple, query_pairs)) & set(map(tuple, false_pairs)):
+            raise RuntimeError('Positive/negative overlap detected in training episode')
 
         yield support_pairs, query_pairs, false_pairs
 
@@ -134,7 +143,7 @@ def drug_structure_construct(all_drug_data,support_triples_rel2id,drug_num_node_
 
     return (batch_drug_data, batch_unique_drug_pair, rels, batch_drug_pair_indices, node_j_for_pairs, node_i_for_pairs,drug_pair_list,drug_node_num_pair_list)
 
-def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_drug_data, drug_num_node_indices):
+def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_drug_data, drug_num_node_indices, seed=19940419):
     logging.info('LOADING TRAINING DATA')
     train_tasks = json.load(open(dataset + '/train_tasks.json'))
     logging.info('LOADING CANDIDATES')
@@ -143,9 +152,11 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
     num_tasks = len(task_pool)
     rel_idx = 0
     rel2id = json.load(open(dataset + '/relation2ids'))
+    # P0-5 (6.1.1)：局部随机数生成器，不依赖全局随机状态
+    rng = random.Random(seed)
     while True:
         if rel_idx % num_tasks == 0:
-            random.shuffle(task_pool)
+            rng.shuffle(task_pool)
         query = task_pool[rel_idx % num_tasks]
         rel_idx += 1
         candidates = rel2candidates[query]
@@ -154,9 +165,9 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
             print('not enough candidates')
             continue
 
-        train_and_test = train_tasks[query]
+        train_and_test = list(train_tasks[query])
 
-        random.shuffle(train_and_test)
+        rng.shuffle(train_and_test)
 
         support_triples = train_and_test[:few]
 
@@ -178,9 +189,9 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
             continue
 
         if len(all_test_triples) < batch_size:
-            query_triples = [random.choice(all_test_triples) for _ in range(batch_size)]
+            query_triples = [rng.choice(all_test_triples) for _ in range(batch_size)]
         else:
-            query_triples = random.sample(all_test_triples, batch_size)
+            query_triples = rng.sample(all_test_triples, batch_size)
 
         query_pairs = [[symbol2id[triple[0]], symbol2id[triple[2]]] for triple in query_triples]
 
@@ -203,7 +214,7 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
             rel = triple[1]
             e_t = triple[2]
             while True:
-                noise = random.choice(candidates)
+                noise = rng.choice(candidates)
                 if (noise not in e1rel_e2[e_h+rel]) and noise != e_t:
                     break
             false_triples.append([e_h,rel,noise])
@@ -218,6 +229,15 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
         for batch in false_batch_loader:
             false_batch.append(batch)
 
+        # P0-5 (6.1.2)：运行时 episode 断言——support/query 无交叉、正负无交叉
+        support_set = {tuple(x) for x in support_triples}
+        query_set = {tuple(x) for x in query_triples}
+        negative_set = {tuple(x) for x in false_triples}
+        if support_set & query_set:
+            raise RuntimeError('Support/query overlap detected in training episode')
+        if query_set & negative_set:
+            raise RuntimeError('Positive/negative overlap detected in training episode')
+
         yield support_pairs, query_pairs, false_pairs, support_left, support_right, query_left, query_right, false_left, false_right,support_batch[0],query_batch[0],false_batch[0]
 
 def train_generate_(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, num_neg=1):
@@ -231,13 +251,13 @@ def train_generate_(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, num_n
 
     while True:
         if rel_idx % num_tasks == 0:
-            random.shuffle(task_pool)
+            rng.shuffle(task_pool)
         query = task_pool[rel_idx % num_tasks]
         rel_idx += 1
         candidates = rel2candidates[query]
-        train_and_test = train_tasks[query]
+        train_and_test = list(train_tasks[query])
 
-        random.shuffle(train_and_test)
+        rng.shuffle(train_and_test)
         support_triples = train_and_test[:few]
         support_pairs = [[symbol2id[triple[0]], symbol2id[triple[2]]] for triple in support_triples]
         support_left = [ent2id[triple[0]] for triple in support_triples]
@@ -245,9 +265,9 @@ def train_generate_(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, num_n
 
         all_test_triples = train_and_test[few:]
         if len(all_test_triples) < batch_size:
-            query_triples = [random.choice(all_test_triples) for _ in range(batch_size)]
+            query_triples = [rng.choice(all_test_triples) for _ in range(batch_size)]
         else:
-            query_triples = random.sample(all_test_triples, batch_size)
+            query_triples = rng.sample(all_test_triples, batch_size)
 
         query_pairs = [[symbol2id[triple[0]], symbol2id[triple[2]]] for triple in query_triples]
         query_left = [ent2id[triple[0]] for triple in query_triples]
