@@ -127,38 +127,44 @@ class MergeFD(nn.Module):
 
 
 
-# ================= 药效团感知TransformerConv =================
+# ============= Selected hidden-channel reweighting (SHCR) =============
 import torch
 from torch import nn
 from torch_geometric.nn import TransformerConv
 
-class PharmacophoreAwareTransformerConv(nn.Module):
+class HiddenChannelReweightingTransformerConv(nn.Module):
+    """SHCR: five fixed hidden-channel indices reweighted by learnable channel
+    coefficients, fused 7:3 with a learned gate. The selected indices carry no
+    guaranteed chemical meaning after the preceding linear projection; the
+    module acts as a lightweight regularizing prior, not a chemical detector."""
+
     def __init__(self, in_channels, out_channels, heads, edge_dim, dropout):
         super().__init__()
         self.base_conv = TransformerConv(in_channels, out_channels, heads,
                                              edge_dim=edge_dim, dropout=dropout)
-        self.pharmacophore_types = ['H-bond-donor', 'H-bond-acceptor',
-                                    'hydrophobic', 'aromatic', 'charged']#映射 5 类经典药效团
-        self.pharm_weight = nn.Parameter(torch.ones(len(self.pharmacophore_types)))
+        self.selected_channel_names = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5']
+        # Kept under its original attribute name for checkpoint compatibility;
+        # semantics: fixed channel indices + learnable channel coefficients.
+        self.pharm_weight = nn.Parameter(torch.ones(len(self.selected_channel_names)))
         self.gate_fc = nn.Linear(in_channels, 1)
 
-    def detect_pharmacophore(self, x):
-        score = torch.zeros(x.size(0), len(self.pharmacophore_types), device=x.device)
-        # Element-based pharmacophore proxies (element-level heuristics)
-        score[:, 0] = x[:, 1]              # N atom as H-bond donor proxy
-        score[:, 1] = x[:, 2]              # O atom as H-bond acceptor proxy
-        score[:, 2] = x[:, 0]              # C atom as hydrophobic proxy
-        score[:, 3] = x[:, 53] if x.size(1) > 53 else 0.  # RDKit aromatic flag
-        score[:, 4] = torch.abs(x[:, 46]) if x.size(1) > 46 else 0.  # formal charge
+    def extract_selected_channels(self, x):
+        score = torch.zeros(x.size(0), len(self.selected_channel_names), device=x.device)
+        # Fixed channel-index selection (indices 1, 2, 0, 53, 46 of the projected representation)
+        score[:, 0] = x[:, 1]
+        score[:, 1] = x[:, 2]
+        score[:, 2] = x[:, 0]
+        score[:, 3] = x[:, 53] if x.size(1) > 53 else 0.
+        score[:, 4] = torch.abs(x[:, 46]) if x.size(1) > 46 else 0.
         return score
 
     def forward(self, x, edge_index, edge_attr):
-        pharm_score = self.detect_pharmacophore(x)
-        pharm_boost = torch.sigmoid(
-            (pharm_score * self.pharm_weight.unsqueeze(0)).sum(1, keepdim=True))
+        channel_score = self.extract_selected_channels(x)
+        channel_weight = torch.sigmoid(
+            (channel_score * self.pharm_weight.unsqueeze(0)).sum(1, keepdim=True))
         gate = torch.sigmoid(self.gate_fc(x))
-        adaptive_weight = 0.7 * gate + 0.3 * pharm_boost#70%来自原始特征，30%来自药效团（7:3）
+        adaptive_weight = 0.7 * gate + 0.3 * channel_weight  # 7:3 gate-to-channel fusion
         x_conv = self.base_conv(x, edge_index, edge_attr)
-        return x_conv * (1 + 1.5 * adaptive_weight)#具有重要药效团特征的节点在信息传递中获得更大权重
+        return x_conv * (1 + 1.5 * adaptive_weight)
     # ===========================================================
  

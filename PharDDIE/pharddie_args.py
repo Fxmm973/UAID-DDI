@@ -1,30 +1,36 @@
 import argparse
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared.config_loader import load_config
+
 
 def read_options():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="dataset1", type=str)
-    parser.add_argument("--embed_dim", default=128, type=int) #CSE 原子层输出维度（≈ 图 1a 的 d）。
-    parser.add_argument("--few", default=10, type=int)#	测试阶段每个事件的 support-set 样本数（K-shot 的 K）。图 3 实验里 1-shot/5-shot 就是靠改它。
-    parser.add_argument("--batch_size", default=256, type=int)
-    parser.add_argument("--neg_num", default=1, type=int)
-    parser.add_argument("--random_embed", default=False, type=bool)#	True=不用预训练 TransE，全部随机初始化；False=先 TransE 预训练 200 epoch。
-    parser.add_argument("--train_few", default=10, type=int)
-    parser.add_argument("--lr", default=0.001, type=float)
-    parser.add_argument("--max_batches", default=40000, type=int)
-    parser.add_argument("--dropout", default=0.2, type=float)
-    parser.add_argument("--log_every", default=50, type=int)#日志，	每 50 个 batch 打印一次 loss
-    parser.add_argument("--eval_every", default=1000, type=int) #每 1 000 batch 在验证集测一次 AUC，用来早停
-    parser.add_argument("--fine_tune", default=True, type=bool)#迁移学习 是否“先 DDIE 预训练 → 再 synergy 微调”；图 4 的 10-shot w/ transfer 即靠它。
-
-    parser.add_argument("--aggregate", default='max', type=str)
-    parser.add_argument("--max_neighbor", default=30, type=int) #每个药最多取 30 个邻居进图，再大显存炸。罕见事件可降到 15。
-    parser.add_argument("--no_meta", action='store_true')#消融
+    cfg = load_config('pharddie.json')
+    parser = argparse.ArgumentParser(description='PharDDIE few-shot training/evaluation')
+    parser.add_argument("--dataset", default=cfg.get('dataset', 'dataset1'), type=str)
+    parser.add_argument("--embed_dim", default=cfg.get('embed_dim', 128), type=int)  # atom-layer output dim
+    parser.add_argument("--few", default=cfg.get('few', 10), type=int)  # support-set size K (set 1/5 for the shots)
+    parser.add_argument("--batch_size", default=cfg.get('batch_size', 256), type=int)
+    parser.add_argument("--neg_num", default=cfg.get('neg_num', 1), type=int)
+    parser.add_argument("--random_embed", default=cfg.get('random_embed', False), type=bool)  # True = random init, no pretrained TransE
+    parser.add_argument("--train_few", default=cfg.get('train_few', 10), type=int)
+    parser.add_argument("--lr", default=cfg.get('lr', 0.001), type=float)
+    parser.add_argument("--max_batches", default=cfg.get('max_batches', 40000), type=int)
+    parser.add_argument("--dropout", default=cfg.get('dropout', 0.2), type=float)
+    parser.add_argument("--log_every", default=cfg.get('log_every', 50), type=int)  # log loss every N batches
+    parser.add_argument("--eval_every", default=cfg.get('eval_every', 1000), type=int)  # dev-AUC early-stopping interval
+    parser.add_argument("--fine_tune", default=cfg.get('fine_tune', True), type=bool)  # transfer: DDIE pretrain -> synergy finetune
+    parser.add_argument("--aggregate", default=cfg.get('aggregate', 'max'), type=str)
+    parser.add_argument("--max_neighbor", default=cfg.get('max_neighbor', 30), type=int)  # DRKG neighbors per drug
+    parser.add_argument("--no_meta", action='store_true')  # ablation switch
     parser.add_argument("--test", action='store_true')
-    parser.add_argument("--grad_clip", default=5.0, type=float)
-    parser.add_argument("--weight_decay", default=0.0, type=float)
-    parser.add_argument("--embed_model", default='TransE', type=str) # ComplEx 知识图谱预训练方法；论文默认 TransE
-    parser.add_argument("--prefix", default='intial', type=str)
-    parser.add_argument("--seed", default='19940419', type=int)
+    parser.add_argument("--grad_clip", default=cfg.get('grad_clip', 5.0), type=float)
+    parser.add_argument("--weight_decay", default=cfg.get('weight_decay', 0.0), type=float)
+    parser.add_argument("--embed_model", default=cfg.get('embed_model', 'TransE'), type=str)  # KG pretraining method
+    parser.add_argument("--prefix", default=cfg.get('prefix', 'intial'), type=str)
+    parser.add_argument("--seed", default=cfg.get('seed', 19940419), type=int)
 
     args = parser.parse_args()
     args.save_path = 'models/' + args.prefix
@@ -35,4 +41,3 @@ def read_options():
     print("----------------------------")
 
     return args
-

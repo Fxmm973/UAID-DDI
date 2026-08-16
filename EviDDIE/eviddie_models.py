@@ -43,16 +43,6 @@ class MVN_DDI(nn.Module):
 
         self.fdmer = MergeFD(self.in_node_features_fp, self.in_node_features_desc, self.kge_dim)
 
-    #        ###########新增#￥###############
-    #
-    #        self.rel_projector = nn.Sequential(
-    #             nn.Linear(self.kge_dim, self.hidd_dim),
-    #             nn.LayerNorm(self.hidd_dim),
-    #             nn.ReLU(),
-    #             nn.Linear(self.hidd_dim, self.hidd_dim)
-    #         )
-    # ################新增结束！！！！！！！！！！！！！
-
     def forward(self, triples):
         triples_c = copy.deepcopy(triples)
         h_data, h_data_fin, h_data_desc, t_data, t_data_fin, t_data_desc, rels, h_data_edge, t_data_edge = triples_c
@@ -80,13 +70,6 @@ class MVN_DDI(nn.Module):
                                                                             t_data_desc)
         h_data_fin = 0.6 * repr_h[0] + 0.4 * repr_h[-1]
         t_data_fin = 0.6 * repr_t[0] + 0.4 * repr_t[-1]
-        #############新增@################################
-        #     rel_emb = self.rel_projector(rels)  # rels 是 task / relation embedding
-        #
-        #     h_data_fin = h_data_fin * rel_emb
-        #     t_data_fin = t_data_fin * rel_emb
-        #
-        # #############################新增结束#########################
         return h_data_fin, t_data_fin
 
 
@@ -167,10 +150,10 @@ class MVN_DDI_Block(nn.Module):
         return h_global_graph_emb, t_global_graph_emb
 
 
-##############新增######################### BSA
+# ---------- BSA: semantic-to-structure prototype mapper ----------
 class PrototypeAligner(nn.Module):
     """
-    将任务语义 embedding 映射到结构 prototype 空间
+    Maps a task semantic embedding into the structural prototype space.
     """
 
     def __init__(self, task_dim, proto_dim):
@@ -184,4 +167,3 @@ class PrototypeAligner(nn.Module):
     def forward(self, task_emb):
         # task_emb: [num_tasks, task_dim]
         return self.mapper(task_emb)
-##############新增结束#########################

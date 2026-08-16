@@ -25,7 +25,7 @@ from eviddie_models import MVN_DDI
 
 class Generate_Model(torch.nn.Module):
     '''
-    生成器
+    Generator.
     '''
 
     def __init__(self, in_dim=700):  # BioSentVec output dimension
@@ -46,7 +46,7 @@ class Generate_Model(torch.nn.Module):
 
 class Distinguish_Model(torch.nn.Module):
     '''
-    判别器
+    Discriminator.
     '''
 
     def __init__(self):
@@ -493,14 +493,17 @@ class AttentionSelectContext(nn.Module):
         return left, right
 
 
-class VAE(nn.Module):
-    '''
-    Input data:
-        Shape = (batch, 120, 35)
-    '''
+class SRAE(nn.Module):
+    """Stochastic Reconstruction-regularized Autoencoder (SRAE).
+
+    Progressive bottleneck encoder (d -> d/2 -> d/4 -> d/8 -> d/2 -> d/4)
+    with asymmetric noise injection: Gaussian perturbation (eta=1e-2) for
+    support latents during training and near-deterministic encoding
+    (eta=1e-3) for query/evaluation latents. No KL term and no
+    standard-normal prior; the scale output is a learned noise magnitude."""
 
     def __init__(self, emb_dim):
-        super(VAE, self).__init__()
+        super(SRAE, self).__init__()
 
         self.conv_1 = nn.Linear(in_features=emb_dim, out_features=int(emb_dim / 2))
         self.conv_2 = nn.Linear(in_features=int(emb_dim / 2), out_features=int(emb_dim / 4))
@@ -517,33 +520,8 @@ class VAE(nn.Module):
         self.softmax = nn.Softmax()
 
     def encode(self, x):
-        '''
-        :param x:
-        :return:
-        Example
-        import numpy
-        import torch.nn as nn
-        import torch.nn.functional as F
-        import torch
-
-        batch_size = 64
-        x = torch.rand(batch_size, 120, 35)
-
-        # Convolutional layer
-        x = F.relu(nn.Conv1d(120, 9, kernel_size=9)(x))      # x.shape=torch.Size([64, 9, 27])
-        x = F.relu(nn.Conv1d(9, 9, kernel_size=9)(x))        # x.shape=torch.Size([64, 9, 19])
-        x = F.relu(nn.Conv1d(9, 10, kernel_size=11)(x))      # x.shape=torch.Size([64, 10, 9])
-
-        # fatten 2 last dimensions but keep the batch_size
-        x = x.view(x.size(0), -1)                            # x.shape=torch.Size([64, 90])
-
-        # Fully connected layer
-        x = F.selu(nn.Linear(90, 435)(x))                    # x.shape=torch.Size([64, 435])
-
-        # Get z_mean and z_logvar (log-variance)
-        z_mean = nn.Linear(435, 292)(x)                      # x.shape=torch.Size([64, 292])
-        z_logvar = nn.Linear(435, 292)(x)                    # x.shape=torch.Size([64, 292])
-        '''
+        """Shared trunk: d -> d/2 -> d/4 -> d/8 (ReLU) -> d/2 (SeLU),
+        then two heads producing the posterior mean and log-scale."""
         x = self.relu(self.conv_1(x))
         x = self.relu(self.conv_2(x))
         x = self.relu(self.conv_3(x))
@@ -551,24 +529,9 @@ class VAE(nn.Module):
         return self.fc_1(x), self.fc_2(x)
 
     def sampling(self, z_mean, z_logvar, is_support, is_eval):
-        '''
-        It is a parameterization trick to sample to get latent variable Z
-        :param z_mean: an output tensor of a standard fully connected layer from encoder (rf. encode() function)
-        :param z_logvar: an output tensor of a standard fully connected layer from encoder (rf. encode() function)
-        :return: z (latent variable)
-            z = z_mean + std * epsilon
-
-        Note. torch.randn_like(input): Returns a tensor with the same size as input that
-              is filled with random numbers from a normal distribution with mean 0 and
-              variance 1. Therefore, input here is just to get shape.
-
-        Example: continue with example in encode() method. Note: 64 is batch_size
-        std = torch.exp(0.5 * z_logvar)               # std.shape=torch.Size([64, 292])
-        epsilon = 1e-2 * torch.randn_like(input=std)  # epsilon.shape=torch.Size([64, 292])
-        z = z_mean + std * epsilon                    # z.shape=torch.Size([64, 292])
-        '''
+        """Asymmetric noise: eta=1e-2 Gaussian for support latents during
+        training; eta=1e-3 (effectively deterministic) for query/eval."""
         std = torch.exp(0.5 * z_logvar)
-        # is_eval = False
         if is_eval:
             epsilon = 1e-3 * torch.ones_like(input=std)
         else:
@@ -579,26 +542,7 @@ class VAE(nn.Module):
         return z_mean + std * epsilon
 
     def decode(self, z):
-        '''
-        :param z:
-        :return:
-
-        Example: continue with example in sampling() method
-        z = F.selu(nn.Linear(292, 292)(z))                      # z.shape=torch.Size([64, 292])
-        z = z.view(z.size(0), 1, z.size(-1)).repeat(1, 120, 1)  # z.shape=torch.Size([64, 120, 292])
-        output, h_n = nn.GRU(292, 501,
-                             num_layers=3,
-                             batch_first=True)(z)               # output.shape=torch.Size([64, 120, 501])
-                                                                # h_n.shape=torch.Size([3, 64, 501])
-        out_reshape = output.contiguous()
-                            .view(-1, output.size(-1))          # out_reshape=torch.Size([7680, 501]) # 7680=64*120
-
-        y_out = nn.Linear(501, 35)(out_reshape)                 # y_out.shape=torch.Size([7680, 35])
-        y_out = F.softmax(y_out, dim=1)                         # y_out.shape=torch.Size([7680, 35])
-                                                                # dim=1 -> sum to 1 to every row
-        y = y_out.contiguous()
-                 .view(output.size(0), -1, y_out.size(-1))      # y.shape=torch.Size([64, 120, 35])
-        '''
+        """Two-layer decoder mapping the compact latent code back to d."""
         z = F.selu(self.fc_3(z))
         y_out = self.fc_4(z)
         y = y_out
@@ -609,6 +553,10 @@ class VAE(nn.Module):
         z = self.sampling(z_mean, z_logvar, is_support, is_eval)
         y = self.decode(z)
         return y, z_mean, z_logvar, z
+
+
+# Temporary checkpoint-compatibility alias for legacy checkpoints and imports.
+VAE = SRAE
 
 
 class EmbedMatcher(nn.Module):
@@ -622,24 +570,7 @@ class EmbedMatcher(nn.Module):
         self.embed_dim = embed_dim
 
         self.pad_idx = num_symbols
-        # self.symbol_emb = nn.Embedding(num_symbols + 1, embed_dim, padding_idx=num_symbols)
-        # self.aggregate = aggregate
-        # self.num_symbols = num_symbols
-        #
-        # self.gcn_w = nn.Linear(2 * self.embed_dim, self.embed_dim)
-        # self.gcn_b = nn.Parameter(torch.FloatTensor(self.embed_dim))
-        #
         self.dropout = nn.Dropout(0.5)
-        #
-        # init.xavier_normal_(self.gcn_w.weight)
-        # init.constant_(self.gcn_b, 0)
-        #
-        # if use_pretrain:
-        #     logging.info('LOADING KB EMBEDDINGS')
-        #     self.symbol_emb.weight.data.copy_(torch.from_numpy(embed))
-        #     if not finetune:
-        #         logging.info('FIX KB EMBEDDING')
-        #         self.symbol_emb.weight.requires_grad = False
 
         d_model = self.embed_dim * 2
 
@@ -716,7 +647,7 @@ class EmbedMatcher(nn.Module):
                                                               num_transformer_heads=self.num_transformer_heads,
                                                               dropout_rate=self.dropout_layers)
 
-        self.vaemodel = VAE(emb_dim=embed_dim * 2)
+        self.vaemodel = SRAE(emb_dim=embed_dim * 2)  # attribute name kept for checkpoint compatibility
 
     def structure_encoder(self, batch):
         qdrug_data_origin, qunique_drug_pair, qrels, qdrug_pair_indices, qnode_j_for_pairs, qnode_i_for_pairs, qdrug_pair_list, qdrug_node_num_pair_list = batch
@@ -742,11 +673,6 @@ class EmbedMatcher(nn.Module):
                                                  qunique_drug_pair.edge_index_batch, reduce='add', dim=0)[
                                              qdrug_pair_indices]], dim=-1))
         return query_pair
-
-    def vae_loss(self, x_reconstructed, x, z_mean, z_logvar):
-        mse_loss = F.mse_loss(input=x_reconstructed, target=x, reduction='mean')
-        kl_loss = -0.5 * torch.sum(1 + z_logvar - z_mean.pow(2) - z_logvar.exp())
-        return mse_loss + kl_loss
 
     def forward(self, task_proto, query, support, query_meta=None, support_meta=None, query_batch=None,
                 support_batch=None, optim_VAE=None, is_eval=False, trainGAN=False):

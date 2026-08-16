@@ -21,6 +21,10 @@ def compute_metrics(y_true, y_prob, group_by_event):
     else:
         r['AUC'], r['AUPR'] = np.nan, np.nan
     r['ACC'] = metrics.accuracy_score(y_true, y_pred)
+    # Balanced accuracy = (TPR + TNR) / 2
+    tpr = metrics.recall_score(y_true, y_pred, pos_label=1, zero_division=0)
+    tnr = metrics.recall_score(y_true, y_pred, pos_label=0, zero_division=0)
+    r['Balanced ACC'] = (tpr + tnr) / 2.0
     event_f1s = []
     for e in np.unique(group_by_event):
         m = group_by_event == e
@@ -62,7 +66,7 @@ def main():
     lines.append('Shot = 0 means ZERO-SHOT: no molecular support examples for target events.')
     lines.append('=' * 120)
     H = (f"{'Setting':<18} {'Shot':<6} {'Method':<24} "
-         f"{'AUC up':<22} {'AUPR up':<22} {'ACC up':<22} {'Macro-F1 up':<22}")
+         f"{'AUC up':<20} {'AUPR up':<20} {'ACC up':<18} {'Bal. ACC up':<18} {'Macro-F1 up':<18}")
     lines.append(H)
     lines.append('-' * 120)
 
@@ -82,11 +86,38 @@ def main():
             rd = pd.DataFrame(rows)
             mean_s, std_s = rd.mean(), rd.std()
             lines.append(f'{s_label:<18} {"0":<6} {method:<24} '
-                         f'{fmt(mean_s.get("AUC", None), std_s.get("AUC", None)):<22} '
-                         f'{fmt(mean_s.get("AUPR", None), std_s.get("AUPR", None)):<22} '
-                         f'{fmt(mean_s.get("ACC", None), std_s.get("ACC", None)):<22} '
-                         f'{fmt(mean_s.get("Macro-F1", None), std_s.get("Macro-F1", None)):<22}')
+                         f'{fmt(mean_s.get("AUC", None), std_s.get("AUC", None)):<20} '
+                         f'{fmt(mean_s.get("AUPR", None), std_s.get("AUPR", None)):<20} '
+                         f'{fmt(mean_s.get("ACC", None), std_s.get("ACC", None)):<18} '
+                         f'{fmt(mean_s.get("Balanced ACC", None), std_s.get("Balanced ACC", None)):<18} '
+                         f'{fmt(mean_s.get("Macro-F1", None), std_s.get("Macro-F1", None)):<18}')
         lines.append('-' * 120)
+
+# 
+    lines.append('')
+    lines.append('=' * 120)
+    lines.append('PER-EVENT AUROC (pooled over seeds; held-out events only)')
+    lines.append('=' * 120)
+    for s_key, s_label in [('fewer', 'fewer (test)'), ('rare', 'rare (test2)')]:
+        lines.append('')
+        lines.append(f'--- {s_label} ---')
+        for method in METHODS:
+            sub = df[(df['setting'] == s_key) & (df['method'] == method)]
+            per_event = []
+            for evt, g in sub.groupby('event_type'):
+                y = g['y_true'].values
+                p = g['prob'].values
+                if len(np.unique(y)) > 1:
+                    per_event.append((evt[:70], metrics.roc_auc_score(y, p), len(g)))
+                else:
+                    per_event.append((evt[:70], np.nan, len(g)))
+            if not per_event:
+                continue
+            aucs = [a for _, a, _ in per_event if not np.isnan(a)]
+            lines.append(f'  {method}: mean per-event AUC = {np.mean(aucs):.4f} '
+                         f'(over {len(aucs)}/{len(per_event)} events with both classes)')
+            for evt_name, a, n in sorted(per_event, key=lambda x: -(x[1] if not np.isnan(x[1]) else -1)):
+                lines.append(f'      AUC={a:.4f}  n={n:4d}  {evt_name}')
 
     lines.append('')
     lines.append('Notes:')

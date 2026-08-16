@@ -23,7 +23,7 @@ import pickle
 from torch_geometric.data import Batch, Data
 from sklearn import metrics
 from eviddie_recorder import ExperimentRecorder
-from shared.eval_manifest import load_fixed_event_rows  # P0-4：固定 manifest 评估数据构造器
+from shared.eval_manifest import load_fixed_event_rows  # P0-4: fixed-manifest evaluation data builder
 
 
 def do_compute_metrics(probas_pred, target):
@@ -46,6 +46,7 @@ class Trainer(object):
 
     def __init__(self, arg):
         super(Trainer, self).__init__()
+        self.device = DEVICE
         for k, v in vars(arg).items(): setattr(self, k, v)
         if not hasattr(self, "zero_shot"):
             self.zero_shot = False
@@ -69,9 +70,9 @@ class Trainer(object):
         # P0-7: training-time semantic augmentation only. Prototypes are
         # perturbed during training for robustness; all inference/export
         # paths use the raw BioSentVec embeddings without noise.
-        # P0-2 审计：显式形状检查（700 维）+ 固定 key 排序 + rng 种子化噪声。
+        # P0-2 audit: explicit 700-dim shape check + fixed key ordering + rng-seeded noise.
         rng = np.random.default_rng(args.seed)
-        ordered_keys = sorted(list(self.semantic_task.keys()))  # 固定排序，防止原型错位
+        ordered_keys = sorted(list(self.semantic_task.keys()))  # fixed ordering to prevent prototype misalignment
         noise_scale = float(getattr(args, 'semantic_noise', 0.3))
         for task in tqdm(ordered_keys):
             vector = np.asarray(self.semantic_task[task], dtype=np.float32).reshape(-1)
@@ -86,10 +87,9 @@ class Trainer(object):
             self.task2id[i] = num
             self.task_ebmedding.append(self.semantic_task[i])
 
-        self.task_ebmedding = torch.tensor(np.vstack(self.task_ebmedding)).float().to(DEVICE)
+        self.task_ebmedding = torch.tensor(np.vstack(self.task_ebmedding)).float().to(self.device)
 
-        # P0-4：dev checkpoint 选择使用固定 manifest（记录哈希）；实例级设备
-        self.device = DEVICE
+        # P0-4: dev checkpoint selection uses the fixed manifest (hash recorded)
         self.dev_rows, self.dev_manifest_sha256 = load_fixed_event_rows(
             self.dataset, split='dev',
             manifest_seed=getattr(args, 'eval_manifest_seed', 19940419))
@@ -101,7 +101,7 @@ class Trainer(object):
         self.matcher = EmbedMatcher(self.embed_dim, self.num_symbols, use_pretrain=self.use_pretrain,
                                     embed=self.symbol2vec, dropout=self.dropout, batch_size=self.batch_size,
                                     finetune=self.fine_tune, aggregate=self.aggregate, task_emb=self.task_ebmedding)
-        self.matcher.to(DEVICE)
+        self.matcher.to(self.device)
 
         self.batch_nums = 0
         if self.test:
@@ -131,49 +131,16 @@ class Trainer(object):
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
 
-        self.G_m = Generate_Model(in_dim=self.task_ebmedding.shape[1]).to(DEVICE)
-        self.D_m = Distinguish_Model().to(DEVICE)
+        self.G_m = Generate_Model(in_dim=self.task_ebmedding.shape[1]).to(self.device)
+        self.D_m = Distinguish_Model().to(self.device)
         self.D_optim = torch.optim.Adam(self.D_m.parameters(), lr=1e-4)
-
-        # ######################新增#######################################
-        # # 初始化BioSentVec模型（条件导入，避免非零样本模式下的依赖）
-        # self.biosent_model = None
-        # if self.zero_shot:
-        #     try:
-        #         import gensim
-        #         logging.info(f'Loading BioSentVec model from {self.biosent_path}')
-        #         self.biosent_model = gensim.models.KeyedVectors.load_word2vec_format(
-        #             self.biosent_path, binary=True
-        #         )
-        #         logging.info('BioSentVec model loaded successfully')
-        #     except ImportError:
-        #         logging.warning('Gensim not installed. Zero-shot learning will use random embeddings.')
-        #         logging.warning('Install gensim with: pip install gensim')
-        #     except Exception as e:
-        #         logging.warning(f'Failed to load BioSentVec model: {e}')
-        #         logging.warning('Zero-shot learning will use random embeddings.')
-        #
-        # # 为Mapper单独创建优化器（仅在零样本模式下使用）
-        # if self.zero_shot:
-        #     self.mapper_optim = torch.optim.Adam(
-        #         self.matcher.enhanced_mapper.parameters(), lr=1e-4
-        #     )
-        # ######################新增结束#######################################
 
         self.G_optim = torch.optim.Adam(self.G_m.parameters(), lr=1e-4)
 
-        # 初始化实验记录器
+        # initialize the experiment recorder
         result_file = f'result_{self.prefix}.txt' if hasattr(self, 'prefix') else 'result.txt'
         self.recorder = ExperimentRecorder(project_name="ZetaDDIE", result_file=result_file)
         self.recorder.record_hyperparameters(arg)
-
-    # #################### # 新增为Mapper单独创建优化器（仅在零样本模式下使用）
-    #      if hasattr(args, 'zero_shot') and args.zero_shot:
-    #          self.mapper_optim = torch.optim.Adam(
-    #              self.matcher.enhanced_mapper.parameters(), lr=1e-4
-    #          )
-    #
-    #      ############新增结束####################3
 
     def load_symbol2id(self):
         symbol_id = {}
@@ -292,7 +259,7 @@ class Trainer(object):
             self.train_standard()
 
     def train_standard(self):
-        """标准训练流程"""
+        """Standard training loop."""
         logging.info('START STANDARD TRAINING...')
         losses = deque([], self.log_every)
 
@@ -308,17 +275,17 @@ class Trainer(object):
             if self.batch_nums % 50 == 0:
                 logging.info('CURRENT EPOCH: %d MAX EPOCH %d' % (self.batch_nums, self.max_batches))
             task_name, support, query, false, support_left, support_right, query_left, query_right, false_left, false_right, support_batch, query_batch, false_batch = data
-            support_batch = [t.to(DEVICE) for t in support_batch]
-            query_batch = [t.to(DEVICE) for t in query_batch]
-            false_batch = [t.to(DEVICE) for t in false_batch]
+            support_batch = [t.to(self.device) for t in support_batch]
+            query_batch = [t.to(self.device) for t in query_batch]
+            false_batch = [t.to(self.device) for t in false_batch]
             # TODO more elegant solution
             support_meta = self.get_meta(support_left, support_right)
             query_meta = self.get_meta(query_left, query_right)
             false_meta = self.get_meta(false_left, false_right)
 
-            support = Variable(torch.LongTensor(support)).to(DEVICE)
-            query = Variable(torch.LongTensor(query)).to(DEVICE)
-            false = Variable(torch.LongTensor(false)).to(DEVICE)
+            support = Variable(torch.LongTensor(support)).to(self.device)
+            query = Variable(torch.LongTensor(query)).to(self.device)
+            false = Variable(torch.LongTensor(false)).to(self.device)
 
             self.matcher.eval()
             zs = self.matcher(self.task_ebmedding[self.task2id[task_name]], query, support, query_meta,
@@ -353,18 +320,18 @@ class Trainer(object):
             task_emb = self.G_m(self.task_ebmedding[self.task2id[task_name]]).detach()
             self.G_m.train()
             ####old##############new#######################
-            # # 此时 query_scores 实际上返回的是 alpha 参数
+            # # legacy: query_scores actually returned the alpha parameters
             # query_alpha, loss2_p = self.matcher(task_emb, query, support, query_meta, support_meta, query_batch,
             #                                     support_batch, self.optim_VAE, trainGAN=False)
             # false_alpha, loss2_n = self.matcher(task_emb, query, support, false_meta, support_meta, false_batch,
             #                                     support_batch, self.optim_VAE, trainGAN=False)
             #
-            # # 使用新的证据损失函数
+            # # legacy: use the new evidential loss
             # loss_p = loss_fn(query_alpha, 'pos', self.batch_nums)
             # loss_n = loss_fn(false_alpha, 'neg', self.batch_nums)
             # loss_main = (loss_p + loss_n) / 2
             #
-            # # 计算用于日志统计的预测概率
+            # # legacy: compute predicted probabilities for logging
             # with torch.no_grad():
             #     q_p = query_alpha / torch.sum(query_alpha, dim=1, keepdim=True)
             #     f_p = false_alpha / torch.sum(false_alpha, dim=1, keepdim=True)
@@ -379,23 +346,23 @@ class Trainer(object):
             # loss += loss2
 
             ####################new#############
-            # 1. 调用模型获取证据 alpha 和 VAE 损失
+            # 1. Forward pass: obtain evidence alpha and the SRAE loss
             query_alpha, loss2_p = self.matcher(task_emb, query, support, query_meta, support_meta, query_batch,
                                                 support_batch, self.optim_VAE, trainGAN=False)
             false_alpha, loss2_n = self.matcher(task_emb, query, support, false_meta, support_meta, false_batch,
                                                 support_batch, self.optim_VAE, trainGAN=False)
 
-            # 2. 计算证据损失 (Evidential Loss)
+            # 2. Compute the evidential loss
             loss_p = loss_fn(query_alpha, 'pos', self.batch_nums)
             loss_n = loss_fn(false_alpha, 'neg', self.batch_nums)
             loss_main = (loss_p + loss_n) / 2
 
-            # 3. 计算日志统计用的概率和标签
+            # 3. Compute probabilities and labels for logging
             with torch.no_grad():
                 q_p = query_alpha / torch.sum(query_alpha, dim=1, keepdim=True)
                 f_p = false_alpha / torch.sum(false_alpha, dim=1, keepdim=True)
                 probas_pred.append(np.concatenate([q_p[:, 1].cpu().numpy(), f_p[:, 1].cpu().numpy()]))
-                # 补全 ground_truth 记录，否则度量计算会报错
+                # complete the ground_truth record, otherwise metric computation fails
                 ground_truth.append(np.concatenate([np.ones(q_p.shape[0]), np.zeros(f_p.shape[0])]))
 
             # 4. Total loss: EDL + SRAE reconstruction only
@@ -413,7 +380,7 @@ class Trainer(object):
             self.optim.step()
 
             if (self.batch_nums + 1) % self.eval_every == 0:
-                # P0-4：dev 选点评估使用固定 manifest（无 random.choice）
+                # P0-4: dev checkpoint evaluation uses the fixed manifest (no random.choice)
                 dev_metrics = self.evaluate_fixed_dev()
                 valauc = dev_metrics['pooled_auroc']
                 valap = dev_metrics['pooled_auprc']
@@ -423,9 +390,9 @@ class Trainer(object):
                     bestvalauc = valauc
                     bestvalap = valap
                     self.save(self.save_path + f'bestmodel')
-                    torch.save(self.G_m, self.save_path + f'bestmodel_G')  # 保存模型
-                    torch.save(self.D_m, self.save_path + f'bestmodel_D')  # 保存模型
-                    # P0-3 (GPT 4.2)：保存与检查点配套的元数据（dev manifest 哈希为 P0-4 修复值）
+                    torch.save(self.G_m, self.save_path + f'bestmodel_G')  # save generator
+                    torch.save(self.D_m, self.save_path + f'bestmodel_D')  # save critic
+                    # P0-3: save checkpoint metadata (dev manifest hash fixed under P0-4)
                     save_checkpoint_metadata(
                         self.save_path + 'bestmodel_meta.json',
                         train_seed=getattr(args, 'seed', None),
@@ -434,7 +401,7 @@ class Trainer(object):
                         dev_metric_value=float(valauc),
                         dev_manifest_sha256=self.dev_manifest_sha256,
                     )
-                    # 更新最新评估为最佳
+                    # record the latest evaluation as best
                     if hasattr(self, 'recorder'):
                         self.recorder.experiment_data['best_models']['dev'] = {
                             'batch_num': self.batch_nums,
@@ -450,7 +417,7 @@ class Trainer(object):
                                                                                          np.concatenate(ground_truth))
                 logging.info(
                     f'loss: {loss:.4f}, acc: {acc:.4f}, roc: {auroc:.4f}, f1: {f1_score:.4f}, p: {precision:.4f}, r: {recall:.4f}, int-ap: {int_ap:.4f}, ap: {ap:.4f}')
-                # 记录训练步骤
+                # log the training step
                 metrics_dict = {
                     'acc': acc, 'auroc': auroc, 'f1_score': f1_score,
                     'precision': precision, 'recall': recall, 'int_ap': int_ap, 'ap': ap
@@ -463,139 +430,8 @@ class Trainer(object):
                 self.save()
                 self.recorder.finalize()
                 break
-
-    #
-    # # ###########################新增#################################
-    # def train_zero_shot(self):
-    #     """零样本学习的训练流程 - 优化版"""
-    #     logging.info('START ZERO-SHOT TRAINING WITH STRUCTURE GUIDANCE...')
-    #
-    #     if self.biosent_model is None:
-    #         logging.error('BioSentVec model not loaded.')
-    #         return
-    #
-    #     # 预计算所有事件的语义向量
-    #     event_semantic_vecs = {}
-    #     for event_name in self.semantic_task.keys():
-    #         event_desc = event_name.replace('#Drug1', 'drug').replace('#Drug2', 'drug')
-    #         words = event_desc.lower().split()
-    #         word_vectors = [self.biosent_model[w] for w in words if w in self.biosent_model]
-    #
-    #         if word_vectors:
-    #             vec = np.mean(word_vectors, axis=0)
-    #         else:
-    #             vec = np.random.randn(700)
-    #
-    #         event_semantic_vecs[event_name] = torch.FloatTensor(vec).unsqueeze(0).cuda()
-    #
-    #     best_val_auc = 0
-    #
-    #     for epoch in range(self.max_batches // 100):  # 调整epoch数
-    #
-    #         for data in train_generate(self.dataset, self.batch_size, self.train_few,
-    #                                    self.symbol2id, self.ent2id, self.e1rel_e2,
-    #                                    self.all_drug_data, self.drug_num_node_indices):
-    #
-    #             task_name, support, query, false, support_left, support_right, \
-    #                 query_left, query_right, false_left, false_right, \
-    #                 support_batch, query_batch, false_batch = data
-    #
-    #             # 转移到GPU
-    #             support_batch = [t.to(device) for t in support_batch]
-    #             query_batch = [t.to(device) for t in query_batch]
-    #             false_batch = [t.to(device) for t in false_batch]
-    #
-    #             # 获取元数据
-    #             support_meta = self.get_meta(support_left, support_right)
-    #             query_meta = self.get_meta(query_left, query_right)
-    #             false_meta = self.get_meta(false_left, false_right)
-    #
-    #             # ========== 阶段1：提取支持集的结构上下文 ==========
-    #             self.matcher.eval()
-    #             with torch.no_grad():
-    #                 support_left_, support_right_ = self.matcher.model(support_batch)
-    #                 support_left_feat = self.matcher.neighbor_encoder(
-    #                     *support_meta[:2], support_left_, support_right_ - support_left_
-    #                 )
-    #                 support_right_feat = self.matcher.neighbor_encoder(
-    #                     *support_meta[2:], support_right_, support_right_ - support_left_
-    #                 )
-    #                 support_neighbor = torch.cat([support_left_feat, support_right_feat], dim=-1)
-    #                 _, _, _, support_context = self.matcher.vaemodel(
-    #                     support_neighbor, is_support=True, is_eval=False
-    #                 )
-    #
-    #             # ========== 阶段2：语义映射训练 ==========
-    #             self.matcher.train()
-    #             semantic_vec = event_semantic_vecs[task_name]
-    #
-    #             # 正样本预测（带结构引导）
-    #             query_scores = self.matcher.forward_zero_shot(
-    #                 semantic_vec, query_meta, query_batch, support_context
-    #             )
-    #
-    #             # 负样本预测
-    #             false_scores = self.matcher.forward_zero_shot(
-    #                 semantic_vec, false_meta, false_batch, support_context
-    #             )
-    #
-    #             # ========== 损失计算 ==========
-    #             # 1. 主分类损失
-    #             loss_main, _, _ = loss_fn(query_scores, false_scores)
-    #
-    #             # 2. 软对齐损失（拉近映射向量与支持集中心）
-    #             mapped_vec = self.matcher.enhanced_mapper(semantic_vec, support_context)
-    #             support_center = support_context.mean(dim=0, keepdim=True)
-    #             loss_soft_align = F.mse_loss(mapped_vec, support_center)
-    #
-    #             # 3. 温度正则化（防止temperature过小）
-    #             loss_temp_reg = torch.relu(0.01 - self.matcher.temperature)
-    #
-    #             # 4. 对比学习损失（增强判别性）
-    #             # 让同一事件的样本在映射空间中更接近
-    #             pos_sim = F.cosine_similarity(mapped_vec, support_center, dim=-1)
-    #             loss_contrastive = -torch.log(torch.sigmoid(pos_sim / self.matcher.temperature))
-    #
-    #             # 总损失
-    #             total_loss = (loss_main +
-    #                           0.3 * loss_soft_align +
-    #                           0.1 * loss_temp_reg +
-    #                           0.2 * loss_contrastive)
-    #
-    #             # 反向传播
-    #             self.optim.zero_grad()
-    #             self.mapper_optim.zero_grad()
-    #             total_loss.backward()
-    #
-    #             # 梯度裁剪
-    #             torch.nn.utils.clip_grad_norm_(self.matcher.parameters(), 1.0)
-    #
-    #             self.optim.step()
-    #             self.mapper_optim.step()
-    #
-    #             # 日志记录
-    #             if self.batch_nums % self.log_every == 0:
-    #                 logging.info(
-    #                     f'Batch {self.batch_nums}: Loss={total_loss:.4f}, '
-    #                     f'Main={loss_main:.4f}, Align={loss_soft_align:.4f}, '
-    #                     f'Contrast={loss_contrastive:.4f}, '
-    #                     f'Temp={self.matcher.temperature.item():.4f}'
-    #                 )
-    #
-    #             self.batch_nums += 1
-    #             if self.batch_nums >= self.max_batches:
-    #                 break
-    #
-    #         # 验证
-    #         if (epoch + 1) % (self.eval_every // 100) == 0:
-    #             val_auc = self.eval_zero_shot(mode='dev')
-    #             if val_auc > best_val_auc:
-    #                 best_val_auc = val_auc
-    #                 self.save(self.save_path + 'best_zeroshot_model')
-    #                 logging.info(f'New best model saved! AUC: {val_auc:.4f}')
-    # ################################新增结束##########################
     def _predict_fixed_rows(self, rows):
-        """P0-4：把固定 manifest 行（正负交替）按事件批量前向，返回 (probs, labels)。"""
+        """P0-4: forward fixed-manifest rows (positive/negative interleaved) per event; returns (probs, labels)."""
         rel2id = json.load(open(self.dataset + '/relation2ids'))
         rows_by_event = {}
         for (evt, head, rel, tail, lab) in rows:
@@ -630,7 +466,7 @@ class Trainer(object):
         return np.concatenate(probas), np.concatenate(labels)
 
     def evaluate_fixed_dev(self):
-        """P0-4：dev checkpoint 选择使用固定 manifest 的评估（无 random.choice）。"""
+        """P0-4: dev checkpoint selection evaluates on the fixed manifest (no random.choice)."""
         self.matcher.eval()
         yp, yt = self._predict_fixed_rows(self.dev_rows)
         if len(yp) == 0:
@@ -645,12 +481,12 @@ class Trainer(object):
         return {'pooled_auroc': auroc, 'pooled_auprc': ap, 'acc': acc, 'f1': f1}
 
     def eval_acc(self, mode='dev', meta=False):
-        # P0-4：训练过程中禁止调用 test/test2；只有 checkpoint 锁定（test_()）后才允许
+        # P0-4: test/test2 evaluation is forbidden during training; allowed only after checkpoint lock (test_())
         if mode != 'dev' and not getattr(self, '_locked_eval', False):
             raise RuntimeError(
                 'test/test2 evaluation is forbidden before checkpoint locking (P0-4). '
                 'Use the locked evaluation entry (--test) after training.')
-        # P0-4：所有模式的评估均读取固定 manifest（无 random.choice）
+        # P0-4: all evaluation modes read the fixed manifest (no random.choice)
         split = {'dev': 'dev', 'test': 'test', 'test2': 'test2'}[mode]
         rows, mh = load_fixed_event_rows(self.dataset, split=split,
                                          manifest_seed=getattr(args, 'eval_manifest_seed', 19940419))
@@ -664,168 +500,24 @@ class Trainer(object):
         self.recorder.record_evaluation(mode, metrics_dict, is_best=False, batch_num=self.batch_nums)
         self.matcher.train()
         return auroc
-
-    #     def eval_acc(self, mode='dev', meta=False):
-    #         self.matcher.eval()
-    #         symbol2id = self.symbol2id
-    #         logging.info('EVALUATING ON %s DATA' % mode.upper())
-    #         if mode == 'dev':
-    #             test_tasks = json.load(open(self.dataset + '/dev_tasks.json'))
-    #         elif mode == 'test':
-    #             test_tasks = json.load(open(self.dataset + '/test_tasks.json'))
-    #         else:
-    #             test_tasks = json.load(open(self.dataset + '/test2_tasks.json'))
-    #         rel2id = json.load(open(self.dataset + '/relation2ids'))
-    #
-    #         rel2candidates = self.rel2candidates
-    #
-    #         probas_pred = []
-    #         ground_truth = []
-    #
-    #         for query_ in test_tasks.keys():
-    #
-    #             probas_pred_t = []
-    #             ground_truth_t = []
-    #             candidates = rel2candidates[query_]
-    #             few = 0
-    #
-    #             query_triples = test_tasks[query_][few:]
-    #             query_pairs = [[symbol2id[triple[0]], symbol2id[triple[2]]] for triple in query_triples]
-    #
-    #             false_pairs = []
-    #             false_triples = []
-    #             for triple in query_triples:
-    #                 e_h = triple[0]
-    #                 rel = triple[1]
-    #                 e_t = triple[2]
-    #                 while True:
-    #                     noise = random.choice(candidates)
-    #                     if (noise not in self.e1rel_e2[e_h + rel]) and noise != e_t:
-    #                         break
-    #                 false_triples.append([e_h, rel, noise])
-    #                 false_pairs.append([symbol2id[e_h], symbol2id[noise]])
-    #
-    #             query_pairs.extend(false_pairs)
-    #             query_triples.extend(false_triples)
-    #             query_triples_rel2id = [[triple[0], triple[2], rel2id[triple[1]]] for triple in query_triples]
-    #
-    #             query = Variable(torch.LongTensor(query_pairs)).cuda()
-    #
-    #             test_size = self.batch_size * 800
-    #             if len(query_triples_rel2id) < test_size:
-    #                 test_size = len(query_triples_rel2id)
-    #             # for i in range(len(query_triples_rel2id) // test_size):
-    #             for i in range(0, len(query_triples_rel2id), test_size):#new
-    #                 # if (i + 1) * test_size > len(query_triples_rel2id):
-    #                 #     query_triples_rel2id_batch = query_triples_rel2id[i * test_size:]
-    #                 # else:
-    #                 #     query_triples_rel2id_batch = query_triples_rel2id[i * test_size: (i + 1) * test_size]
-    #                 query_triples_rel2id_batch = query_triples_rel2id[i: i + test_size]#new
-    #
-    #
-    #
-    #
-    #                 if meta:
-    #                     query_left = [self.ent2id[triple[0]] for triple in query_triples]
-    #                     query_right = [self.ent2id[triple[2]] for triple in query_triples]
-    #                     query_meta = self.get_meta(query_left, query_right)
-    #                     query_batch = DrugDataset(query_triples_rel2id)
-    #                     query_batch_loader = DrugDataLoader(query_batch, batch_size=len(query_triples_rel2id),
-    #                                                         shuffle=False)
-    #                     query_batch = []
-    #                     for batch in query_batch_loader:
-    #                         query_batch.append(batch)
-    #                     query_batch = [t.to(device) for t in query_batch[0]]
-    #                     ############old#
-    #                     # self.G_m.eval()
-    #                     # task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
-    #                     # self.G_m.train()
-    #                     # scores, loss2 = self.matcher(task_emb, query, None, query_meta, None, query_batch, None,
-    #                     #                              self.optim_VAE, is_eval=True, trainGAN=False)
-    #                     # scores.detach()
-    #                     # scores = scores.data
-    #                     # probas_pred_t.append(np.concatenate([torch.sigmoid(scores.detach()).cpu()]))
-    #                     #new
-    #                     self.G_m.eval()
-    #                     task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
-    #
-    #                     # 评估模式：返回 alpha / S 的概率
-    #                     scores_prob, _ = self.matcher(task_emb, query, None, query_meta, None, query_batch, None,
-    #                                                   self.optim_VAE, is_eval=True, trainGAN=False)
-    #
-    #                     # 此时 scores_prob 已经是概率，直接存入
-    #                     probas_pred_t.append(scores_prob.detach().cpu().numpy())
-    # #############################################
-    #
-    #
-    #
-    #                 else:
-    #                     scores, loss2 = self.matcher(query, support)
-    #                     scores.detach()
-    #                     scores = scores.data
-    #                     probas_pred_t.append(np.concatenate([torch.sigmoid(scores.detach()).cpu()]))
-    #                     ##################new##############
-    #                     # 这里的 probas_pred_t[0] 包含了 [正样本概率, 负样本概率]
-    #                     num_total = len(probas_pred_t[0])
-    #                     ground_truth_t.append(np.concatenate([np.ones(num_total // 2), np.zeros(num_total // 2)]))
-    #
-    #                     # 记录日志
-    #                     acc, auroc, f1, pre, rec, int_ap, ap = do_compute_metrics(np.concatenate(probas_pred_t),
-    #                                                                               np.concatenate(ground_truth_t))
-    #
-    #
-    #
-    #
-    # ##################old######################
-    #             # ground_truth_t.append(
-    #             #     np.concatenate([np.ones(int(len(probas_pred_t[0]) / 2)), np.zeros(int(len(probas_pred_t[0]) / 2))]))
-    #             # loss, loss_p, loss_n = loss_fn(scores[:int(len(probas_pred_t[0]) / 2)],
-    #             #                                scores[int(len(probas_pred_t[0]) / 2):])
-    #             #
-    #
-    #
-    #
-    #
-    #             acc, auroc, f1_score, precision, recall, int_ap, ap = do_compute_metrics(np.concatenate(probas_pred_t),
-    #                                                                                      np.concatenate(ground_truth_t))
-    #             logging.info(
-    #                 f'task: {query_}\n loss: {loss:.4f}, acc: {acc:.4f}, roc: {auroc:.4f}, f1: {f1_score:.4f}, p: {precision:.4f}, r: {recall:.4f}, int-ap: {int_ap:.4f}, ap: {ap:.4f}')
-    #             probas_pred.extend(probas_pred_t)
-    #             ground_truth.extend(ground_truth_t)
-    #
-    #         acc, auroc, f1_score, precision, recall, int_ap, ap = do_compute_metrics(np.concatenate(probas_pred),
-    #                                                                                  np.concatenate(ground_truth))
-    #         logging.info(
-    #             f'alltask:\n loss: {loss:.4f}, acc: {acc:.4f}, roc: {auroc:.4f}, f1: {f1_score:.4f}, p: {precision:.4f}, r: {recall:.4f}, int-ap: {int_ap:.4f}, ap: {ap:.4f}')
-    #
-    #         # 记录评估结果
-    #         metrics_dict = {
-    #             'acc': acc, 'auroc': auroc, 'f1_score': f1_score,
-    #             'precision': precision, 'recall': recall, 'int_ap': int_ap, 'ap': ap
-    #         }
-    #         batch_num = getattr(self, 'batch_nums', None)
-    #         self.recorder.record_evaluation(mode, metrics_dict, is_best=False, batch_num=batch_num)
-    #
-    #         self.matcher.train()
-    #         return auroc
-
     def test_(self):
         self.load()
         logging.info('Pre-trained model loaded')
-        # P0-4：checkpoint 锁定后才允许 test/test2 评估
+        # P0-4: test/test2 evaluation allowed only after checkpoint lock
         self._locked_eval = True
         testauc = self.eval_acc(meta=self.meta, mode='test')
         test2auc = self.eval_acc(meta=self.meta, mode='test2')
-        # 完成测试记录
+        # finalize test records
         self.recorder.finalize()
 
 
 def make_target(target_type, batch_size, device='cpu'):
-    """EDL 训练目标（与导出脚本的类别顺序约定一致，见 tests/test_evidential_class_order.py）。
+    """EDL training objective (class-order convention matches the export scripts;
+    see tests/test_evidential_class_order.py).
 
-    fc 输出通道约定：0 = 负类 (negative)，1 = 正类 (positive)。
-    - 正样本 'pos' -> [0, 1]
-    - 负样本 'neg' -> [1, 0]
+    fc output channel convention: 0 = negative class, 1 = positive class.
+    - positive 'pos' -> [0, 1]
+    - negative 'neg' -> [1, 0]
     """
     if target_type == 'pos':
         y = torch.tensor([[0, 1]], dtype=torch.float32)
@@ -838,9 +530,10 @@ def make_target(target_type, batch_size, device='cpu'):
 
 def save_checkpoint_metadata(path, train_seed, best_step, dev_metric_name,
                              dev_metric_value, dev_manifest_sha256):
-    """P0-3 (GPT 4.2)：与检查点配套的元数据 JSON（训练种子/最佳步/类别顺序/头类型）。
+    """P0-3: checkpoint metadata JSON (train seed / best step / class order / head type).
 
-    供导出与表格脚本校验：同一 seed 的 matcher 与 generator 配套、类别顺序固定。
+    Used by export/table scripts to verify that the matcher and generator of the
+    same seed match and the class order is fixed.
     """
     payload = {
         'format_version': 2,
@@ -851,7 +544,7 @@ def save_checkpoint_metadata(path, train_seed, best_step, dev_metric_name,
         'dev_metric_name': dev_metric_name,
         'dev_metric_value': float(dev_metric_value),
         'dev_manifest_sha256': dev_manifest_sha256,
-        'note': 'dev_manifest_sha256 将在 P0-4（dev 固定 manifest 选点）修复后填入',
+        'note': 'dev_manifest_sha256 filled in under P0-4 fixed-manifest dev selection',
     }
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
@@ -866,7 +559,7 @@ class EvidentialLoss(nn.Module):
 
     def __init__(self, annealing_step=500):
         super(EvidentialLoss, self).__init__()
-        self.annealing_step = annealing_step  # 逐步增加 KL 散度的权重
+        self.annealing_step = annealing_step  # anneals the KL regularizer weight over training
 
     def kl_divergence(self, alpha):
         ones = torch.ones([1, 2], dtype=torch.float32).to(DEVICE)
@@ -877,17 +570,17 @@ class EvidentialLoss(nn.Module):
         return first_term + second_term.sum(dim=1, keepdim=True)
 
     def forward(self, alpha, target_type, batch_num):
-        # target_type: 'pos' 为正样本, 'neg' 为负样本
+        # target_type: 'pos' = positive, 'neg' = negative
         y = make_target(target_type, alpha.size(0), DEVICE)
 
         S = torch.sum(alpha, dim=1, keepdim=True)
-        # 1. 计算 Expected Mean Square Error
+        # 1. Expected mean squared error
         p = alpha / S
         err = (y - p) ** 2
         var = p * (1 - p) / (S + 1)
         loss_mse = torch.mean(torch.sum(err + var, dim=1))
 
-        # 2. 计算 KL 散度正则项 (移除正确类别的证据后的惩罚)
+        # 2. KL regularization (penalizes evidence of the incorrect class)
         annealing_coef = min(1.0, batch_num / self.annealing_step)
         alpha_hat = y + (1 - y) * alpha
         loss_kl = annealing_coef * torch.mean(self.kl_divergence(alpha_hat))
@@ -899,7 +592,7 @@ class EvidentialLoss(nn.Module):
 
 if __name__ == '__main__':
     args = read_options()
-    # P0-7: per-seed independent checkpoints — the checkpoint prefix always
+    # P0-7: per-seed independent checkpoints - the checkpoint prefix always
     # encodes the training seed, so the matcher (bestmodel) and generator
     # (bestmodel_G) checkpoints are never shared across seeds.
     args.save_path = f'models/{args.prefix}_seed{args.seed}'

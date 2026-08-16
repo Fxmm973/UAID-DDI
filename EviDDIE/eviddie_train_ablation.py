@@ -37,13 +37,14 @@ def compute_metrics(probas, targets):
 
 
 class EviDDIEAblationTrainer:
-    """直接加载 PharDDIE checkpoint，在 SRAE latent 空间上训练 EviDDIE 的消融 fc 头。"""
+    """Frozen-backbone EviDDIE head ablation: loads a pre-trained PharDDIE
+    encoder + SRAE, freezes both, and trains only the semantic/evidential
+    head per variant (softmax / w/o BSA / w/o EVI / full)."""
+
     def __init__(self, dataset='dataset1', ckpt_path='models/dataset1/pharddie_best.pt'):
-        # ---------- PharDDIE matcher (加载预训练权重) ----------
-        # 先用 train=False 构造 PharDDIEMatcher，但不加载任何 KB embedding
-        # 我们只需要它的 model (MVN_DDI) + vaemodel (SRAE)
+        # ---- PharDDIE backbone (frozen): MVN_DDI encoder + SRAE ----
         self.embed_dim = 128
-        # 直接构造核心模块
+        # construct the core modules directly
         n_atom_feats, kge_dim = 55, 128
         from pharddie_matcher import MVN_DDI
         self.molecular_encoder = MVN_DDI(
@@ -51,10 +52,10 @@ class EviDDIEAblationTrainer:
         ).to(device)
         self.srae = SRAE(emb_dim=kge_dim * 2).to(device)
 
-        # 加载预训练权重
+        # load the pre-trained backbone weights
         if os.path.exists(ckpt_path):
             ckpt = torch.load(ckpt_path, map_location=device)
-            # 提取 encoder 和 srae 的权重
+            # extract encoder and SRAE weights
             encoder_state = {}
             srae_state = {}
             for k, v in ckpt.items():
@@ -86,7 +87,12 @@ class EviDDIEAblationTrainer:
         gm_path = 'models/dataset1/bestmodels_G'
         gm_loaded = False
         if os.path.exists(gm_path):
-            gm_state = torch.load(gm_path, map_location=device)
+            # alias legacy module names for the pickled generator (same as eviddie_export_zs_v2)
+            import eviddie_matcher as _em
+            for _old in ['matcher_structure_acc_fp_neigh_VAE_GAN_struc',
+                         'matcher_structure_acc_fp_neigh_VAE_GAN_struc_ttt']:
+                sys.modules[_old] = _em
+            gm_state = torch.load(gm_path, map_location=device, weights_only=False)
             if isinstance(gm_state, dict) and 'fc.0.weight' in gm_state:
                 gm_state = {k.replace('fc.', ''): v for k, v in gm_state.items()}
             elif hasattr(gm_state, 'state_dict'):
@@ -123,7 +129,7 @@ class EviDDIEAblationTrainer:
                 f'Ablation requires a valid pretrained GAN generator.'
             )
 
-        # w/o BSA 用线性投影替代 G_m
+        # w/o BSA: a linear projection replaces the GAN generator
         self.linear_proj = nn.Linear(self.sem_dim, 64).to(device)
 
         # ---------- FC head (trainable) ----------
@@ -133,7 +139,7 @@ class EviDDIEAblationTrainer:
             nn.Linear(64, 2)
         ).to(device)
 
-        # ---------- 数据 ----------
+        # ---------- data ----------
         self.dataset = dataset
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self._load_data()
@@ -235,7 +241,7 @@ class EviDDIEAblationTrainer:
 
         save_dir = os.path.join(self.base_dir, 'models', 'dataset1')
         os.makedirs(save_dir, exist_ok=True)
-        save = os.path.join(save_dir, f'fc_{variant_name}.pt')
+        save = os.path.join(save_dir, f'fc_{variant_name.replace("/", "_")}.pt')
         torch.save(self.fc.state_dict(), save)
         if variant_name == 'w/o BSA':
             torch.save(self.linear_proj.state_dict(), os.path.join(save_dir, 'linear_proj_wo_BSA.pt'))

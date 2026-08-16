@@ -13,7 +13,7 @@ from pharddie_layers import (
                     RESCAL,
                     MergeFD,
                     CoAttentionLayer,
-                    PharmacophoreAwareTransformerConv,  # 新增这行
+                    HiddenChannelReweightingTransformerConv,
                     )
 import time
 import copy
@@ -85,10 +85,10 @@ class MVN_DDI_Block(nn.Module):
         self.n_heads = n_heads
         self.in_features = in_features
         self.out_features = head_out_feats
-        self.feature_conv = PharmacophoreAwareTransformerConv(in_features, head_out_feats, n_heads, edge_dim=edge_feature,dropout=dp)
+        self.feature_conv = HiddenChannelReweightingTransformerConv(in_features, head_out_feats, n_heads, edge_dim=edge_feature,dropout=dp)
         self.lin_up = Linear(64, 64, bias=True, weight_initializer='glorot')
 
-        self.feature_conv2 = PharmacophoreAwareTransformerConv(in_features, head_out_feats, n_heads, edge_dim=edge_feature,dropout=dp)
+        self.feature_conv2 = HiddenChannelReweightingTransformerConv(in_features, head_out_feats, n_heads, edge_dim=edge_feature,dropout=dp)
         self.lin_up2 = Linear(64, 64, bias=True, weight_initializer='glorot')
 
         self.readout = SAGPooling(n_heads * head_out_feats, min_score=-1)
