@@ -5,6 +5,8 @@ import json
 import logging
 import numpy as np
 import datetime
+import os
+import hashlib
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -312,6 +314,22 @@ class Trainer(object):
         rel2id = json.load(open(self.dataset + '/relation2ids'))
         rel2candidates = self.rel2candidates
 
+        # P0-4: held-out evaluation (and dev checkpoint selection) reads the
+        # fixed pre-generated negative manifest (SHA256-verified), matching the
+        # paper's protocol. common_test is a legacy split not used in the paper
+        # and keeps dynamic negatives.
+        manifest = None
+        if mode in ('dev', 'test', 'test2'):
+            manifest_path = f'{self.dataset}/neg_manifests/{mode}_seed19940419_negatives.json'
+            if not os.path.exists(manifest_path):
+                raise FileNotFoundError(f'Evaluation manifest not found: {manifest_path}')
+            actual_hash = hashlib.sha256(open(manifest_path, 'rb').read()).hexdigest()
+            hash_log = json.load(open(f'{self.dataset}/neg_manifests/manifest_hashes.json'))
+            recorded = hash_log.get(f'{mode}_seed19940419', {}).get('sha256')
+            if recorded is None or actual_hash != recorded:
+                raise RuntimeError(f'Manifest SHA256 mismatch: {manifest_path}')
+            manifest = json.load(open(manifest_path))
+
         probas_pred = []
         ground_truth = []
 
@@ -342,16 +360,30 @@ class Trainer(object):
 
             false_pairs = []
             false_triples = []
-            for triple in query_triples:
-                e_h = triple[0]
-                rel = triple[1]
-                e_t = triple[2]
-                while True:
-                    noise = random.choice(candidates)
-                    if (noise not in self.e1rel_e2[e_h + rel]) and noise != e_t:
-                        break
-                false_triples.append([e_h, rel, noise])
-                false_pairs.append([symbol2id[e_h], symbol2id[noise]])
+            if manifest is not None:
+                # fixed manifest negatives, aligned entry-by-entry with the query triples
+                entries = manifest.get(query_, [])[few:]
+                if len(entries) != len(query_triples):
+                    raise RuntimeError(f'[{mode}] {query_}: manifest has {len(entries)} negatives '
+                                       f'but {len(query_triples)} queries')
+                for t, entry in zip(query_triples, entries):
+                    d_i, d_j, d_k, rel = entry
+                    if not (d_i == t[0] and d_j == t[2] and rel == t[1]):
+                        raise RuntimeError(f'[{mode}] {query_}: manifest entry {entry} does not match {t}')
+                    false_triples.append([t[0], t[1], d_k])
+                    false_pairs.append([symbol2id[t[0]], symbol2id[d_k]])
+            else:
+                # legacy dynamic negatives (common_test only)
+                for triple in query_triples:
+                    e_h = triple[0]
+                    rel = triple[1]
+                    e_t = triple[2]
+                    while True:
+                        noise = random.choice(candidates)
+                        if (noise not in self.e1rel_e2[e_h + rel]) and noise != e_t:
+                            break
+                    false_triples.append([e_h, rel, noise])
+                    false_pairs.append([symbol2id[e_h], symbol2id[noise]])
 
             query_pairs.extend(false_pairs)
             query_triples.extend(false_triples)
