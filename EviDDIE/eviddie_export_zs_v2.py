@@ -40,10 +40,23 @@ from shared.checkpoint import load_state_dict_safe
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
-METHOD_MAP = {'softmax': 'Softmax baseline', 'evi_no_evi': 'EviDDIE w/o EVI', 'full_evi': 'EviDDIE'}
-SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]  # 扩展到5个
-# fc 输出通道约定：0 = 负类 (negative)，1 = 正类 (positive)；prob = alpha[:,1]/S。
+METHOD_MAP = {'softmax': 'Softmax baseline', 'evi_no_evi': 'EviDDIE w/o EVI',
+              'wo_BSA': 'EviDDIE w/o BSA', 'full_evi': 'EviDDIE'}
+SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
+# fc output channel convention: 0 = negative, 1 = positive; prob = alpha[:,1]/S.
 CLASS_ORDER = ('negative', 'positive')
+
+
+def resolve_checkpoint(train_seed):
+    """Accept both the flat trainer naming (models/dataset1/<prefix>_seed<seed>bestmodel)
+    and the directory layout (models/dataset1/<prefix>_seed<seed>/bestmodel)."""
+    flat_m = f'models/dataset1/eviddie_0shot_seed{train_seed}bestmodel'
+    flat_g = f'models/dataset1/eviddie_0shot_seed{train_seed}bestmodel_G'
+    dir_m = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel'
+    dir_g = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel_G'
+    m = flat_m if os.path.exists(flat_m) else dir_m
+    g = flat_g if os.path.exists(flat_g) else dir_g
+    return m, g
 
 
 def load_neg_manifest(dataset, split, seed):
@@ -104,8 +117,12 @@ class ExportVariants(object):
                 del ckpt[k]
         load_state_dict_safe(self.matcher, ckpt, model_name='matcher')
 
-        self.G_m = torch.load(arg.g_model_path, map_location=self.device)
+        self.G_m = torch.load(arg.g_model_path, map_location=self.device, weights_only=False)
         self.G_m.eval()
+        # w/o BSA: a linear projection replaces the GAN generator (trained by
+        # eviddie_train_ablation.py); loaded lazily only when needed.
+        self.linear_proj = None
+        self.linear_proj_loaded = False
 
         self.ent2id = json.load(open(self.dataset+'/ent2ids'))
         self.num_ents = len(self.ent2id.keys())
@@ -159,12 +176,26 @@ class ExportVariants(object):
         return (lc,ld,rc,rd)
 
     def load_head(self, variant):
-        path = f'{self.save_dir}/fc_{variant}.pt'
-        head = torch.load(path, map_location=self.device)
+        # the ablation trainer sanitizes '/' in variant names ('w/o BSA' -> 'w_o BSA')
+        name = variant.replace('/', '_')
+        path = f'{self.save_dir}/fc_{name}.pt'
+        head = torch.load(path, map_location=self.device, weights_only=False)
         self.matcher.fc.load_state_dict(head)
         self.matcher.eval()
         w = next(iter(head.values()))
         logging.info(f'Loaded fc head: {variant} (first weight mean_abs={w.float().abs().mean().item():.5f})')
+
+    def load_linear_proj(self):
+        path = f'{self.save_dir}/linear_proj_wo_BSA.pt'
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'w/o BSA linear projection not found: {path}. '
+                                    f'Run eviddie_train_ablation.py first.')
+        import torch.nn as nn
+        self.linear_proj = nn.Linear(700, 64).to(self.device)
+        self.linear_proj.load_state_dict(torch.load(path, map_location=self.device, weights_only=False))
+        self.linear_proj.eval()
+        self.linear_proj_loaded = True
+        logging.info('Loaded linear projection for the w/o BSA variant')
 
     def export(self, mode, csv_writer, train_seed, eval_seed, method_name, variant):
         setting_map = {'dev':'common','test':'fewer','test2':'rare'}
@@ -212,7 +243,13 @@ class ExportVariants(object):
                 qb = DrugDataset(all_rel2id)
                 qbl = DrugDataLoader(qb, batch_size=len(all_rel2id), shuffle=False)
                 qb_data = [t.to(self.device) for t in next(iter(qbl))]
-                task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
+                if variant == 'wo_BSA':
+                    if not self.linear_proj_loaded:
+                        self.load_linear_proj()
+                    sem = self.task_ebmedding[self.task2id[query_]].reshape(1, -1)
+                    task_emb = self.linear_proj(sem).detach()
+                else:
+                    task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
 
                 ql_, qr_ = self.matcher.model(qb_data)
                 qn = torch.cat((ql_, qr_), dim=-1)
@@ -222,12 +259,16 @@ class ExportVariants(object):
                 if variant == 'softmax':
                     probs = F.softmax(fc_out, dim=1)[:, 1]
                     unc = 1.0 - torch.max(F.softmax(fc_out, dim=1), dim=1)[0]
+                    ev0_np = np.zeros(probs.shape[0], dtype=np.float32)
+                    ev1_np = np.zeros(probs.shape[0], dtype=np.float32)
                 else:
                     evidence = F.softplus(fc_out)
                     alpha = evidence + 1
                     prob = alpha / alpha.sum(dim=1, keepdim=True)
                     probs = prob[:, 1]
                     unc = 2.0 / alpha.sum(dim=1)
+                    ev0_np = evidence[:, 0].cpu().numpy()
+                    ev1_np = evidence[:, 1].cpu().numpy()
 
                 probs_np = probs.cpu().numpy()
                 unc_np = unc.cpu().numpy()
@@ -246,6 +287,7 @@ class ExportVariants(object):
                                          method_name, query_, t[0], t[2], int(gt[idx]),
                                          1 if p >= 0.5 else 0,
                                          round(float(p), 8), round(float(u), 8),
+                                         round(float(ev0_np[idx]), 8), round(float(ev1_np[idx]), 8),
                                          rm.get('checkpoint_sha256', ''),
                                          rm.get('eval_manifest_hashes', {}).get(mode, ''),
                                          rm.get('event_embedding_sha256', ''),
@@ -292,12 +334,12 @@ if __name__ == '__main__':
     with open(out_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['run_id','train_seed','eval_seed','setting','shot','method','event_type','drug_a','drug_b',
-                     'y_true','y_pred','prob','uncertainty','checkpoint_sha256','eval_manifest_sha256',
+                     'y_true','y_pred','prob','uncertainty','evidence_0','evidence_1',
+                     'checkpoint_sha256','eval_manifest_sha256',
                      'event_embedding_sha256','git_commit'])
 
         for train_seed in TRAINING_SEEDS:
-            args.pretrained_model = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel'
-            args.g_model_path = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel_G'
+            args.pretrained_model, args.g_model_path = resolve_checkpoint(train_seed)
             if not os.path.exists(args.pretrained_model):
                 raise FileNotFoundError(
                     f'Per-seed checkpoint not found: {args.pretrained_model}. '
@@ -316,13 +358,12 @@ if __name__ == '__main__':
             random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
             if torch.cuda.is_available(): torch.cuda.manual_seed_all(eval_seed)
 
-            for variant in ['softmax', 'evi_no_evi', 'full_evi']:
+            for variant in ['softmax', 'evi_no_evi', 'wo_BSA', 'full_evi']:
                 method = METHOD_MAP[variant]
                 logging.info(f'===== train_seed={train_seed} {method} =====')
                 ex = ExportVariants(args)
                 if variant == 'full_evi':
-                    # 正式模型：直接使用 per-seed checkpoint 自带的原生双输出 EDL 头，
-                    # 绝不用共享的冻结骨干消融头覆盖（这是此前导出概率恒为 0.5 的原因）
+                    # the formal model keeps its per-seed native dual-output EDL head
                     logging.info('[HEAD] full_evi: keeping the checkpoint native EDL head.')
                 else:
                     ex.load_head(variant)
