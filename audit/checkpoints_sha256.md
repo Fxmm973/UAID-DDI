@@ -1,11 +1,16 @@
 # Checkpoint SHA256 Manifest
 
-Integrity record for the per-training-seed checkpoints used to produce
-Table 2 and the PharDDIE rows of Table 3 (few-shot), and the zero-shot
-rows of Table 3 (EviDDIE). Binary checkpoints are not stored in this
-repository (16-33 MB each); they are regenerable with the provided
-training scripts or available from the authors. The SHA256 values below
-allow independent verification of the five-seed evidence chain.
+Integrity record for the per-training-seed checkpoints behind the shipped
+per-sample prediction CSVs: `results/predictions/predictions_dataset1_PharDDIE.csv`
+(PharDDIE, 5 training seeds; the source of the paper's Table 2/3/4 rows) and the
+EviDDIE per-seed checkpoints recorded during the P0-7 protocol. The paper's
+Table 3 zero-shot rows themselves use the fixed-checkpoint CSV with three
+negative-sampling replicates (seeds 2024, 2025, 2026) — see
+`EviDDIE/results/predictions/predictions_dataset1_zero_shot_variants.csv` and
+RESULTS_MAP.md. Binary checkpoints are not stored in this repository (16-33 MB
+each); they are regenerable with the provided training scripts or available from
+the authors. The SHA256 values below allow independent verification of the
+five-seed evidence chain.
 
 Fixed evaluation manifest seed: 19940419 for all rows. Manifest SHA256
 values are recorded in `PharDDIE/dataset1/neg_manifests/manifest_hashes.json`

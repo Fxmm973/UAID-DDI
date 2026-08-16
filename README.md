@@ -16,12 +16,12 @@ The triage policy maps each candidate to one of four actions---High-Priority Rev
 
 | Model | Setting | Key Modules |
 |-------|---------|-------------|
-| **PharDDIE** | Few-Shot ($K \in \{1,5\}$) | PPNR (Pharmacophore-Proxy Node Reweighting) + ACI (Adaptive Context Integration) + SRAE (Stochastic Reconstruction-Regularized Autoencoder) |
+| **PharDDIE** | Few-Shot ($K \in \{1,5\}$) | SHCR (Selected Hidden-Channel Reweighting) + ACI (Adaptive Context Integration) + SRAE (Stochastic Reconstruction-Regularized Autoencoder) |
 | **EviDDIE** | Zero-Shot | BSA (Bio-Semantic Alignment) + EVI (Evidence Variance Inference) |
 
 ### PharDDIE — Few-Shot DDI Prediction
 
-- **PPNR** (Pharmacophore-Proxy Node Reweighting): `pharddie_layers.py` — `PharmacophoreAwareTransformerConv` fuses a learned data-driven gate $\psi_i$ with a frozen proxy signal $\phi_i$ at a fixed 0.7:0.3 ratio. The proxy reads five fixed channels (0, 1, 2, 46, 53) of the *projected hidden* representation (after `initial_node_feature` linear projection + LayerNorm + ELU); these channels carry no guaranteed chemical meaning and the proxy is best interpreted as a pharmacophore-inspired regularizing prior, **not** a chemical detector. Node scaling: $\tilde{h}_i = h_i \odot (1 + 1.5\gamma_i)$.
+- **SHCR** (Selected Hidden-Channel Reweighting): `pharddie_layers.py` — `HiddenChannelReweightingTransformerConv` fuses a learned data-driven gate $\psi_i$ with a fixed-channel proxy signal $\phi_i$ at a fixed 0.7:0.3 ratio. Five fixed channel indices (0, 1, 2, 46, 53) of the *projected hidden* representation (after `initial_node_feature` linear projection + LayerNorm + ELU) are reweighted by learnable channel coefficients; the indices carry no guaranteed chemical meaning and the module acts as a lightweight regularizing prior, **not** a chemical detector. Node scaling: $\tilde{h}_i = h_i \odot (1 + 1.5\gamma_i)$.
 - **ACI** (Adaptive Context Integration): `pharddie_matcher.py` — bilinear attention over first-order DRKG neighbors with differential query $\delta_{ij} = z_i - z_j$ and residual-style gating $d_i = \text{ELU}(W_{\text{nei}} c_i + W_{\text{self}} z_i)$; drugs without KG neighbors fall back to the structural branch.
 - **SRAE** (Stochastic Reconstruction-Regularized Autoencoder): `pharddie_matcher.py` — asymmetric stochastic bottleneck ($\eta = 10^{-2}$ support, $\eta = 10^{-3}$ query), no KL term and no standard-normal prior; the scale output $\sigma_\phi = \exp(0.5\, l_\phi)$ is a learned noise magnitude, reported as the *latent dispersion score*. Pair scoring: $\text{MLP}(|z_s - z_q|)$.
 
@@ -51,7 +51,7 @@ UAID-DDI/
 │   ├── pharddie_args.py            # Hyperparameters & CLI
 │   ├── pharddie_dataloader.py      # Episodic data loading
 │   ├── pharddie_grapher.py         # Molecular graph construction
-│   ├── pharddie_layers.py          # PPNR: PharmacophoreAwareTransformerConv
+│   ├── pharddie_layers.py          # SHCR: HiddenChannelReweightingTransformerConv
 │   ├── pharddie_models.py          # MVN_DDI: molecular encoder with SAGPooling
 │   ├── pharddie_modules.py         # Support modules
 │   ├── pharddie_matcher.py         # EmbedMatcher: ACI + SRAE + scorer
@@ -61,7 +61,7 @@ UAID-DDI/
 │   ├── pharddie_recorder.py        # Experiment result logging
 │   ├── pharddie_export.py          # w/o-uncertainty variant export (manifest-based)
 │   ├── pharddie_export_full.py     # Main export: fixed manifests, SHA256-verified, SEED-CHAIN-checked
-│   ├── pharddie_table2.py          # Table 2 (main results; 8 transcribed baselines)
+│   ├── pharddie_table2.py          # Table 2 (main results; 7 transcribed baselines + re-evaluated RareDDIE)
 │   ├── pharddie_table3_complete.py # Calibration table (per-seed aggregation)
 │   ├── pharddie_table4_paper.py    # Triage table (unified semantics, 1-shot, AURC/risk-coverage/budget)
 │   ├── dataset1/                   # Benchmark dataset (few-shot split) + neg_manifests/ (SHA256-recorded)
@@ -71,7 +71,7 @@ UAID-DDI/
 │   ├── eviddie_args.py             # Hyperparameters & CLI
 │   ├── eviddie_dataloader.py       # Data loading
 │   ├── eviddie_grapher.py          # Graph construction
-│   ├── eviddie_layers.py           # Support layers (no pharmacophore gating, by design)
+│   ├── eviddie_layers.py           # Support layers (no channel-reweighting gating, by design)
 │   ├── eviddie_models.py           # Molecular encoder (standard TransformerConv)
 │   ├── eviddie_modules.py          # Support modules
 │   ├── eviddie_matcher.py          # Matcher with BSA (GAN) + EVI (native dual-output EDL)
@@ -84,10 +84,8 @@ UAID-DDI/
 │   ├── eviddie_retriever.py        # Bio-text retrieval & embedding
 │   ├── eviddie_export_ds1.py       # Export predictions (dataset 1)
 │   ├── eviddie_export_zs_v2.py     # Zero-shot export (manifest-based, per-seed checkpoints)
-│   ├── eviddie_export_variants.py  # Export ablation variant predictions
-│   ├── eviddie_eval_ablation.py    # Evaluate ablated checkpoints
-│   ├── eviddie_table_discrimination.py  # Zero-shot discrimination table (main text)
-│   ├── eviddie_plot_figure4.py     # Figure 4 (frozen-backbone ablation curves)
+│   ├── eviddie_export_variants.py  # Legacy export of the zero-shot variant CSV (source of the paper's Table 3 zero-shot rows)
+│   ├── eviddie_plot_figure4.py     # Legacy Figure 4 plotting (no longer referenced in the paper)
 │   ├── eviddie_plot_bar.py         # Bar plot utilities
 │   ├── eviddie_debug.py            # Debugging utilities
 │   ├── eviddie_verify_ckpt.py      # Checkpoint integrity verification
@@ -203,10 +201,6 @@ python eviddie_plot_figure4.py
 # Main prediction performance (Table: main results)
 cd PharDDIE
 python pharddie_table2.py
-
-# Zero-shot discrimination (main-text table) — needs EviDDIE/results/predictions CSV
-cd ../EviDDIE
-python eviddie_table_discrimination.py
 
 # Calibration (Table: calibration)
 cd ../PharDDIE
