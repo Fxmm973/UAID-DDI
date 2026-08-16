@@ -1,0 +1,7 @@
+__pycache__/
+logs/
+logs_/
+models/
+PharDDIE/dataset1/DRKG_TransE_entity.npy
+EviDDIE/dataset1/DRKG_TransE_entity.npy
+EviDDIE/dataset2/DRKG_TransE_entity.npy

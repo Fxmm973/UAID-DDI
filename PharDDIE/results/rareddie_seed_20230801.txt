@@ -1,0 +1,6 @@
+RareDDIE unified eval - seed 20230801
+============================================================
+1-shot test : AUC=0.8218 ACC=0.7380 F1=0.7091
+1-shot test2: AUC=0.9007 ACC=0.8061 F1=0.8373
+5-shot test : AUC=0.9145 ACC=0.8324 F1=0.8354
+5-shot test2: AUC=0.9741 ACC=0.9052 F1=0.8933
