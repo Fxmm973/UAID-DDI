@@ -1,6 +1,18 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""导出 EviDDIE 三变体预测 CSV"""
+"""
+PROVENANCE SCRIPT for the paper's Table 3 zero-shot rows.
+
+This legacy export produced the shipped per-sample prediction file
+`results/predictions/predictions_dataset1_zero_shot_variants.csv`
+(Softmax baseline / EviDDIE w/o EVI / EviDDIE; three negative-sampling
+replicates, seeds 2024/2025/2026; earlier concatenation-based comparator head;
+on-the-fly seeded negative sampling). That CSV is the sole repository artifact
+backing the 12 zero-shot calibration numbers of the paper's Table 3.
+The current-protocol export (fixed manifests, per-seed checkpoints, |p-z|
+comparator) is `eviddie_export_zs_v2.py`; its regenerated numbers will be
+deposited together with the released checkpoints.
+"""
 import json, logging, numpy as np, torch, torch.nn as nn, torch.nn.functional as F
 import random, os, csv
 from collections import defaultdict

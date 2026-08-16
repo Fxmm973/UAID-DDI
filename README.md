@@ -50,14 +50,12 @@ UAID-DDI/
 ├── PharDDIE/                       # Few-shot model
 │   ├── pharddie_args.py            # Hyperparameters & CLI
 │   ├── pharddie_dataloader.py      # Episodic data loading
-│   ├── pharddie_grapher.py         # Molecular graph construction
 │   ├── pharddie_layers.py          # SHCR: HiddenChannelReweightingTransformerConv
 │   ├── pharddie_models.py          # MVN_DDI: molecular encoder with SAGPooling
 │   ├── pharddie_modules.py         # Support modules
 │   ├── pharddie_matcher.py         # EmbedMatcher: ACI + SRAE + scorer
 │   ├── pharddie_trainer.py         # Training loop with SRAE loss
 │   ├── pharddie_train_wo_unc.py    # Ablation: train without uncertainty branch
-│   ├── pharddie_tester.py          # Evaluation on test/test2/common_test
 │   ├── pharddie_recorder.py        # Experiment result logging
 │   ├── pharddie_export.py          # w/o-uncertainty variant export (manifest-based)
 │   ├── pharddie_export_full.py     # Main export: fixed manifests, SHA256-verified, SEED-CHAIN-checked
@@ -65,12 +63,11 @@ UAID-DDI/
 │   ├── pharddie_table3_complete.py # Calibration table (per-seed aggregation)
 │   ├── pharddie_table4_paper.py    # Triage table (unified semantics, 1-shot, AURC/risk-coverage/budget)
 │   ├── dataset1/                   # Benchmark dataset (few-shot split) + neg_manifests/ (SHA256-recorded)
-│   └── dataset2/                   # Case study dataset
+│   └── dataset2/                   # Dataset 2 (source of the EviDDIE training tasks)
 │
 ├── EviDDIE/                        # Zero-shot model
 │   ├── eviddie_args.py             # Hyperparameters & CLI
 │   ├── eviddie_dataloader.py       # Data loading
-│   ├── eviddie_grapher.py          # Graph construction
 │   ├── eviddie_layers.py           # Support layers (no channel-reweighting gating, by design)
 │   ├── eviddie_models.py           # Molecular encoder (standard TransformerConv)
 │   ├── eviddie_modules.py          # Support modules
@@ -78,16 +75,9 @@ UAID-DDI/
 │   ├── eviddie_trainer.py          # Formal training entry (per-seed checkpoints)
 │   ├── eviddie_train_zs.py         # Zero-shot training (single variant)
 │   ├── eviddie_train_ablation.py   # Frozen-backbone ablation training (softmax / w/o EVI / full)
-│   ├── eviddie_train_variants.py   # Variant training utilities
-│   ├── eviddie_tester.py           # Evaluation
 │   ├── eviddie_recorder.py         # Experiment result logging
-│   ├── eviddie_retriever.py        # Bio-text retrieval & embedding
-│   ├── eviddie_export_ds1.py       # Export predictions (dataset 1)
 │   ├── eviddie_export_zs_v2.py     # Zero-shot export (manifest-based, per-seed checkpoints)
 │   ├── eviddie_export_variants.py  # Legacy export of the zero-shot variant CSV (source of the paper's Table 3 zero-shot rows)
-│   ├── eviddie_plot_figure4.py     # Legacy Figure 4 plotting (no longer referenced in the paper)
-│   ├── eviddie_plot_bar.py         # Bar plot utilities
-│   ├── eviddie_debug.py            # Debugging utilities
 │   ├── eviddie_verify_ckpt.py      # Checkpoint integrity verification
 │   ├── train_tasks.json            # EviDDIE training tasks
 │   ├── neg_manifests/              # Pre-generated negative manifests + SHA256 hashes
@@ -95,8 +85,6 @@ UAID-DDI/
 │   └── results/predictions/        # Fixed-checkpoint zero-shot prediction CSV (paper source)
 │
 ├── results/                        # Table outputs matching the paper
-│   ├── table2_final.txt            # Main prediction performance
-│   ├── table3_complete_detail.csv  # Calibration, per training seed (PharDDIE rare 1/5-shot)
 │   ├── table3new.txt               # Calibration summary (zero-shot + PharDDIE rare rows)
 │   └── table4_paper.txt            # Uncertainty-aware prioritization (unified semantics, 1-shot)
 │
@@ -192,7 +180,6 @@ cd EviDDIE
 python eviddie_train_ablation.py
 
 # Generate Figure 4
-python eviddie_plot_figure4.py
 ```
 
 ### 5. Reproduce Paper Tables

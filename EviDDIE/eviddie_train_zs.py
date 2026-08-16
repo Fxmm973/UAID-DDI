@@ -1,10 +1,13 @@
 #!/usr/bin/env Python
 # coding=utf-8
 """
-DEPRECATED (P0-7 cleanup): superseded by eviddie_trainer.py (formal zero-shot
+LEGACY / PROVENANCE ONLY. This script trains the earlier head variants whose
+fixed checkpoint produced the shipped CSV
+(results/predictions/predictions_dataset1_zero_shot_variants.csv) that backs
+the zero-shot rows of the paper's calibration table (Table 3), exported by
+eviddie_export_variants.py. Superseded by eviddie_trainer.py (formal zero-shot
 entry with a native dual-output EDL head) and eviddie_train_ablation.py
-(frozen-backbone head ablation, Figure 4). Kept for reference only; do not
-use to produce paper results.
+(frozen-backbone head ablation). Do not use to produce paper results.
 """
 import torch.nn as nn, torch.nn.functional as F
 import csv
