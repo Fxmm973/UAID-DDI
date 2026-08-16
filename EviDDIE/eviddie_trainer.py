@@ -3,6 +3,12 @@
 
 import json
 import logging
+import sys
+import os
+
+# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -65,15 +71,15 @@ class Trainer(object):
             self.load_embed()
         self.use_pretrain = use_pretrain
 
-        self.semantic_task = json.load(open(f'{args.dataset}/{args.semantic}'))
+        self.semantic_task = json.load(open(f'{self.dataset}/{self.semantic}'))
 
         # P0-7: training-time semantic augmentation only. Prototypes are
         # perturbed during training for robustness; all inference/export
         # paths use the raw BioSentVec embeddings without noise.
         # P0-2 audit: explicit 700-dim shape check + fixed key ordering + rng-seeded noise.
-        rng = np.random.default_rng(args.seed)
+        rng = np.random.default_rng(self.seed)
         ordered_keys = sorted(list(self.semantic_task.keys()))  # fixed ordering to prevent prototype misalignment
-        noise_scale = float(getattr(args, 'semantic_noise', 0.3))
+        noise_scale = float(getattr(self, 'semantic_noise', 0.3))
         for task in tqdm(ordered_keys):
             vector = np.asarray(self.semantic_task[task], dtype=np.float32).reshape(-1)
             if vector.shape != (700,):
@@ -92,7 +98,7 @@ class Trainer(object):
         # P0-4: dev checkpoint selection uses the fixed manifest (hash recorded)
         self.dev_rows, self.dev_manifest_sha256 = load_fixed_event_rows(
             self.dataset, split='dev',
-            manifest_seed=getattr(args, 'eval_manifest_seed', 19940419))
+            manifest_seed=getattr(self, 'eval_manifest_seed', 19940419))
         logging.info(f'[P0-4] Fixed dev manifest loaded: {len(self.dev_rows)} rows, '
                      f'sha256={self.dev_manifest_sha256}')
 
@@ -119,8 +125,9 @@ class Trainer(object):
         self.ent2id = json.load(open(self.dataset + '/ent2ids'))
         self.num_ents = len(self.ent2id.keys())
 
-        # logging.info('BUILDING CONNECTION MATRIX')
-        # degrees = self.build_connection(max_=self.max_neighbor)
+        logging.info('BUILDING CONNECTION MATRIX')
+        # KG 恢复 (2026-08-16)：get_meta/matcher forward 需要 DRKG 邻居连接与度数
+        degrees = self.build_connection(max_=self.max_neighbor)
 
         logging.info('LOADING CANDIDATES ENTITIES')
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
@@ -222,7 +229,9 @@ class Trainer(object):
 
         degrees = {}
         for ent, id_ in self.ent2id.items():
-            neighbors = self.e1_rele2[ent]
+            # KG 恢复 (2026-08-16)：dataset1 有 8909/16837 个实体不在 path_graph；
+            # 无邻居实体 -> 空列表 -> 度数 0、全 PAD，neighbor_encoder 靠 PAD 掩码 + 残差门控退化为自身特征
+            neighbors = self.e1_rele2.get(ent, [])
             if len(neighbors) > max_:
                 random.shuffle(neighbors)
                 neighbors = neighbors[:max_]
@@ -243,14 +252,15 @@ class Trainer(object):
         self.matcher.load_state_dict(torch.load(self.save_path))
 
     def get_meta(self, left, right):
-        return None
-        # left_connections = Variable(
-        #     torch.LongTensor(np.stack([self.connections[_, :, :] for _ in left], axis=0))).cuda()
-        # left_degrees = Variable(torch.FloatTensor([self.e1_degrees[_] for _ in left])).cuda()
-        # right_connections = Variable(
-        #     torch.LongTensor(np.stack([self.connections[_, :, :] for _ in right], axis=0))).cuda()
-        # right_degrees = Variable(torch.FloatTensor([self.e1_degrees[_] for _ in right])).cuda()
-        # return (left_connections, left_degrees, right_connections, right_degrees)
+        # KG 恢复 (2026-08-16)：matcher forward 需要 DRKG 邻居 meta；
+        # 实现与 eviddie_export_zs_v2.py 的 get_meta 保持一致（self.device 替代 .cuda()）。
+        left_connections = Variable(
+            torch.LongTensor(np.stack([self.connections[_, :, :] for _ in left], axis=0))).to(self.device)
+        left_degrees = Variable(torch.FloatTensor([self.e1_degrees[_] for _ in left])).to(self.device)
+        right_connections = Variable(
+            torch.LongTensor(np.stack([self.connections[_, :, :] for _ in right], axis=0))).to(self.device)
+        right_degrees = Variable(torch.FloatTensor([self.e1_degrees[_] for _ in right])).to(self.device)
+        return (left_connections, left_degrees, right_connections, right_degrees)
 
     def train(self):
         if self.zero_shot:

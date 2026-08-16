@@ -199,9 +199,6 @@ def main():
                     'ua_ref': ua_ref, 'ua_cov': ua_cov, 'ua_sel': ua_sel,
                     'n_auto': int(auto_mask.sum()), 'n_referred': int(referred_mask.sum()),
                     'n': n,
-                    # P1-9 (10.4)：四类 action 数量
-                    'n_hp': int((cat == 0).sum()), 'n_er': int((cat == 1).sum()),
-                    'n_dr': int((cat == 2).sum()), 'n_lp': int((cat == 3).sum()),
                 })
 
             def avg(key):
@@ -226,12 +223,6 @@ def main():
             n_ref = avg('n_referred')
             lines.append('  [counts] shot={}: mean automatic={:.0f}, referred={:.0f} '
                          'of {} candidates per seed'.format(shot, n_auto, n_ref, avg('n')))
-            lines.append('  [action counts] High-Priority={:.1f} Expert-Referral={:.1f} '
-                         'Deferred-Review={:.1f} Low-Priority={:.1f} (mean per seed; '
-                         'fractions {:.1%}/{:.1%}/{:.1%}/{:.1%})'.format(
-                             avg('n_hp'), avg('n_er'), avg('n_dr'), avg('n_lp'),
-                             avg('n_hp') / avg('n'), avg('n_er') / avg('n'),
-                             avg('n_dr') / avg('n'), avg('n_lp') / avg('n')))
 
         lines.append('-' * 112)
 

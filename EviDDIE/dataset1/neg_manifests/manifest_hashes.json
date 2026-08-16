@@ -1,0 +1,62 @@
+{
+  "dev_seed19940419": {
+    "path": "EviDDIE/dataset1/neg_manifests/dev_seed19940419_negatives.json",
+    "sha256": "4d9a4e053bf93fd07dab072b1982cefb635a84eaa4a90cc8597408359a550576"
+  },
+  "test_seed19940419": {
+    "path": "EviDDIE/dataset1/neg_manifests/test_seed19940419_negatives.json",
+    "sha256": "d08589a877e0734da995c2bedcf3d75f43172e2e72385324dd1b5d9bee049712"
+  },
+  "test2_seed19940419": {
+    "path": "EviDDIE/dataset1/neg_manifests/test2_seed19940419_negatives.json",
+    "sha256": "70e221350083485538a25e6b784161d9d547abe6b44e85cac1fbf33fd187b749"
+  },
+  "dev_seed20230801": {
+    "path": "EviDDIE/dataset1/neg_manifests/dev_seed20230801_negatives.json",
+    "sha256": "3f11744f851047d7451f5a1ba8258be5027f3eabf8f2b4a98f43084976d56de7"
+  },
+  "test_seed20230801": {
+    "path": "EviDDIE/dataset1/neg_manifests/test_seed20230801_negatives.json",
+    "sha256": "b9be1f56cdef2841dfc0654a145788560eaa530d7a47fab91cb8079ef2b0e55e"
+  },
+  "test2_seed20230801": {
+    "path": "EviDDIE/dataset1/neg_manifests/test2_seed20230801_negatives.json",
+    "sha256": "275c64368837001d3a78caed308dd8324ab25627f48d87fab32552ddc8b0f664"
+  },
+  "dev_seed20240115": {
+    "path": "EviDDIE/dataset1/neg_manifests/dev_seed20240115_negatives.json",
+    "sha256": "d9be625e43558a837b7250808c14edaa266ea18daaac63aec1cc25e5ad190f0e"
+  },
+  "test_seed20240115": {
+    "path": "EviDDIE/dataset1/neg_manifests/test_seed20240115_negatives.json",
+    "sha256": "53a99636ab6be30107180fbf54d601e3572906d75ae77f2fd73651f09f98ec90"
+  },
+  "test2_seed20240115": {
+    "path": "EviDDIE/dataset1/neg_manifests/test2_seed20240115_negatives.json",
+    "sha256": "71e7a1aa4ea9acfd0d9037d6b80a3c6498f256a0f1640fc019dc63e9fab3f6c5"
+  },
+  "dev_seed20240520": {
+    "path": "EviDDIE/dataset1/neg_manifests/dev_seed20240520_negatives.json",
+    "sha256": "e5e0664a4751b15f772929a7509e441fa4892b89d730aec31df8ce8a2ed3cf60"
+  },
+  "test_seed20240520": {
+    "path": "EviDDIE/dataset1/neg_manifests/test_seed20240520_negatives.json",
+    "sha256": "3065b0ac61821e5ba37aec8bedde2cbfc552c6898a885373e7abefec19cf45c8"
+  },
+  "test2_seed20240520": {
+    "path": "EviDDIE/dataset1/neg_manifests/test2_seed20240520_negatives.json",
+    "sha256": "8b28b85420b50ae29c9ce37377fe70fd6f2af3e68bc7646224cdadbf67b5fee9"
+  },
+  "dev_seed20240910": {
+    "path": "EviDDIE/dataset1/neg_manifests/dev_seed20240910_negatives.json",
+    "sha256": "2779ad17081ffac10d380a62b724d218d9dab21363c5bfa783bd5c9b1e3ec2f4"
+  },
+  "test_seed20240910": {
+    "path": "EviDDIE/dataset1/neg_manifests/test_seed20240910_negatives.json",
+    "sha256": "bf18bc2f644645eb58e9ec121e2d09a1a01c20a25b1066d0bbcbb6bc02ecc029"
+  },
+  "test2_seed20240910": {
+    "path": "EviDDIE/dataset1/neg_manifests/test2_seed20240910_negatives.json",
+    "sha256": "76b5fd6d72dd015a4c6816cde97e89099648cb8b540227ae8a8926a611fb81b2"
+  }
+}

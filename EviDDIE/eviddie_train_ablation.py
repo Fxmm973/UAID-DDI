@@ -1,317 +1,280 @@
 #!/usr/bin/env python
-"""EviDDIE frozen-backbone ablation (Figure 4): loads a pre-trained PharDDIE
-molecular encoder and SRAE, freezes both, and trains only the semantic/evidential
-head per variant (softmax / w/o BSA / w/o EVI / full). This is NOT an end-to-end
-module ablation."""
-import json, logging, numpy as np, torch, torch.nn as nn, torch.nn.functional as F
-import random, os, sys, csv
-from collections import defaultdict, deque
-from torch import optim
-from sklearn import metrics
-# Root path for checkpoint_utils
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-# PharDDIE paths for matcher and args (lower priority than EviDDIE local)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'PharDDIE'))
-from eviddie_args import read_options
-from pharddie_matcher import EmbedMatcher as PharDDIEMatcher, VAE as SRAE
-from shared.checkpoint import load_state_dict_safe
+# coding=utf-8
+"""EviDDIE 消融训练 v4 (2026-08-16)：冻结当前五种子 KG 版骨干，只训练比较器变体头。
 
-# EviDDIE local LAST = highest priority for data_loader (has task_name in yield)
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from eviddie_dataloader import DrugDataset, DrugDataLoader, train_generate
+与主训练协议完全一致（P0-1/P0-2 要求）：
+  - 骨干 = 当前 EviDDIE 五种子 checkpoint 的 KG 邻居编码器 + MVN_DDI + SRAE + G_m，
+    全部冻结；每 seed 加载自己的 checkpoint
+  - 前向与主训练器相同：KG 邻居上下文 -> SRAE -> |proto - z_q| -> head
+  - 变体只替换比较器：softmax（CE）、w/o EVI（MSE 无 KL 正则）、w/o BSA
+    （linear_proj 替代 G_m 生成原型）；full_evi = 主训练原生 EDL 头，不重训
+  - dev 评估用与主训练器相同的固定 dev manifest（零样本口径，无推理噪声）
+  - 保存 per-seed：models/<prefix>_seed<seed>/fc_<variant>.pt（导出脚本按此加载）
+
+用法（每个窗口一个 seed，与五种子窗口模式相同）：
+  python eviddie_train_ablation.py --train_seed 19940419 --prefix eviddie_new_s1 \
+      --max_iter 5000 --variants softmax,evi_no_evi,wo_BSA
+"""
+import json
+import logging
+import os
+import sys
+
+# 允许从任意目录启动：把仓库根目录加入 sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import optim
+from collections import deque
+import random
+import csv
+from sklearn import metrics
+
+from eviddie_args import read_options
+from eviddie_trainer import Trainer, EvidentialLoss
+from eviddie_dataloader import train_generate
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MAX_ITER = 5000
 EVAL_EVERY = 200
-SEED = 2024
 
 
 def compute_metrics(probas, targets):
-    if len(np.unique(targets)) < 2: return 0.5, 0.5, 0.5
+    if len(np.unique(targets)) < 2:
+        return 0.5, 0.5, 0.5
     pred = (probas >= 0.5).astype(int)
     return (metrics.accuracy_score(targets, pred),
             metrics.roc_auc_score(targets, probas),
             metrics.f1_score(targets, pred, zero_division=0))
 
 
-class EviDDIEAblationTrainer:
-    """Frozen-backbone EviDDIE head ablation: loads a pre-trained PharDDIE
-    encoder + SRAE, freezes both, and trains only the semantic/evidential
-    head per variant (softmax / w/o BSA / w/o EVI / full)."""
+class AblationTrainer:
+    """复用主 Trainer 的完整初始化（KG connections、固定 dev manifest、语义噪声、
+    数据加载、G_m），在其上冻结骨干、只训练比较器变体头。"""
 
-    def __init__(self, dataset='dataset1', ckpt_path='models/dataset1/pharddie_best.pt'):
-        # ---- PharDDIE backbone (frozen): MVN_DDI encoder + SRAE ----
-        self.embed_dim = 128
-        # construct the core modules directly
-        n_atom_feats, kge_dim = 55, 128
-        from pharddie_matcher import MVN_DDI
-        self.molecular_encoder = MVN_DDI(
-            [n_atom_feats, 2048, 200], 17, kge_dim, kge_dim, 0, [64, 64], [2, 2], 64, 0.0
-        ).to(device)
-        self.srae = SRAE(emb_dim=kge_dim * 2).to(device)
+    def __init__(self, args, train_seed, prefix):
+        args.seed = train_seed
+        args.prefix = prefix
+        args.save_path = f'models/{args.prefix}_seed{args.seed}'
+        self.args = args
+        self.prefix = prefix
+        self.train_seed = train_seed
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # load the pre-trained backbone weights
-        if os.path.exists(ckpt_path):
-            ckpt = torch.load(ckpt_path, map_location=device)
-            # extract encoder and SRAE weights
-            encoder_state = {}
-            srae_state = {}
-            for k, v in ckpt.items():
-                if k.startswith('model.'):
-                    encoder_state[k.replace('model.', '')] = v
-                elif k.startswith('vaemodel.'):
-                    srae_state[k.replace('vaemodel.', '')] = v
-            if encoder_state:
-                load_state_dict_safe(self.molecular_encoder, encoder_state, model_name='molecular_encoder')
-                logging.info(f'Loaded encoder: {len(encoder_state)} keys')
-            if srae_state:
-                load_state_dict_safe(self.srae, srae_state, model_name='srae')
-                logging.info(f'Loaded SRAE: {len(srae_state)} keys')
-        else:
+        # 复用主训练器的完整初始化（不加载 checkpoint，与主训练相同的数据/协议）
+        self.t = Trainer(args)
+        self.matcher = self.t.matcher
+        self.G_m = self.t.G_m
+
+        # ---- 加载五种子 checkpoint：matcher（含 KG + fc）+ G_m ----
+        matcher_path = f'{args.save_path}bestmodel'
+        g_path = f'{args.save_path}bestmodel_G'
+        if not os.path.exists(matcher_path) or not os.path.exists(g_path):
             raise FileNotFoundError(
-                f'Checkpoint not found: {ckpt_path}. '
-                f'Ablation experiments require a valid pretrained PharDDIE checkpoint '
-                f'to ensure the frozen encoder and SRAE are meaningful. '
-                f'Please train PharDDIE first or place the checkpoint at {ckpt_path}.'
-            )
-
-        # Freeze encoder + SRAE
-        for p in self.molecular_encoder.parameters(): p.requires_grad = False
-        for p in self.srae.parameters(): p.requires_grad = False
-        self.molecular_encoder.eval()
-        self.srae.eval()
-
-        # ---------- G_m (GAN generator) ----------
-        gm_path = 'models/dataset1/bestmodels_G'
-        gm_loaded = False
-        if os.path.exists(gm_path):
-            # alias legacy module names for the pickled generator (same as eviddie_export_zs_v2)
-            import eviddie_matcher as _em
-            for _old in ['matcher_structure_acc_fp_neigh_VAE_GAN_struc',
-                         'matcher_structure_acc_fp_neigh_VAE_GAN_struc_ttt']:
-                sys.modules[_old] = _em
-            gm_state = torch.load(gm_path, map_location=device, weights_only=False)
-            if isinstance(gm_state, dict) and 'fc.0.weight' in gm_state:
-                gm_state = {k.replace('fc.', ''): v for k, v in gm_state.items()}
-            elif hasattr(gm_state, 'state_dict'):
-                gm_state = gm_state.state_dict()
-                if 'fc.0.weight' in gm_state:
-                    gm_state = {k.replace('fc.', ''): v for k, v in gm_state.items()}
-            # Auto-detect sem_dim from checkpoint first layer
-            if '0.weight' in gm_state:
-                self.sem_dim = gm_state['0.weight'].shape[1]
-            else:
-                self.sem_dim = 768
-            self.G_m = nn.Sequential(
-                nn.Linear(self.sem_dim, 256), nn.Tanh(),
-                nn.Linear(256, 512), nn.Tanh(),
-                nn.Linear(512, 64), nn.Tanh(),
-            ).to(device)
-            try:
-                self.G_m.load_state_dict(gm_state)
-                gm_loaded = True
-                logging.info('G_m loaded (sem_dim=%d)', self.sem_dim)
-            except Exception as e:
-                raise RuntimeError(
-                    f'G_m (GAN generator) checkpoint failed to load: {e}. '
-                    f'The ablation study requires a valid pretrained G_m to produce '
-                    f'meaningful task prototypes for the BSA-based variants. '
-                    f'Without it, "w/o BSA vs. full" comparison is invalid. '
-                    f'Please verify the checkpoint at {gm_path}.'
-                ) from e
-            for p in self.G_m.parameters(): p.requires_grad = False
-            self.G_m.eval()
+                f'Per-seed checkpoints not found: {matcher_path} / {g_path}. '
+                f'Ablation requires the corresponding training-seed checkpoints.')
+        ckpt = torch.load(matcher_path, map_location=self.device)
+        self.matcher.load_state_dict(ckpt, strict=False)
+        gm = torch.load(g_path, map_location=self.device)
+        # 主训练器保存的是整个 Generate_Model 对象；兼容两种格式
+        if isinstance(gm, dict):
+            self.G_m.load_state_dict(gm)
         else:
-            raise FileNotFoundError(
-                f'G_m checkpoint not found: {gm_path}. '
-                f'Ablation requires a valid pretrained GAN generator.'
-            )
+            self.G_m.load_state_dict(gm.state_dict())
+        logging.info(f'Loaded matcher ({len(ckpt)} keys) + G_m from {args.save_path}')
 
-        # w/o BSA: a linear projection replaces the GAN generator
-        self.linear_proj = nn.Linear(self.sem_dim, 64).to(device)
+        # ---- 冻结全部骨干，只放开 fc ----
+        for p in self.matcher.parameters():
+            p.requires_grad = False
+        for p in self.matcher.fc.parameters():
+            p.requires_grad = True
+        for p in self.G_m.parameters():
+            p.requires_grad = False
+        self.matcher.eval()
+        self.G_m.eval()
 
-        # ---------- FC head (trainable) ----------
-        self.fc = nn.Sequential(
-            nn.Linear(64, 128), nn.ReLU(), nn.Dropout(0.2),
-            nn.Linear(128, 64), nn.ReLU(),
-            nn.Linear(64, 2)
-        ).to(device)
+        # w/o BSA 的线性原型投影（可训练）
+        self.linear_proj = nn.Linear(self.t.task_ebmedding.shape[1], 64).to(self.device)
 
-        # ---------- data ----------
-        self.dataset = dataset
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        self._load_data()
+    def reset_head(self):
+        for layer in self.matcher.fc:
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()
+        self.linear_proj.reset_parameters()
 
-    def _load_data(self):
-        self.ds = os.path.join(self.base_dir, self.dataset)
-        self.ent2id = json.load(open(os.path.join(self.ds, 'ent2ids')))
-        self.rel2candidates = json.load(open(os.path.join(self.ds, 'rel2candidates.json')))
-        self.e1rel_e2 = defaultdict(list)
-        self.e1rel_e2.update(json.load(open(os.path.join(self.ds, 'e1rel_e2.json'))))
-        self.rel2id = json.load(open(os.path.join(self.ds, 'relation2ids')))
-        self.eval_tasks = json.load(open(os.path.join(self.ds, 'dev_tasks.json')))
-        self.task_emb = json.load(open(os.path.join(self.ds, 'event_embedding2.json')))
-        self.all_drug_data = {}
-        self.drug_num_node_indices = {}
+    def _kg_encode(self, qb_data, left_ids, right_ids):
+        """与主训练器 train_standard 相同的 KG 前向。"""
+        ql_, qr_ = self.matcher.model(qb_data)
+        q_meta = self.t.get_meta(left_ids, right_ids)
+        ql = self.matcher.neighbor_encoder(q_meta[0], q_meta[1], ql_, qr_ - ql_)
+        qr = self.matcher.neighbor_encoder(q_meta[2], q_meta[3], qr_, qr_ - ql_)
+        qn = torch.cat((ql, qr), dim=-1)
+        _, _, _, zq = self.matcher.vaemodel(qn, is_support=False, is_eval=True)
+        return zq
 
-    def encode_pair(self, pairs_batch):
-        """pairs_batch: DrugDataset batch on device → SRAE latent [B, 64]"""
-        hl, hr = self.molecular_encoder(pairs_batch)
-        qn = torch.cat((hl, hr), dim=-1)
-        _, _, _, z = self.srae(qn, is_support=False, is_eval=True)
-        return z
+    def _proto(self, task_name, use_bsa):
+        sem = self.t.task_ebmedding[self.t.task2id[task_name]].unsqueeze(0)
+        if use_bsa:
+            return self.G_m(sem).detach()
+        return self.linear_proj(sem).detach()
 
-    def _get_task_emb(self, task_name):
-        """Load task embedding and ensure shape [1, sem_dim]."""
-        emb = np.array(self.task_emb[task_name], dtype=np.float32)
-        emb = emb.reshape(-1)  # flatten to 1D
-        return torch.tensor(emb, device=device).unsqueeze(0)
-
-    def get_proto_gan(self, task_name):
-        return self.G_m(self._get_task_emb(task_name)).detach()
-
-    def get_proto_linear(self, task_name):
-        return self.linear_proj(self._get_task_emb(task_name)).detach()
-
-    def train_variant(self, variant_name, csv_writer, max_iter=MAX_ITER):
-        logging.info(f'\n{"="*60}\nTraining {variant_name} ({max_iter} iters)\n{"="*60}')
-        params = list(self.fc.parameters())
-        if variant_name == 'w/o BSA':
+    def train_variant(self, variant_name, csv_writer, max_iter):
+        use_bsa = (variant_name != 'wo_BSA')
+        logging.info(f'===== {variant_name} ({max_iter} iters, seed={self.train_seed}) =====')
+        params = list(self.matcher.fc.parameters())
+        if not use_bsa:
             params += list(self.linear_proj.parameters())
-            self.linear_proj.train()
-        optimizer = optim.Adam(params, lr=0.001, weight_decay=0)
+        optimizer = optim.Adam(params, lr=0.001, weight_decay=0.0)
         losses = deque([], 50)
         step = 0
 
-        for data in train_generate(self.ds, 256, 10,
-                                     self.symbol2id, self.ent2id, self.e1rel_e2,
-                                     self.all_drug_data, self.drug_num_node_indices):
-            task_name, support, query, false = data[0], data[1], data[2], data[3]
-            sl, sr, ql, qr, fl, fr = data[4], data[5], data[6], data[7], data[8], data[9]
-            sb, qb, fb = data[10], data[11], data[12]
-            sb = [t.to(device) for t in sb]
-            qb = [t.to(device) for t in qb]
-            fb = [t.to(device) for t in fb]
+        for data in train_generate(self.t.dataset, self.t.batch_size, self.t.train_few,
+                                   self.t.symbol2id, self.t.ent2id, self.t.e1rel_e2,
+                                   self.t.all_drug_data, self.t.drug_num_node_indices):
+            task_name, _, query, false = data[0], data[1], data[2], data[3]
+            ql, qr, fl, fr = data[6], data[7], data[8], data[9]
+            qb, fb = data[11], data[12]
+            qb = [t_.to(self.device) for t_ in qb]
+            fb = [t_.to(self.device) for t_ in fb]
 
-            proto = self.get_proto_gan(task_name) if variant_name != 'w/o BSA' else self.get_proto_linear(task_name)
-            self.fc.train()
+            proto = self._proto(task_name, use_bsa)
+            self.matcher.fc.train()
+            if not use_bsa:
+                self.linear_proj.train()
 
-            zq = self.encode_pair(qb)
-            zf = self.encode_pair(fb)
-            q_out = self.fc(torch.abs(proto.expand_as(zq) - zq))
-            f_out = self.fc(torch.abs(proto.expand_as(zf) - zf))
+            zq = self._kg_encode(qb, ql, qr)
+            zf = self._kg_encode(fb, fl, fr)
+            q_out = self.matcher.fc(torch.abs(proto.expand_as(zq) - zq))
+            f_out = self.matcher.fc(torch.abs(proto.expand_as(zf) - zf))
 
             if variant_name == 'softmax':
-                loss = F.cross_entropy(q_out, torch.ones(q_out.size(0), dtype=torch.long, device=device)) + \
-                       F.cross_entropy(f_out, torch.zeros(f_out.size(0), dtype=torch.long, device=device))
-            elif variant_name in ('evi_no_evi', 'w/o BSA'):
-                ev_q, al_q = F.softplus(q_out), F.softplus(q_out) + 1
-                ev_f, al_f = F.softplus(f_out), F.softplus(f_out) + 1
-                loss = F.mse_loss(al_q[:,1]/al_q.sum(1), torch.ones_like(al_q[:,1])) + \
-                       F.mse_loss(al_f[:,1]/al_f.sum(1), torch.zeros_like(al_f[:,1]))
+                loss = F.cross_entropy(q_out, torch.ones(q_out.size(0), dtype=torch.long, device=self.device)) + \
+                       F.cross_entropy(f_out, torch.zeros(f_out.size(0), dtype=torch.long, device=self.device))
+            elif variant_name in ('evi_no_evi', 'wo_BSA'):
+                al_q = F.softplus(q_out) + 1
+                al_f = F.softplus(f_out) + 1
+                loss = F.mse_loss(al_q[:, 1] / al_q.sum(1), torch.ones_like(al_q[:, 1])) + \
+                       F.mse_loss(al_f[:, 1] / al_f.sum(1), torch.zeros_like(al_f[:, 1]))
+            elif variant_name == 'evi_full':
+                # 完整 EDL 头：MSE + 退火 KL（与主训练器 EvidentialLoss 一致）
+                if not hasattr(self, 'edl_loss_fn'):
+                    self.edl_loss_fn = EvidentialLoss(annealing_step=500)
+                al_q = F.softplus(q_out) + 1
+                al_f = F.softplus(f_out) + 1
+                loss = self.edl_loss_fn(al_q, 'pos', step) + \
+                       self.edl_loss_fn(al_f, 'neg', step)
             else:
-                ev_q, al_q = F.softplus(q_out), F.softplus(q_out) + 1
-                ev_f, al_f = F.softplus(f_out), F.softplus(f_out) + 1
-                Sq, Sf = al_q.sum(1), al_f.sum(1)
-                mse = F.mse_loss(al_q[:,1]/Sq, torch.ones_like(al_q[:,1])) + \
-                      F.mse_loss(al_f[:,1]/Sf, torch.zeros_like(al_f[:,1]))
-                def kl(alpha, S):
-                    K=alpha.shape[1]; a0=torch.ones_like(alpha)
-                    return (torch.lgamma(S)-torch.lgamma(torch.tensor(float(K),device=device))
-                            -(torch.lgamma(alpha)-torch.lgamma(a0)).sum(1)
-                            +((alpha-a0)*(torch.digamma(alpha)-torch.digamma(S.unsqueeze(1)))).sum(1)).mean()
-                loss = 0.5*mse + 0.005*(kl(al_q,Sq)+kl(al_f,Sf))
+                raise ValueError(variant_name)
 
             losses.append(loss.item())
-            optimizer.zero_grad(); loss.backward(); optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
             step += 1
 
             if step % EVAL_EVERY == 0 or step == 1:
-                self.fc.eval()
-                if variant_name == 'w/o BSA': self.linear_proj.eval()
-                acc, auroc, f1 = self._eval_dev(variant_name)
-                self.fc.train()
-                if variant_name == 'w/o BSA': self.linear_proj.train()
-                logging.info(f'  [{variant_name}] step={step}/{max_iter} loss={np.mean(losses):.4f} au={auroc:.4f} f1={f1:.4f} acc={acc:.4f}')
+                self.matcher.fc.eval()
+                if not use_bsa:
+                    self.linear_proj.eval()
+                acc, auroc, f1 = self._eval_dev(variant_name, use_bsa)
+                self.matcher.fc.train()
+                if not use_bsa:
+                    self.linear_proj.train()
+                logging.info(f'  [{variant_name}] step={step}/{max_iter} loss={np.mean(losses):.4f} '
+                             f'auroc={auroc:.4f} f1={f1:.4f} acc={acc:.4f}')
                 csv_writer.writerow([variant_name, step, np.mean(losses), auroc, f1, acc])
 
-            if step >= max_iter: break
+            if step >= max_iter:
+                break
 
-        save_dir = os.path.join(self.base_dir, 'models', 'dataset1')
+        # per-seed 保存（独立目录：主训练器已占用 models/<prefix>_seed<seed> 裸名文件）
+        save_dir = f'models/ablation_{self.prefix}_seed{self.train_seed}'
         os.makedirs(save_dir, exist_ok=True)
-        save = os.path.join(save_dir, f'fc_{variant_name.replace("/", "_")}.pt')
-        torch.save(self.fc.state_dict(), save)
-        if variant_name == 'w/o BSA':
+        torch.save(self.matcher.fc.state_dict(), os.path.join(save_dir, f'fc_{variant_name}.pt'))
+        if not use_bsa:
             torch.save(self.linear_proj.state_dict(), os.path.join(save_dir, 'linear_proj_wo_BSA.pt'))
-        logging.info(f'Saved {variant_name} → {save}')
+        logging.info(f'Saved {variant_name} -> {save_dir}')
 
-    def _eval_dev(self, variant_name):
-        all_p, all_l = [], []
+    def _eval_dev(self, variant_name, use_bsa):
+        """固定 dev manifest 零样本评估（与主训练器 _predict_fixed_rows 相同口径）。"""
+        rel2id = json.load(open(self.t.dataset + '/relation2ids'))
+        rows_by_event = {}
+        for (evt, head, rel, tail, lab) in self.t.dev_rows:
+            rows_by_event.setdefault(evt, []).append((head, rel, tail, lab))
+        probas, labels = [], []
         with torch.no_grad():
-            for query_, triples in self.eval_tasks.items():
-                if not triples: continue
-                candidates = self.rel2candidates[query_]
-                np.random.seed(hash(query_) % 100000 + 42)
-                false_triples = []
-                for t in triples:
-                    eh, rel, et = t[0], t[1], t[2]
-                    while True:
-                        n = np.random.choice(candidates)
-                        if n not in self.e1rel_e2.get(eh+rel,[]) and n!=et: break
-                    false_triples.append([eh, rel, n])
-                at = triples + false_triples
-                ar = [[t[0], t[2], self.rel2id[t[1]]] for t in at]
-                npos = len(triples)
-                qb = DrugDataset(ar)
-                qbl = DrugDataLoader(qb, batch_size=len(ar), shuffle=False)
-                qbd = [t.to(device) for t in next(iter(qbl))]
-                proto = self.get_proto_gan(query_) if variant_name != 'w/o BSA' else self.get_proto_linear(query_)
-                zq = self.encode_pair(qbd)
-                fc_out = self.fc(torch.abs(proto.expand_as(zq) - zq))
-                if variant_name == 'softmax':
-                    prob = F.softmax(fc_out, dim=1)[:,1]
-                else:
-                    al = F.softplus(fc_out)+1; prob = al[:,1]/al.sum(1)
-                all_p.append(prob.cpu().numpy())
-                all_l.append(np.concatenate([np.ones(npos), np.zeros(len(at)-npos)]))
-        return compute_metrics(np.concatenate(all_p), np.concatenate(all_l))
+            for evt, ev_rows in rows_by_event.items():
+                triples = [[h, t, rel2id[r]] for (h, r, t, _) in ev_rows]
+                labels_e = [lab for (_, _, _, lab) in ev_rows]
+                for i in range(0, len(triples), self.t.batch_size * 20):
+                    batch = triples[i:i + self.t.batch_size * 20]
+                    batch_labels = labels_e[i:i + self.t.batch_size * 20]
+                    qb = [t_.to(self.device) for t_ in self._make_batch(batch)]
+                    ql = [self.t.ent2id[t[0]] for t in batch]
+                    qr = [self.t.ent2id[t[1]] for t in batch]
+                    proto = self._proto(evt, use_bsa)
+                    zq = self._kg_encode(qb, ql, qr)
+                    fc_out = self.matcher.fc(torch.abs(proto.expand_as(zq) - zq))
+                    if variant_name == 'softmax':
+                        prob = F.softmax(fc_out, dim=1)[:, 1]
+                    else:
+                        al = F.softplus(fc_out) + 1
+                        prob = al[:, 1] / al.sum(1)
+                    probas.append(prob.cpu().numpy())
+                    labels.append(np.asarray(batch_labels))
+        if not probas:
+            return 0.5, 0.5, 0.5
+        return compute_metrics(np.concatenate(probas), np.concatenate(labels))
 
-    def load_embed(self):
-        symbol_id={}; r2=json.load(open(os.path.join(self.ds, 'relation2ids')))
-        e2=json.load(open(os.path.join(self.ds, 'ent2ids')))
-        r2e=json.load(open(os.path.join(self.ds, 'relation2embids')))
-        e2e=json.load(open(os.path.join(self.ds, 'ent2embids')))
-        ee=np.load(os.path.join(self.ds, 'DRKG_TransE_entity.npy')); re=np.load(os.path.join(self.ds, 'DRKG_TransE_relation.npy'))
-        i=0; emb=[]
-        for k in sorted(r2):
-            if k not in ['','OOV']: symbol_id[k]=i; i+=1; emb.append(list(re[r2e[k],:]) if r2e[k]!=-1 else list(np.random.randn(re.shape[1])))
-        for k in sorted(e2):
-            if k not in ['','OOV']: symbol_id[k]=i; i+=1; emb.append(list(ee[e2e[k],:]) if e2e[k]!=-1 else list(np.random.randn(re.shape[1])))
-        symbol_id['PAD']=i; emb.append(list(np.zeros((re.shape[1],))))
-        self.symbol2id=symbol_id; self.symbol2vec=np.array(emb)
+    def _make_batch(self, triples_sym):
+        from eviddie_dataloader import DrugDataset, DrugDataLoader
+        data = DrugDataset(triples_sym)
+        loader = DrugDataLoader(data, batch_size=len(triples_sym), shuffle=False)
+        return next(iter(loader))
 
 
 if __name__ == '__main__':
     args = read_options()
-    random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
-    if torch.cuda.is_available(): torch.cuda.manual_seed_all(SEED)
+    train_seed = int(getattr(args, 'train_seed', args.seed))
+    prefix = getattr(args, 'prefix', 'eviddie_new_s1')
+    variants = [v.strip() for v in getattr(args, 'variants', 'softmax,evi_no_evi,wo_BSA').split(',') if v.strip()]
+    max_iter = int(getattr(args, 'max_iter', 5000))
+
+    random.seed(train_seed)
+    np.random.seed(train_seed)
+    torch.manual_seed(train_seed)
 
     os.makedirs('results', exist_ok=True)
-    csv_path = 'results/ablation_curves.csv'
+    csv_path = f'results/ablation_curves_{prefix}_seed{train_seed}.csv'
+    header = ['variant', 'iter', 'train_loss', 'dev_auroc', 'dev_f1', 'dev_acc']
+
+    # 保留已有行（部分变体重跑时不覆盖历史结果）
+    existing_rows = []
+    if os.path.exists(csv_path):
+        with open(csv_path, newline='', encoding='utf-8') as rf:
+            reader = csv.reader(rf)
+            old_header = next(reader, None)
+            if old_header == header:
+                existing_rows = [row for row in reader]
+                logging.info(f'Loaded {len(existing_rows)} existing rows from {csv_path}')
+            else:
+                logging.warning(f'Header mismatch in {csv_path}; starting fresh')
+
     f = open(csv_path, 'w', newline='', encoding='utf-8')
     w = csv.writer(f)
-    w.writerow(['variant', 'iter', 'train_loss', 'dev_auroc', 'dev_f1', 'dev_acc'])
+    w.writerow(header)
+    for row in existing_rows:
+        w.writerow(row)
+    f.flush()
 
-    trainer = EviDDIEAblationTrainer(dataset='dataset1')
-    trainer.load_embed()
-
-    for variant in ['softmax', 'w/o BSA', 'evi_no_evi', 'full_evi']:
-        for layer in trainer.fc:
-            if hasattr(layer, 'reset_parameters'): layer.reset_parameters()
-        if variant == 'w/o BSA': trainer.linear_proj.reset_parameters()
-        trainer.train_variant(variant, w, max_iter=MAX_ITER)
+    tr = AblationTrainer(args, train_seed, prefix)
+    for variant in variants:
+        tr.reset_head()
+        tr.train_variant(variant, w, max_iter)
+        f.flush()
 
     f.close()
-    logging.info(f'Done → {csv_path}')
+    logging.info(f'Done -> {csv_path}')

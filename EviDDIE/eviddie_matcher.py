@@ -626,6 +626,18 @@ class EmbedMatcher(nn.Module):
             nn.Linear(64, 2)  # dual-output evidential head
         )
 
+        # ---- KG 恢复 (2026-08-16)：与 PharDDIE ACI 相同的 DRKG 邻居上下文（无药效团代理）----
+        if embed is not None:
+            self.symbol_emb = nn.Embedding.from_pretrained(
+                torch.tensor(embed, dtype=torch.float32), freeze=True)
+        else:
+            self.symbol_emb = nn.Embedding(num_symbols + 1, embed_dim, padding_idx=num_symbols)
+        self.gcn_w = nn.Linear(2 * embed_dim, embed_dim)
+        self.Bilinear = nn.Bilinear(embed_dim, embed_dim, 1)
+        self.Linear_weak_rel = nn.Linear(embed_dim, embed_dim)
+        self.Linear_nei = nn.Linear(embed_dim, embed_dim)
+        self.Linear_self = nn.Linear(embed_dim, embed_dim)
+
         self.pad_idx = num_symbols
         self.fc_struc_net = nn.Sequential(
             nn.Linear(256, 128),
@@ -674,50 +686,68 @@ class EmbedMatcher(nn.Module):
                                              qdrug_pair_indices]], dim=-1))
         return query_pair
 
+    def neighbor_encoder(self, connections, num_neighbors, self_feature, weak_rel):
+        """ACI 式 DRKG 邻居编码（自 PharDDIE matcher 移植）：
+        bilinear attention over first-order KG neighbors + residual gating。"""
+        num_neighbors = num_neighbors.unsqueeze(1)
+        relations = connections[:, :, 0].squeeze(-1)
+        entities = connections[:, :, 1].squeeze(-1)
+        rel_embeds = self.dropout(self.symbol_emb(relations))   # (batch, N, embed_dim)
+        ent_embeds = self.dropout(self.symbol_emb(entities))    # (batch, N, embed_dim)
+        concat_embeds = torch.cat((rel_embeds, ent_embeds), dim=-1)
+        out = self.gcn_w(concat_embeds)
+        weak_rel = self.Linear_weak_rel(weak_rel.unsqueeze(1).repeat(1, out.size(1), 1))
+        score = self.Bilinear(weak_rel, out).squeeze(2)
+        pad_mask = (relations == self.pad_idx).squeeze(-1)
+        score = score.masked_fill(pad_mask, float('-inf'))
+        score = torch.cat([score, torch.zeros(score.size(0), 1, device=score.device)], dim=1)
+        att = torch.softmax(score, dim=1)[:, :-1].unsqueeze(dim=1)
+        out = torch.bmm(att, out).squeeze(1)
+        out = out * num_neighbors.bool().int()
+        out = self.Linear_nei(out) + self.Linear_self(self_feature)
+        return F.elu(out)
+
     def forward(self, task_proto, query, support, query_meta=None, support_meta=None, query_batch=None,
                 support_batch=None, optim_VAE=None, is_eval=False, trainGAN=False):
-        '''
-        EviDDIE forward (canonical): molecular CSE features -> pair
-        concatenation -> SRAE latent -> dual-output evidential comparator.
-        '''
+        """EviDDIE forward (KG 恢复版, 2026-08-16)：
+        CSE -> ACI 式 DRKG 邻居编码 -> 拼接 -> SRAE -> |proto - z_q| -> 原生双输出 EDL。
+        零样本（is_eval=True, support=None）只使用 task_proto，无分子 support。"""
 
-        if trainGAN == True:
-            # GAN step: support-set CSE features only
-            support_left_, support_right_ = self.model(support_batch)
-            support_neighbor = torch.cat((support_left_, support_right_), dim=-1)
-
-            output_s, z_mean_s, z_logvar_s, zs = self.vaemodel(support_neighbor, is_support=True, is_eval=is_eval)
+        if trainGAN:
+            slc, sld, src, srd = support_meta
+            sl_, sr_ = self.model(support_batch)
+            sl = self.neighbor_encoder(slc, sld, sl_, sr_ - sl_)
+            sr = self.neighbor_encoder(src, srd, sr_, sr_ - sl_)
+            s_pair = torch.cat((sl, sr), dim=-1)
+            _, _, _, zs = self.vaemodel(s_pair, is_support=True, is_eval=is_eval)
             return zs
 
+        # ---- Query 分支：KG 上下文 ----
+        qlc, qld, qrc, qrd = query_meta
+        ql_, qr_ = self.model(query_batch)
+        ql = self.neighbor_encoder(qlc, qld, ql_, qr_ - ql_)
+        qr = self.neighbor_encoder(qrc, qrd, qr_, qr_ - ql_)
+        q = torch.cat((ql, qr), dim=-1)
+
+        if not is_eval and support_batch is not None:
+            slc, sld, src, srd = support_meta
+            sl_, sr_ = self.model(support_batch)
+            sl = self.neighbor_encoder(slc, sld, sl_, sr_ - sl_)
+            sr = self.neighbor_encoder(src, srd, sr_, sr_ - sl_)
+            s_pair = torch.cat((sl, sr), dim=-1)
+            output_s, _, _, _ = self.vaemodel(s_pair, is_support=True, is_eval=is_eval)
+            output_q, _, _, zq = self.vaemodel(q, is_support=False, is_eval=is_eval)
+            ls = F.mse_loss(output_s, s_pair.detach(), reduction='mean')
+            lq = F.mse_loss(output_q, q.detach(), reduction='mean')
+            mse_loss = (ls + lq) / 2
+            evidence = F.softplus(self.fc(torch.abs(task_proto.expand_as(zq) - zq)))
+            return evidence + 1, 0.2 * mse_loss
         else:
-            # Query branch: CSE features only (EviDDIE uses no KG neighbor
-            # aggregation or gating, by design)
-            query_left_, query_right_ = self.model(query_batch)
-            query_neighbor = torch.cat((query_left_, query_right_), dim=-1)
-
-            if is_eval == False:
-                support_left_, support_right_ = self.model(support_batch)
-                support_neighbor = torch.cat((support_left_, support_right_), dim=-1)
-                support = support_neighbor
-
-            query = query_neighbor
-
-            if is_eval == False:
-                output_s, z_mean_s, z_logvar_s, zs = self.vaemodel(support, is_support=True, is_eval=is_eval)
-
-            output_q, z_mean_q, z_logvar_q, zq = self.vaemodel(query, is_support=False, is_eval=is_eval)
-
+            _, _, _, zq = self.vaemodel(q, is_support=False, is_eval=is_eval)
             evidence = F.softplus(self.fc(torch.abs(task_proto.expand_as(zq) - zq)))
             alpha = evidence + 1
-
-            if is_eval == False:
-                ls = F.mse_loss(input=output_s, target=support.detach(), reduction='mean')
-                lq = F.mse_loss(input=output_q, target=query.detach(), reduction='mean')
-                mse_loss = (ls + lq) / 2
-                return alpha, 0.2 * mse_loss
-            else:
-                prob = alpha / torch.sum(alpha, dim=1, keepdim=True)
-                return prob[:, 1], 0
+            prob = alpha / torch.sum(alpha, dim=1, keepdim=True)
+            return prob[:, 1], 0
 
     def forward_(self, query_meta, support_meta):
         query_left_connections, query_left_degrees, query_right_connections, query_right_degrees = query_meta

@@ -1,0 +1,670 @@
+{
+  "#Drug1 may increase the photosensitizing activities of #Drug2.": [
+    [
+      "DB04571",
+      "DB00460",
+      "DB01060",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB00855",
+      "DB00460",
+      "DB01211",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB09536",
+      "DB00460",
+      "DB01076",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB01600",
+      "DB00460",
+      "DB00992",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB09000",
+      "DB00460",
+      "DB04571",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB11630",
+      "DB00460",
+      "DB00221",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB00553",
+      "DB00460",
+      "DB09270",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB06261",
+      "DB00460",
+      "DB00453",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB01878",
+      "DB00460",
+      "DB09570",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB00140",
+      "DB00460",
+      "DB06274",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ],
+    [
+      "DB00821",
+      "DB00460",
+      "DB01121",
+      "#Drug1 may increase the photosensitizing activities of #Drug2."
+    ]
+  ],
+  "#Drug1 may decrease the antiplatelet activities of #Drug2.": [
+    [
+      "DB01045",
+      "DB06209",
+      "DB04842",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ],
+    [
+      "DB00338",
+      "DB00758",
+      "DB00381",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ],
+    [
+      "DB06441",
+      "DB00758",
+      "DB04272",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ],
+    [
+      "DB00736",
+      "DB00758",
+      "DB06274",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ],
+    [
+      "DB00199",
+      "DB00758",
+      "DB00502",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ],
+    [
+      "DB00295",
+      "DB00758",
+      "DB11574",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ],
+    [
+      "DB06441",
+      "DB06209",
+      "DB01162",
+      "#Drug1 may decrease the antiplatelet activities of #Drug2."
+    ]
+  ],
+  "#Drug1 may increase the dermatologic adverse activities of #Drug2.": [
+    [
+      "DB00932",
+      "DB01357",
+      "DB09008",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB00783",
+      "DB01355",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB00655",
+      "DB06702",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB00890",
+      "DB00279",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB04573",
+      "DB00435",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00619",
+      "DB00448",
+      "DB00787",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB04575",
+      "DB12598",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB00977",
+      "DB12483",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB01041",
+      "DB01234",
+      "DB00304",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB00255",
+      "DB00896",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ],
+    [
+      "DB00932",
+      "DB09070",
+      "DB09282",
+      "#Drug1 may increase the dermatologic adverse activities of #Drug2."
+    ]
+  ],
+  "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1.": [
+    [
+      "DB00968",
+      "DB09241",
+      "DB01088",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB09245",
+      "DB00859",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB09244",
+      "DB11581",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB00752",
+      "DB00917",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB01037",
+      "DB09061",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB01626",
+      "DB00202",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB00614",
+      "DB01000",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB01171",
+      "DB08957",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB00780",
+      "DB00807",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB01367",
+      "DB01319",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB00182",
+      "DB00809",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB01168",
+      "DB12070",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB00805",
+      "DB08883",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ],
+    [
+      "DB00968",
+      "DB01247",
+      "DB01262",
+      "The risk or severity of hypertension can be increased when #Drug2 is combined with #Drug1."
+    ]
+  ],
+  "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2.": [
+    [
+      "DB09241",
+      "DB00454",
+      "DB00948",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB01037",
+      "DB00454",
+      "DB04842",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB00752",
+      "DB00454",
+      "DB01607",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB00780",
+      "DB00454",
+      "DB09138",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB09244",
+      "DB00454",
+      "DB00432",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB00614",
+      "DB00454",
+      "DB01240",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB01367",
+      "DB00454",
+      "DB11691",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB01247",
+      "DB00454",
+      "DB01170",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB00182",
+      "DB00454",
+      "DB01075",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB01168",
+      "DB00454",
+      "DB06211",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB00805",
+      "DB00454",
+      "DB06699",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB09245",
+      "DB00454",
+      "DB00738",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB01626",
+      "DB00454",
+      "DB00832",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ],
+    [
+      "DB01171",
+      "DB00454",
+      "DB00297",
+      "#Drug1 may increase the hypotensive and central nervous system depressant (CNS depressant) activities of #Drug2."
+    ]
+  ],
+  "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2.": [
+    [
+      "DB00421",
+      "DB00091",
+      "DB09112",
+      "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2."
+    ],
+    [
+      "DB00384",
+      "DB00864",
+      "DB00229",
+      "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2."
+    ],
+    [
+      "DB00421",
+      "DB00864",
+      "DB01367",
+      "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2."
+    ],
+    [
+      "DB00594",
+      "DB00864",
+      "DB01301",
+      "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2."
+    ],
+    [
+      "DB00594",
+      "DB00091",
+      "DB11121",
+      "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2."
+    ],
+    [
+      "DB00384",
+      "DB00091",
+      "DB09015",
+      "The risk or severity of hyperkalemia can be increased when #Drug1 is combined with #Drug2."
+    ]
+  ],
+  "The protein binding of #Drug2 can be decreased when combined with #Drug1.": [
+    [
+      "DB01067",
+      "DB01032",
+      "DB01582",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB01289",
+      "DB01032",
+      "DB00349",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB00252",
+      "DB01327",
+      "DB00602",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB00672",
+      "DB01032",
+      "DB01243",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB00839",
+      "DB01032",
+      "DB06767",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB01320",
+      "DB01327",
+      "DB01297",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB01120",
+      "DB01032",
+      "DB09221",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB01016",
+      "DB01032",
+      "DB01060",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB01124",
+      "DB01032",
+      "DB00209",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB01251",
+      "DB01032",
+      "DB00388",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ],
+    [
+      "DB00222",
+      "DB01032",
+      "DB00663",
+      "The protein binding of #Drug2 can be decreased when combined with #Drug1."
+    ]
+  ],
+  "#Drug1 may increase the central neurotoxic activities of #Drug2.": [
+    [
+      "DB09245",
+      "DB00289",
+      "DB01221",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB01367",
+      "DB00289",
+      "DB01017",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB00805",
+      "DB00289",
+      "DB01110",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB00752",
+      "DB00289",
+      "DB01192",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB01626",
+      "DB00289",
+      "DB04876",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB01171",
+      "DB00289",
+      "DB11943",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB00780",
+      "DB00289",
+      "DB01054",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB01247",
+      "DB00289",
+      "DB01336",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB09244",
+      "DB00289",
+      "DB00294",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB01037",
+      "DB00289",
+      "DB06794",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB01168",
+      "DB00289",
+      "DB00308",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB00614",
+      "DB00289",
+      "DB00337",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ],
+    [
+      "DB09241",
+      "DB00289",
+      "DB00973",
+      "#Drug1 may increase the central neurotoxic activities of #Drug2."
+    ]
+  ],
+  "#Drug1 may decrease the analgesic activities of #Drug2.": [
+    [
+      "DB06204",
+      "DB00377",
+      "DB04571",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB00193",
+      "DB00904",
+      "DB00420",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB06204",
+      "DB11699",
+      "DB01359",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB06204",
+      "DB00889",
+      "DB00715",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB00193",
+      "DB00889",
+      "DB01212",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB00193",
+      "DB11699",
+      "DB01143",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB00193",
+      "DB00757",
+      "DB00935",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB01551",
+      "DB00908",
+      "DB00626",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB00193",
+      "DB00377",
+      "DB08884",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ],
+    [
+      "DB06204",
+      "DB00757",
+      "DB00271",
+      "#Drug1 may decrease the analgesic activities of #Drug2."
+    ]
+  ],
+  "The bioavailability of #Drug2 can be increased when combined with #Drug1.": [
+    [
+      "DB00727",
+      "DB01200",
+      "DB00304",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00589",
+      "DB00351",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00661",
+      "DB00950",
+      "DB06767",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB01253",
+      "DB00363",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00353",
+      "DB06412",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00247",
+      "DB00762",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB01186",
+      "DB00361",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00696",
+      "DB00424",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00699",
+      "DB01303",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00248",
+      "DB01396",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ],
+    [
+      "DB00727",
+      "DB00320",
+      "DB00908",
+      "The bioavailability of #Drug2 can be increased when combined with #Drug1."
+    ]
+  ]
+}

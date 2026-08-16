@@ -97,7 +97,7 @@ class ExportEviDDIE(object):
                 e1,rel,e2=l.rstrip().split('\t')
                 self.e1r2[e1[-7:]].append((self.symbol2id[rel],self.symbol2id[e2]))
         for ent,id_ in self.ent2id.items():
-            nb=self.e1r2[ent]
+            nb=self.e1r2.get(ent, [])
             if len(nb)>max_:random.shuffle(nb);nb=nb[:max_]
             self.e1d[id_]=len(nb)
             for idx,_ in enumerate(nb):self.conn[id_,idx,0]=_[0];self.conn[id_,idx,1]=_[1]

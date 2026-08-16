@@ -47,13 +47,14 @@ SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
 CLASS_ORDER = ('negative', 'positive')
 
 
-def resolve_checkpoint(train_seed):
-    """Accept both the flat trainer naming (models/dataset1/<prefix>_seed<seed>bestmodel)
-    and the directory layout (models/dataset1/<prefix>_seed<seed>/bestmodel)."""
-    flat_m = f'models/dataset1/eviddie_0shot_seed{train_seed}bestmodel'
-    flat_g = f'models/dataset1/eviddie_0shot_seed{train_seed}bestmodel_G'
-    dir_m = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel'
-    dir_g = f'models/dataset1/eviddie_0shot_seed{train_seed}/bestmodel_G'
+def resolve_checkpoint(train_seed, prefix='eviddie_0shot', base_dir='models'):
+    """Accept both the flat trainer naming (<base_dir>/<prefix>_seed<seed>bestmodel)
+    and the directory layout (<base_dir>/<prefix>_seed<seed>/bestmodel).
+    KG 恢复 (2026-08-16)：五种子正式训练 prefix 为 eviddie_new_s1..s5。"""
+    flat_m = f'{base_dir}/{prefix}_seed{train_seed}bestmodel'
+    flat_g = f'{base_dir}/{prefix}_seed{train_seed}bestmodel_G'
+    dir_m = f'{base_dir}/{prefix}_seed{train_seed}/bestmodel'
+    dir_g = f'{base_dir}/{prefix}_seed{train_seed}/bestmodel_G'
     m = flat_m if os.path.exists(flat_m) else dir_m
     g = flat_g if os.path.exists(flat_g) else dir_g
     return m, g
@@ -110,12 +111,17 @@ class ExportVariants(object):
             raise RuntimeError(
                 'Legacy single-output checkpoint is unsupported. '
                 'Retrain EviDDIE with the native two-class evidential head.')
+        # KG 恢复 (2026-08-16)：symbol_emb / gcn_w / Bilinear / Linear_* 是当前
+        # EmbedMatcher 的训练参数（ACI 式 DRKG 邻居编码器），必须从五种子 checkpoint
+        # 加载，否则导出时 KG 模块会回到随机初始化、与训练模型不一致。
+        # 仅删除 P0-7 已废弃组件的防御性残留键。
         for k in list(ckpt.keys()):
-            if any(x in k for x in ['symbol_emb','gcn_w','gcn_b','Bilinear','Linear_self',
-                                     'Linear_nei','Linear_weak_rel','NeighborAggregator','siamese',
-                                     'support_encoder','query_encoder']):
+            if any(x in k for x in ['NeighborAggregator', 'siamese',
+                                     'support_encoder', 'query_encoder']):
                 del ckpt[k]
-        load_state_dict_safe(self.matcher, ckpt, model_name='matcher')
+        load_state_dict_safe(self.matcher, ckpt, model_name='matcher',
+                             critical_patterns=['gcn_w', 'Bilinear', 'Linear_nei',
+                                                'Linear_self', 'Linear_weak_rel'])
 
         self.G_m = torch.load(arg.g_model_path, map_location=self.device, weights_only=False)
         self.G_m.eval()
@@ -163,7 +169,8 @@ class ExportVariants(object):
                 e1,rel,e2=line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel],self.symbol2id[e2]))
         for ent,id_ in self.ent2id.items():
-            nb=self.e1_rele2[ent]
+            # KG 恢复 (2026-08-16)：与 eviddie_trainer.py 一致，无邻居实体用空列表（度数 0、全 PAD）
+            nb=self.e1_rele2.get(ent, [])
             if len(nb)>max_: random.shuffle(nb); nb=nb[:max_]
             self.e1_degrees[id_]=len(nb)
             for idx,_ in enumerate(nb): self.connections[id_,idx,0]=_[0]; self.connections[id_,idx,1]=_[1]
@@ -175,18 +182,20 @@ class ExportVariants(object):
         rd=Variable(torch.FloatTensor([self.e1_degrees[_] for _ in right])).to(self.device)
         return (lc,ld,rc,rd)
 
-    def load_head(self, variant):
+    def load_head(self, variant, head_dir=None):
         # the ablation trainer sanitizes '/' in variant names ('w/o BSA' -> 'w_o BSA')
         name = variant.replace('/', '_')
-        path = f'{self.save_dir}/fc_{name}.pt'
+        base = head_dir if head_dir is not None else self.save_dir
+        path = f'{base}/fc_{name}.pt'
         head = torch.load(path, map_location=self.device, weights_only=False)
         self.matcher.fc.load_state_dict(head)
         self.matcher.eval()
         w = next(iter(head.values()))
         logging.info(f'Loaded fc head: {variant} (first weight mean_abs={w.float().abs().mean().item():.5f})')
 
-    def load_linear_proj(self):
-        path = f'{self.save_dir}/linear_proj_wo_BSA.pt'
+    def load_linear_proj(self, head_dir=None):
+        base = head_dir if head_dir is not None else self.save_dir
+        path = f'{base}/linear_proj_wo_BSA.pt'
         if not os.path.exists(path):
             raise FileNotFoundError(f'w/o BSA linear projection not found: {path}. '
                                     f'Run eviddie_train_ablation.py first.')
@@ -245,14 +254,18 @@ class ExportVariants(object):
                 qb_data = [t.to(self.device) for t in next(iter(qbl))]
                 if variant == 'wo_BSA':
                     if not self.linear_proj_loaded:
-                        self.load_linear_proj()
+                        head_dir = f'models/ablation_{SEED_PREFIX[train_seed]}_seed{train_seed}'
+                        self.load_linear_proj(head_dir=head_dir)
                     sem = self.task_ebmedding[self.task2id[query_]].reshape(1, -1)
                     task_emb = self.linear_proj(sem).detach()
                 else:
                     task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
 
+                # KG 恢复 (2026-08-16)：与 matcher forward 相同的 ACI 式 DRKG 邻居上下文
                 ql_, qr_ = self.matcher.model(qb_data)
-                qn = torch.cat((ql_, qr_), dim=-1)
+                ql = self.matcher.neighbor_encoder(q_meta[0], q_meta[1], ql_, qr_ - ql_)
+                qr = self.matcher.neighbor_encoder(q_meta[2], q_meta[3], qr_, qr_ - ql_)
+                qn = torch.cat((ql, qr), dim=-1)
                 _, _, _, zq = self.matcher.vaemodel(qn, is_support=False, is_eval=True)
                 fc_out = self.matcher.fc(torch.abs(task_emb.expand_as(zq) - zq))
 
@@ -304,6 +317,14 @@ if __name__ == '__main__':
     TRAINING_SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
     EVAL_MANIFEST_SEED = 19940419  # 固定负样本种子
     MODES = ['dev', 'test', 'test2']
+    # KG 恢复 (2026-08-16)：五种子正式训练的 per-seed prefix（与训练命令一一对应）
+    SEED_PREFIX = {
+        19940419: 'eviddie_new_s1',
+        20230801: 'eviddie_new_s2',
+        20240115: 'eviddie_new_s3',
+        20240520: 'eviddie_new_s4',
+        20240910: 'eviddie_new_s5',
+    }
 
     # ---- P0-3 / GPT 4.4：逐样本 CSV 元数据 ----
     def sha256_file(p):
@@ -326,7 +347,8 @@ if __name__ == '__main__':
 
     out_dir = 'results/predictions'
     os.makedirs(out_dir, exist_ok=True)
-    out_csv = os.path.join(out_dir, 'predictions_dataset1_zero_shot_variants.csv')
+    # 2026-08-16：--out_csv 指定新文件名，避免覆盖旧模型的 legacy 预测 CSV
+    out_csv = os.path.join(out_dir, args.out_csv)
 
     import hashlib  # 种子独立性验证
     ckpt_hashes = []
@@ -339,7 +361,8 @@ if __name__ == '__main__':
                      'event_embedding_sha256','git_commit'])
 
         for train_seed in TRAINING_SEEDS:
-            args.pretrained_model, args.g_model_path = resolve_checkpoint(train_seed)
+            args.pretrained_model, args.g_model_path = resolve_checkpoint(
+                train_seed, prefix=SEED_PREFIX[train_seed])
             if not os.path.exists(args.pretrained_model):
                 raise FileNotFoundError(
                     f'Per-seed checkpoint not found: {args.pretrained_model}. '
@@ -358,7 +381,9 @@ if __name__ == '__main__':
             random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
             if torch.cuda.is_available(): torch.cuda.manual_seed_all(eval_seed)
 
-            for variant in ['softmax', 'evi_no_evi', 'wo_BSA', 'full_evi']:
+            # 2026-08-16：--variants 过滤（消融头训练前可只导 full_evi）
+            export_variants = [v.strip() for v in args.variants.split(',') if v.strip()]
+            for variant in export_variants:
                 method = METHOD_MAP[variant]
                 logging.info(f'===== train_seed={train_seed} {method} =====')
                 ex = ExportVariants(args)
@@ -366,7 +391,9 @@ if __name__ == '__main__':
                     # the formal model keeps its per-seed native dual-output EDL head
                     logging.info('[HEAD] full_evi: keeping the checkpoint native EDL head.')
                 else:
-                    ex.load_head(variant)
+                    # 2026-08-16：消融头按 per-seed 独立目录保存（eviddie_train_ablation.py v4）
+                    head_dir = f'models/ablation_{SEED_PREFIX[train_seed]}_seed{train_seed}'
+                    ex.load_head(variant, head_dir=head_dir)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed, method, variant)
                 # P0-5 (6.1.3)：保存真实评估 episode manifest（每个 (train_seed, variant) 一份）

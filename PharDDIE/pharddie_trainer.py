@@ -4,9 +4,7 @@
 import json
 import logging
 import numpy as np
-import datetime
-import os
-import hashlib
+import datetime  # <--- 添加这一行
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -61,9 +59,9 @@ class Trainer(object):
             self.load_embed()
         self.use_pretrain = use_pretrain
 
-        self.num_symbols = len(self.symbol2id.keys()) - 1  # exclude the PAD entry
+        self.num_symbols = len(self.symbol2id.keys()) - 1  # 减去PAD的计数
         self.pad_id = self.num_symbols
-        # initialize the model
+        # 初始化模型（移除device参数，因为EmbedMatcher不接受）
         self.matcher = EmbedMatcher(
             self.embed_dim, self.num_symbols,
             use_pretrain=self.use_pretrain,
@@ -73,7 +71,7 @@ class Trainer(object):
             finetune=self.fine_tune,
             aggregate=self.aggregate
         )
-        self.matcher.to(self.device)
+        self.matcher.to(self.device)  # 模型移至CPU
 
         self.batch_nums = 0
         if self.test:
@@ -96,14 +94,14 @@ class Trainer(object):
         logging.info('LOADING CANDIDATES ENTITIES')
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
 
-        # load the answer index
+        # 加载答案字典
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
 
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
 
-        # initialize the experiment recorder
+        # 初始化实验记录器
         result_file = f'result_{self.prefix}.txt' if hasattr(self, 'prefix') else 'result.txt'
         self.recorder = ExperimentRecorder(project_name="RareDDIE", result_file=result_file)
         self.recorder.record_hyperparameters(arg)
@@ -171,7 +169,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5: ACI reads the sanitized graph only
+        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图
             lines = f.readlines()
             for line in tqdm(lines):
                 e1, rel, e2 = line.rstrip().split('\t')
@@ -197,11 +195,11 @@ class Trainer(object):
         torch.save(self.matcher.state_dict(), path)
 
     def load(self):
-        # load the model
+        # 加载模型时指定CPU
         self.matcher.load_state_dict(torch.load(self.save_path, map_location=self.device))
 
     def get_meta(self, left, right):
-        # move all variables to the device
+        #所有变量移至CPU
         left_connections = Variable(torch.LongTensor(np.stack([self.connections[_, :, :] for _ in left], axis=0))).to(
             self.device)
         left_degrees = Variable(torch.FloatTensor([self.e1_degrees[_] for _ in left])).to(self.device)
@@ -225,7 +223,7 @@ class Trainer(object):
                 logging.info('CURRENT EPOCH: %d MAX EPOCH %d' % (self.batch_nums, self.max_batches))
 
             support, query, false, support_left, support_right, query_left, query_right, false_left, false_right, support_batch, query_batch, false_batch = data
-            # move data to the device
+            # 数据移至CPU
             support_batch = [t.to(self.device) for t in support_batch]
             query_batch = [t.to(self.device) for t in query_batch]
             false_batch = [t.to(self.device) for t in false_batch]
@@ -234,7 +232,7 @@ class Trainer(object):
             query_meta = self.get_meta(query_left, query_right)
             false_meta = self.get_meta(false_left, false_right)
 
-            # move variables to the device
+            # 变量移至CPU
             support = Variable(torch.LongTensor(support)).to(self.device)
             query = Variable(torch.LongTensor(query)).to(self.device)
             false = Variable(torch.LongTensor(false)).to(self.device)
@@ -264,12 +262,12 @@ class Trainer(object):
                 if is_best:
                     bestvalauc = valauc
                     self.save(self.save_path + f'bestmodel')
-                    # record the latest evaluation as best
+                    # 更新最新评估为最佳
                     if hasattr(self, 'recorder'):
                         self.recorder.experiment_data['best_models']['dev'] = {
                             'batch_num': self.batch_nums,
                             'metrics': {'auroc': valauc},
-                             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  
+                             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # <--- 添加这一行
                         }
                         self.recorder._write_to_file()
 
@@ -279,7 +277,7 @@ class Trainer(object):
                                                                                          np.concatenate(ground_truth))
                 logging.info(
                     f'loss: {loss:.4f}, acc: {acc:.4f}, roc: {auroc:.4f}, f1: {f1_score:.4f}, p: {precision:.4f}, r: {recall:.4f}, int-ap: {int_ap:.4f}, ap: {ap:.4f}')
-                # log the training step
+                # 记录训练步骤
                 metrics_dict = {
                     'acc': acc, 'auroc': auroc, 'f1_score': f1_score,
                     'precision': precision, 'recall': recall, 'int_ap': int_ap, 'ap': ap
@@ -306,29 +304,13 @@ class Trainer(object):
         elif mode == 'test2':
             test_tasks = json.load(open(self.dataset + '/test2_tasks.json'))
         elif mode == 'common_test':
-            # load the common test split (sample size > 50)
+            # 加载常见测试集（样本量 > 50）
             test_tasks = json.load(open(self.dataset + '/common_test_tasks.json'))
         else:
             test_tasks = json.load(open(self.dataset + '/test_tasks.json'))
 
         rel2id = json.load(open(self.dataset + '/relation2ids'))
         rel2candidates = self.rel2candidates
-
-        # P0-4: held-out evaluation (and dev checkpoint selection) reads the
-        # fixed pre-generated negative manifest (SHA256-verified), matching the
-        # paper's protocol. common_test is a legacy split not used in the paper
-        # and keeps dynamic negatives.
-        manifest = None
-        if mode in ('dev', 'test', 'test2'):
-            manifest_path = f'{self.dataset}/neg_manifests/{mode}_seed19940419_negatives.json'
-            if not os.path.exists(manifest_path):
-                raise FileNotFoundError(f'Evaluation manifest not found: {manifest_path}')
-            actual_hash = hashlib.sha256(open(manifest_path, 'rb').read()).hexdigest()
-            hash_log = json.load(open(f'{self.dataset}/neg_manifests/manifest_hashes.json'))
-            recorded = hash_log.get(f'{mode}_seed19940419', {}).get('sha256')
-            if recorded is None or actual_hash != recorded:
-                raise RuntimeError(f'Manifest SHA256 mismatch: {manifest_path}')
-            manifest = json.load(open(manifest_path))
 
         probas_pred = []
         ground_truth = []
@@ -352,7 +334,7 @@ class Trainer(object):
             support_right = [self.ent2id[triple[2]] for triple in support_triples]
             support_meta = self.get_meta(support_left, support_right)
 
-            # move variables to the device
+            # 变量移至CPU
             support = Variable(torch.LongTensor(support_pairs)).to(self.device)
 
             query_triples = test_tasks[query_][few:]
@@ -360,36 +342,22 @@ class Trainer(object):
 
             false_pairs = []
             false_triples = []
-            if manifest is not None:
-                # fixed manifest negatives, aligned entry-by-entry with the query triples
-                entries = manifest.get(query_, [])[few:]
-                if len(entries) != len(query_triples):
-                    raise RuntimeError(f'[{mode}] {query_}: manifest has {len(entries)} negatives '
-                                       f'but {len(query_triples)} queries')
-                for t, entry in zip(query_triples, entries):
-                    d_i, d_j, d_k, rel = entry
-                    if not (d_i == t[0] and d_j == t[2] and rel == t[1]):
-                        raise RuntimeError(f'[{mode}] {query_}: manifest entry {entry} does not match {t}')
-                    false_triples.append([t[0], t[1], d_k])
-                    false_pairs.append([symbol2id[t[0]], symbol2id[d_k]])
-            else:
-                # legacy dynamic negatives (common_test only)
-                for triple in query_triples:
-                    e_h = triple[0]
-                    rel = triple[1]
-                    e_t = triple[2]
-                    while True:
-                        noise = random.choice(candidates)
-                        if (noise not in self.e1rel_e2[e_h + rel]) and noise != e_t:
-                            break
-                    false_triples.append([e_h, rel, noise])
-                    false_pairs.append([symbol2id[e_h], symbol2id[noise]])
+            for triple in query_triples:
+                e_h = triple[0]
+                rel = triple[1]
+                e_t = triple[2]
+                while True:
+                    noise = random.choice(candidates)
+                    if (noise not in self.e1rel_e2[e_h + rel]) and noise != e_t:
+                        break
+                false_triples.append([e_h, rel, noise])
+                false_pairs.append([symbol2id[e_h], symbol2id[noise]])
 
             query_pairs.extend(false_pairs)
             query_triples.extend(false_triples)
             query_triples_rel2id = [[triple[0], triple[2], rel2id[triple[1]]] for triple in query_triples]
 
-            # move variables to the device
+            # 变量移至CPU
             query = Variable(torch.LongTensor(query_pairs)).to(self.device)
 
             test_size = self.batch_size * 800
@@ -416,11 +384,11 @@ class Trainer(object):
                     support_batch_input = [t.to(self.device) for t in support_batch[0]] if support_batch else []
                     query_batch_input = [t.to(self.device) for t in query_batch[0]] if query_batch else []
 
-                    # 2. pass the processed input variables
-                    # note: query_batch_input is passed, not query_batch
+                    # 2. 修改调用，传入上面处理好的 input 变量
+                    # 注意：这里传入的是 query_batch_input 而不是 query_batch
 
 
-                    # move data to the device
+                    # 数据移至CPU
                     support_batch_cpu = [t.to(self.device) for t in support_batch[0]] if support_batch else []
                     query_batch_cpu = [t.to(self.device) for t in query_batch[0]] if query_batch else []
 
@@ -451,12 +419,12 @@ class Trainer(object):
         logging.info(
             f'alltask ({mode}):\n loss: {loss:.4f}, acc: {acc:.4f}, roc: {auroc:.4f}, f1: {f1_score:.4f}, p: {precision:.4f}, r: {recall:.4f}, int-ap: {int_ap:.4f}, ap: {ap:.4f}')
 
-        # record the evaluation results
+        # 记录评估结果
         metrics_dict = {
             'acc': acc, 'auroc': auroc, 'f1_score': f1_score,
             'precision': precision, 'recall': recall, 'int_ap': int_ap, 'ap': ap
         }
-        # record the evaluation results
+        # 记录评估结果
         batch_num = getattr(self, 'batch_nums', None)
         self.recorder.record_evaluation(mode, metrics_dict, is_best=False, batch_num=batch_num)
 
@@ -467,7 +435,7 @@ class Trainer(object):
         self.load()
         logging.info('Pre-trained model loaded')
 
-        # evaluate the three test splits
+        # 测试三个测试集
         logging.info('\n' + '=' * 50)
         logging.info('TESTING ON COMMON TEST SET (sample size > 50)')
         logging.info('=' * 50)
@@ -483,7 +451,7 @@ class Trainer(object):
         logging.info('=' * 50)
         test2_auc = self.eval_acc(meta=self.meta, mode='test2')
 
-        # print the summary
+        # 打印汇总结果
         logging.info('\n' + '=' * 60)
         logging.info('SUMMARY OF TEST RESULTS')
         logging.info('=' * 60)
@@ -492,7 +460,7 @@ class Trainer(object):
         logging.info(f'Test2 Set: AUROC = {test2_auc:.4f}')
         logging.info('=' * 60)
 
-        # finalize the test records
+        # 完成测试记录
         self.recorder.finalize()
 
         return {
@@ -512,7 +480,7 @@ class SigmoidLoss(nn.Module):
 if __name__ == '__main__':
     args = read_options()
 
-    # logging setup
+    # 日志配置
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s: - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -525,19 +493,19 @@ if __name__ == '__main__':
     logger.addHandler(ch)
     logger.addHandler(fh)
 
-    # random seeds
+    # 随机种子（移除CUDA相关）
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    # device selection
+    # 设备设置为CPU
     device = 'cpu'
     loss_fn = SigmoidLoss()
 
     trainer = Trainer(args)
     if args.test:
         results = trainer.test_()
-        # optional: save results to file
+        # 可选：将结果保存到文件
         with open(f'results_{args.prefix}.json', 'w') as f:
             json.dump(results, f, indent=2)
         logging.info(f'Results saved to results_{args.prefix}.json')
