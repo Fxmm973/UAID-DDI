@@ -17,7 +17,7 @@ The triage policy maps each candidate to one of four actions---High-Priority Rev
 | Model | Setting | Key Modules |
 |-------|---------|-------------|
 | **PharDDIE** | Few-Shot ($K \in \{1,5\}$) | SHCR (Selected Hidden-Channel Reweighting) + ACI (Adaptive Context Integration) + SRAE (Stochastic Reconstruction-Regularized Autoencoder) |
-| **EviDDIE** | Zero-Shot | BSA (Bio-Semantic Alignment) + EVI (Evidence Variance Inference, native dual-output evidential head) |
+| **EviDDIE** | Zero-Shot | BSA (Bio-Semantic Alignment) + EVI (Evidential Inference: standard two-class EDL, native dual-output evidential head) |
 
 ### PharDDIE — Few-Shot DDI Prediction
 
@@ -28,7 +28,7 @@ The triage policy maps each candidate to one of four actions---High-Priority Rev
 ### EviDDIE — Zero-Shot DDI Prediction
 
 - **BSA** (Bio-Semantic Alignment): `eviddie_matcher.py` — a GAN aligns drug-pair latent codes with BioSentVec event prototypes (700-dim, precomputed in `event_embedding2.json`). Generator: $700\to256\to512\to64$ (Tanh). Critic: $64\to512\to256\to128\to1$ (Sigmoid).
-- **EVI** (Evidence Variance Inference): `eviddie_matcher.py` — native dual-output Dirichlet evidential head ($\alpha = e + 1$, $u_{\text{EDL}} = 2/S$), EDL loss with annealed KL ($\lambda_t = \min(1, t/10000)$). **Comparator**: $\mathrm{Softplus}(\mathrm{MLP}(|p_t - z_q|))$, the absolute-difference comparator described in the paper (legacy concatenation-based comparators and single-output checkpoints are rejected, never converted).
+- **EVI** (Evidential Inference): `eviddie_matcher.py` — native dual-output Dirichlet evidential head ($\alpha = e + 1$, $u_{\text{EDL}} = 2/S$), EDL loss with annealed KL ($\lambda_t = \min(1, t/10000)$). **Comparator**: $\mathrm{Softplus}(\mathrm{MLP}(|p_t - z_q|))$, the absolute-difference comparator described in the paper (legacy concatenation-based comparators and single-output checkpoints are rejected, never converted).
 - The formal training entry `eviddie_trainer.py` uses per-seed independent checkpoints (`models/{prefix}_seed{seed}bestmodel{, _G}`) for the five training seeds (19940419, 20230801, 20240115, 20240520, 20240910). Inference uses the raw BioSentVec prototypes (no semantic noise) and one fixed evaluation manifest (seed 19940419).
 
 ### EviDDIE Frozen-Backbone Ablation
