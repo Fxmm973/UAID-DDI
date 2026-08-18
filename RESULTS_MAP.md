@@ -15,7 +15,7 @@
 |------------|--------|-------------|
 | Datasets summary (Table 1) | — | Text-only table |
 | Main results 1/5-shot (Table 2) | `PharDDIE/pharddie_table2.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (+ RareDDIE re-evaluated under the unified protocol; 7 baselines transcribed from published source data) |
-| Zero-shot discrimination + calibration (Table 3) | `shared/calibration_table.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE/results/calibration_table_new.csv`; PharDDIE rare rows from the PharDDIE CSV above |
+| Zero-shot discrimination + calibration (Table 3) | `shared/calibration_table.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE/results/calibration_table_variants.csv`; PharDDIE rare rows from the PharDDIE CSV above |
 | Uncertainty-aware prioritization (Table 4) | `shared/rq3_triage_table.py` + `shared/rq3_triage_priority_random.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) |
 | Selective referral, matched coverage (Table 5) | `shared/rq3_selective_referral.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) → `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` |
 | Selective referral, fixed budgets (Table 6) | `shared/rq3_selective_referral.py` | same CSV / same output file |
@@ -81,12 +81,12 @@ earlier concatenation-based comparator used by pre-revision drafts.
   seed first**, aggregated as mean ± SD over the five seeds (P0-5); temperature scaling is
   fitted per seed on that seed's dev (common) rows and applied to its held-out rows;
   includes the analytic no-skill $p{=}0.5$ row (Brier 0.25, NLL ln 2) and prints the
-  P0-2 proper-scoring-baseline verdict. Output: `EviDDIE/results/calibration_table_new.csv`.
+  P0-2 proper-scoring-baseline verdict. Output: `EviDDIE/results/calibration_table_variants.csv` (all three heads).
 - **PharDDIE rare-event rows** (same table, for side-by-side comparison): computed from
   `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (rare setting,
   1/5-shot), pooled AUROC/AUPRC/ACC + event-macro F1, mean ± SD over the five seeds.
 - **Reliability diagram**: `shared/calibration_table.py --fig` →
-  `EviDDIE/reliability_diagram_new.png` (Fewer | Rare panels, 10 equal-width confidence
+  `EviDDIE/reliability_diagram_new.png` (Fewer | Rare panels, 10 equal-width predicted-probability
   bins with per-bin sample counts, native evidential bars + per-seed temperature-scaled
   curves). Equivalent standalone generator: `EviDDIE/eviddie_reliability_figure.py`.
 - **Same-protocol reference rows (Softmax baseline / EviDDIE w/o EVI)**: computed

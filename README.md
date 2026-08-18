@@ -106,7 +106,6 @@ UAID-DDI/
 │       └── predictions/            # Per-sample zero-shot predictions (5 seeds, fixed manifest) + episode manifests
 │
 ├── results/                        # Paper-facing table summaries
-│   ├── table3new.txt               # Calibration summary (zero-shot + PharDDIE rare rows)
 │   └── table4_paper.txt            # Uncertainty-aware prioritization (unified semantics, 1-shot)
 │
 ├── tests/
@@ -234,7 +233,7 @@ python pharddie_table2.py
 # Table 3 — Zero-shot discrimination + calibration (EviDDIE native / +TempScale / no-skill;
 #           PharDDIE rare rows for comparison)
 python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv \
-    --out ../EviDDIE/results/calibration_table_new.csv --fig ../EviDDIE/reliability_diagram_new.png
+    --out ../EviDDIE/results/calibration_table_variants.csv --fig ../EviDDIE/reliability_diagram_new.png
 
 # Table 4 — Uncertainty-aware prioritization (unified triage semantics, 1-shot)
 python ../shared/rq3_triage_table.py
