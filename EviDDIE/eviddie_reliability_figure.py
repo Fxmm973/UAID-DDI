@@ -39,7 +39,7 @@ def fit_temperature(df):
 
 
 def reliability(probs, y, n_bins=N_BINS):
-    """返回 (bin_centers, observed_freq, counts, ece, n_total)"""
+    """返回 (bin_centers, observed_freq, counts, n_total)"""
     edges = np.linspace(0, 1, n_bins + 1)
     ids = np.digitize(probs, edges[1:-1])
     centers, freq, counts = [], [], []
@@ -53,8 +53,27 @@ def reliability(probs, y, n_bins=N_BINS):
             centers.append((edges[b] + edges[b + 1]) / 2)
             freq.append(np.nan)
     freq = np.array(freq)
-    ece = np.nansum((np.abs(np.array(centers) - freq) * np.array(counts))) / np.sum(counts)
-    return np.array(centers), freq, np.array(counts), ece, len(probs)
+    return np.array(centers), freq, np.array(counts), len(probs)
+
+
+def per_seed_ece_mean(df, setting, method, n_bins=N_BINS):
+    """Per-seed ECE (10 equal-width predicted-probability bins) averaged over
+    seeds -- the same number reported in the calibration table."""
+    vals = []
+    g = df[(df.setting == setting) & (df.method == method)]
+    for seed, sg in g.groupby('train_seed'):
+        p = sg['prob'].values
+        y = sg['y_true'].values
+        edges = np.linspace(0, 1, n_bins + 1)
+        ids = np.digitize(p, edges[1:-1])
+        ece = 0.0
+        for b in range(n_bins):
+            m = ids == b
+            if m.sum() == 0:
+                continue
+            ece += (m.sum() / len(p)) * abs(y[m].mean() - p[m].mean())
+        vals.append(ece)
+    return float(np.mean(vals))
 
 
 def main():
@@ -68,7 +87,8 @@ def main():
         g = native[native.setting == setting]
         probs = g['prob'].values
         y = g['y_true'].values
-        centers, freq, counts, ece, n = reliability(probs, y)
+        centers, freq, counts, n = reliability(probs, y)
+        ece = per_seed_ece_mean(df, setting, 'EviDDIE')
         ax.bar(centers, freq, width=0.075, alpha=0.85, color=COL_NATIVE,
                label=f'EviDDIE (ECE={ece:.4f})', edgecolor='none')
 
@@ -79,7 +99,23 @@ def main():
             logit = np.log(p / (1 - p))
             ts_probs.append(1 / (1 + np.exp(-logit / temps[seed])))
         ts_probs = np.concatenate(ts_probs)
-        tc, tf, tcounts, tece, _ = reliability(ts_probs, y)
+        tc, tf, tcounts, _ = reliability(ts_probs, y)
+        # TempScale ECE 使用每种子温度缩放后的逐种子计算
+        ts_ece_vals = []
+        for seed, sg in g.groupby('train_seed'):
+            p = np.clip(sg['prob'].values, 1e-6, 1 - 1e-6)
+            logit = np.log(p / (1 - p))
+            tp = 1 / (1 + np.exp(-logit / temps[seed]))
+            edges = np.linspace(0, 1, N_BINS + 1)
+            ids = np.digitize(tp, edges[1:-1])
+            e = 0.0
+            for b in range(N_BINS):
+                m = ids == b
+                if m.sum() == 0:
+                    continue
+                e += (m.sum() / len(tp)) * abs(sg['y_true'].values[m].mean() - tp[m].mean())
+            ts_ece_vals.append(e)
+        tece = float(np.mean(ts_ece_vals))
         ax.plot(tc, tf, color=COL_TSCALE, marker='o', markersize=5,
                 linewidth=2, label=f'EviDDIE + TempScale (ECE={tece:.4f})')
 
@@ -90,7 +126,7 @@ def main():
                         fontsize=7, color='gray')
 
         ax.plot([0, 1], [0, 1], 'k--', linewidth=1, label='Perfect calibration')
-        ax.set_xlabel('Predicted probability (confidence bin)', fontsize=10)
+        ax.set_xlabel('Predicted probability', fontsize=10)
         ax.set_ylabel('Observed positive fraction', fontsize=10)
         ax.set_title(f'{TITLES[setting]}  (n={n})', fontsize=11)
         ax.set_xlim(0, 1)

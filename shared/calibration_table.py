@@ -223,7 +223,7 @@ def main():
                      'auroc_mean': 0.5, 'auroc_sd': 0.0, 'auprc_mean': 0.5, 'auprc_sd': 0.0,
                      'f1_macro_mean': 2 / 3, 'f1_macro_sd': 0.0, 'acc_mean': 0.5, 'acc_sd': 0.0,
                      'ece_mean': 0.0, 'ece_sd': 0.0, 'brier_mean': 0.25, 'brier_sd': 0.0,
-                     'nll_mean': LN2, 'nll_sd': 0.0, 'hce_mean': 0.5, 'hce_sd': 0.0,
+                     'nll_mean': LN2, 'nll_sd': 0.0, 'hce_mean': np.nan, 'hce_sd': np.nan,
                      'hce_coverage_mean': 0.0, 'hce_coverage_sd': 0.0, 'hce_count': 0,
                      'n': n, 'bin_counts': None})
 
