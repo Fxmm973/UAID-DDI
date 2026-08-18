@@ -29,7 +29,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score, average_precision_score
 
-GRID = np.arange(0.05, 1.0, 0.05)  # risk-coverage curve grid
+GRID = np.arange(0.05, 1.05, 0.05)  # risk-coverage curve grid, c in [0.05, 1.0] (paper Eq. aurc)
 
 
 def load_predictions(csv):
