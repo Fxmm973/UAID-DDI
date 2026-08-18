@@ -82,7 +82,6 @@ UAID-DDI/
 │   ├── pharddie_table4_paper.py    # Legacy triage table generator (unified semantics; superseded by shared/rq3_*.py for the rebuilt per-signal tables)
 │   ├── eval_rareddie_unified.py / aggregate_rareddie.py  # RareDDIE re-evaluation under the unified protocol
 │   ├── dataset1/                   # Benchmark dataset (few-shot split) + neg_manifests/ (SHA256-recorded)
-│   ├── dataset2/                   # Dataset 2 (reference only; not used in reported experiments)
 │   └── results/                    # Table outputs + per-seed RareDDIE results + rq3_rebuilt_PharDDIE.csv (source of Tables 5/6)
 │
 ├── EviDDIE/                        # Zero-shot model
@@ -102,7 +101,7 @@ UAID-DDI/
 │   ├── eviddie_table_discrimination.py # Zero-shot discrimination table (legacy CSV reader; superseded by shared/calibration_table.py)
 │   ├── eviddie_export_variants.py / eviddie_export_zs.py  # Legacy exports (kept for provenance)
 │   ├── neg_manifests/              # Pre-generated negative manifests + SHA256 hashes (all 5 seeds × dev/test/test2)
-│   ├── dataset1/ dataset2/         # Datasets (incl. event_embedding2.json BioSentVec prototypes)
+│   ├── dataset1/                   # Benchmark dataset (incl. event_embedding2.json BioSentVec prototypes)
 │   └── results/                    # Ablation curves/summary/sigtest, calibration table, RQ3 zero-shot CSVs, figures
 │       └── predictions/            # Per-sample zero-shot predictions (5 seeds, fixed manifest) + episode manifests
 │
@@ -149,7 +148,7 @@ pip install torch-geometric==2.6.1 rdkit-pypi==2025.03.5 numpy==1.24.3 pandas sc
 
 ### 1. Data Preparation
 
-Datasets are pre-processed and included in `PharDDIE/dataset1/` and `PharDDIE/dataset2/`. They were derived from DrugBank (version 5.x, license-restricted) and processed following the event-level split protocols from Nyamabo et al. (Briefings in Bioinformatics, 2022) and Lin et al. (Briefings in Bioinformatics, 2021).
+The benchmark dataset is pre-processed and included in `PharDDIE/dataset1/` (and mirrored under `EviDDIE/dataset1/`). They were derived from DrugBank (version 5.x, license-restricted) and processed following the event-level split protocols from Nyamabo et al. (Briefings in Bioinformatics, 2022) and Lin et al. (Briefings in Bioinformatics, 2021).
 
 Negative-sample manifests are pre-generated in `PharDDIE/dataset1/neg_manifests/` and `EviDDIE/neg_manifests/` with SHA256 hashes. Verify them with:
 

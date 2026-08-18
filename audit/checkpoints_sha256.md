@@ -50,4 +50,3 @@ and `EviDDIE/neg_manifests/manifest_hashes.json`.
 ## BioSentVec Event Embedding Files (precomputed; keys are the event description templates)
 
 - `EviDDIE/dataset1/event_embedding2.json`: `5f343b64a720eaa6ba6413a6a8b52edc3315f08528ee16460a0d7766b4e6631c` (1386481 bytes)
-- `EviDDIE/dataset2/event_embedding2.json`: `b45bfe49a9c1a87a2c90e3878e8754a9819f8bde4717653d6fb44fa920ff1e90` (1583492 bytes)
