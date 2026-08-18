@@ -1,10 +1,10 @@
-# UAID-DDI: A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Prediction with Selective Referral
+# UAID-DDI: A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Event Prediction with Selective Referral
 
-Official implementation of the paper *"A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Prediction with Selective Referral"*.
+Official implementation of the paper *"A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Event Prediction with Selective Referral"*.
 
 ## Overview
 
-UAID-DDI is a two-model framework for predicting rare drug-drug interaction (DDI) events under extreme data scarcity. Each model outputs a prediction probability $p$ together with an uncertainty signal, which drives a downstream **rule-based triage policy**. Three uncertainty signals are distinguished throughout the paper and code:
+UAID-DDI is a two-model framework for predicting rare drug-drug interaction (DDI) events under extreme data scarcity. Each model outputs a prediction probability $p$ together with an uncertainty signal, which drives a downstream **selective-referral evaluation using confidence or model-derived uncertainty signals**. Three uncertainty signals are distinguished throughout the paper and code:
 
 | Signal | Setting | Meaning |
 |--------|---------|---------|
@@ -12,7 +12,7 @@ UAID-DDI is a two-model framework for predicting rare drug-drug interaction (DDI
 | $u_{\text{latent}}$ | PharDDIE $K\ge 5$ | normalized SRAE **latent dispersion score**; a reconstruction-derived proxy with no KL-based posterior interpretation |
 | $u_{\text{EDL}} = 2/S$ | EviDDIE zero-shot | Dirichlet evidential uncertainty (total evidence $S$) |
 
-The triage policy maps each candidate to one of four actions---High-Priority Review, Expert Referral, Deferred Review, Low Priority---under the **unified semantics**: automatic set = {high-priority review, low-priority assignment} ($u \le \tau_u$); referred set = {expert referral, deferred review} ($u > \tau_u$). The paper reports triage results for the 1-shot setting; the rebuilt per-signal selective-referral comparison (raw score $p$ / MSP / margin / entropy / latent $u$ / true random referral) is reported at matched coverage and at fixed referral budgets.
+The selective-referral policy maps each candidate to one of four actions---High-Priority Review, Expert Referral, Deferred Review, Low Priority---under the **unified semantics**: automatic set = {high-priority review, low-priority assignment} ($u \le \tau_u$); referred set = {expert referral, deferred review} ($u > \tau_u$). The paper reports selective-referral results for the 1-shot setting; the rebuilt per-signal selective-referral comparison (raw score $p$ / MSP / margin / entropy / latent $u$ / true random referral) is reported at matched coverage and at fixed referral budgets.
 
 | Model | Setting | Key Modules |
 |-------|---------|-------------|
@@ -63,7 +63,7 @@ UAID-DDI/
 │   ├── audit_logger.py             # Audit trail utilities
 │   ├── calibration_table.py        # P0-2/P0-5 Table: AUROC/AUPRC/ACC/F1/Brier/NLL/ECE/HCE (+TempScale, no-skill row, reliability diagram with per-bin counts); HCE = classification error among confidence>=0.9
 │   ├── rq3_selective_referral.py   # P0-3 rebuilt per-signal selective referral (p / MSP / margin / entropy / latent u / random; selective risk = classification error rate; per-seed AURC mean±SD; error-detection AUROC/AUPRC)
-│   ├── rq3_triage_table.py         # Triage prioritization table (unified semantics; includes the independent Random row with correct error-rate risk)
+│   ├── rq3_triage_table.py         # Selective-referral / confidence-based prioritization table (unified semantics; includes the independent Random row with correct error-rate risk)
 │   └── paired_diff_rareddie.py     # P1-6: seed-paired PharDDIE-RareDDIE differences with 95% CI
 │
 ├── PharDDIE/                       # Few-shot model
@@ -78,7 +78,7 @@ UAID-DDI/
 │   ├── pharddie_export_full.py     # Main export: fixed manifests, SHA256-verified, SEED-CHAIN-checked
 │   ├── pharddie_table2.py          # Paper Table 2 (main results; 7 transcribed baselines + re-evaluated RareDDIE)
 │   ├── pharddie_table3.py / pharddie_table3_complete.py  # PharDDIE calibration rows (per-seed aggregation)
-│   ├── pharddie_table4_paper.py    # Legacy triage table generator (unified semantics; superseded by shared/rq3_*.py for the rebuilt per-signal tables)
+│   ├── pharddie_table4_paper.py    # Legacy Table 4 generator (unified semantics; superseded by shared/rq3_*.py for the rebuilt per-signal tables)
 │   ├── eval_rareddie_unified.py / aggregate_rareddie.py  # RareDDIE re-evaluation under the unified protocol
 │   ├── dataset1/                   # Benchmark dataset (few-shot split) + neg_manifests/ (SHA256-recorded)
 │   └── results/                    # Table outputs + per-seed RareDDIE results + rq3_rebuilt_PharDDIE.csv (source of Tables 5/6)
@@ -105,7 +105,7 @@ UAID-DDI/
 │       └── predictions/            # Per-sample zero-shot predictions (5 seeds, fixed manifest) + episode manifests
 │
 ├── results/                        # Paper-facing table summaries
-│   └── table4_paper.txt            # Uncertainty-aware prioritization (unified semantics, 1-shot)
+│   └── table4_paper.txt            # Selective-referral performance / confidence-based prioritization (unified semantics, 1-shot)
 │
 ├── tests/
 │   └── test_evidential_class_order.py  # Class-order convention test (negative=0, positive=1)
@@ -241,7 +241,7 @@ python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predi
     --methods "EviDDIE (frozen EDL head)" \
     --out ../EviDDIE/results/calibration_table_evi_full.csv
 
-# Table 4 — Uncertainty-aware prioritization (unified triage semantics, 1-shot;
+# Table 4 — Selective-referral performance / confidence-based prioritization (unified action semantics, 1-shot;
 #           the Random row is computed inside rq3_triage_table.py)
 python ../shared/rq3_triage_table.py
 
