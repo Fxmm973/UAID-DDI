@@ -1,0 +1,43 @@
+================================================================================
+实验记录 - ZetaDDIE
+================================================================================
+
+【实验基本信息】
+项目名称: ZetaDDIE
+开始时间: 2026-08-18 13:47:41
+
+【超参数配置】
+  aggregate: max
+  batch_size: 256
+  dataset: dataset1
+  dropout: 0.2
+  embed_dim: 128
+  embed_model: TransE
+  eval_every: 1000
+  eval_manifest_seed: 19940419
+  few: 10
+  fine_tune: True
+  grad_clip: 5.0
+  log_every: 50
+  lr: 0.001
+  margin: 5.0
+  max_batches: 20000
+  max_iter: 5000
+  max_neighbor: 30
+  neg_num: 1
+  no_meta: False
+  out_csv: predictions_dataset1_zero_shot_variants.csv
+  prefix: eviddie_new_s5
+  process_steps: 2
+  proto_weight: 2.0
+  random_embed: False
+  seed: 20240910
+  semantic: event_embedding2.json
+  semantic_noise: 0.3
+  test: False
+  train_few: 10
+  train_seed: 20240910
+  variants: wo_BSA
+  weight_decay: 0.0
+
+================================================================================

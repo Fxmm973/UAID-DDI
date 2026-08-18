@@ -9,3 +9,4 @@ EviDDIE/dataset2/DRKG_TransE_entity.npy
 .idea/
 results/reliability_diagram.png
 EviDDIE/results/predictions/predictions_dataset1_zero_shot_variants.csv
+EviDDIE/EviDDIE_Ablation_Study_new.png
