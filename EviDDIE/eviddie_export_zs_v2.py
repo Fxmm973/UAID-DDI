@@ -41,7 +41,8 @@ from shared.checkpoint import load_state_dict_safe
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
 METHOD_MAP = {'softmax': 'Softmax baseline', 'evi_no_evi': 'EviDDIE w/o EVI',
-              'wo_BSA': 'EviDDIE w/o BSA', 'full_evi': 'EviDDIE'}
+              'wo_BSA': 'EviDDIE w/o BSA', 'full_evi': 'EviDDIE',
+              'evi_full': 'EviDDIE (frozen EDL head)'}
 SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
 # fc output channel convention: 0 = negative, 1 = positive; prob = alpha[:,1]/S.
 CLASS_ORDER = ('negative', 'positive')
