@@ -61,10 +61,11 @@ UAID-DDI/
 │   ├── audit_leakage.py            # Six-part leakage audit (support-query / pos-neg / ordered / unordered / cross-split / KG-edge)
 │   ├── audit_drug_overlap.py       # Drug-overlap audit across splits
 │   ├── audit_logger.py             # Audit trail utilities
-│   ├── calibration_table.py        # P0-2/P0-5 Table: AUROC/AUPRC/ACC/F1/Brier/NLL/ECE/HCE (+TempScale, no-skill row, reliability diagram with per-bin counts)
-│   ├── rq3_selective_referral.py   # P0-3 rebuilt per-signal selective referral (p / MSP / margin / entropy / latent u / random; per-seed AURC mean±SD; error-detection AUROC/AUPRC)
+│   ├── calibration_table.py        # P0-2/P0-5 Table: AUROC/AUPRC/ACC/F1/Brier/NLL/ECE/HCE (+TempScale, no-skill row, reliability diagram with per-bin counts); HCE = classification error among confidence>=0.9
+│   ├── rq3_selective_referral.py   # P0-3 rebuilt per-signal selective referral (p / MSP / margin / entropy / latent u / random; selective risk = classification error rate; per-seed AURC mean±SD; error-detection AUROC/AUPRC)
 │   ├── rq3_triage_table.py         # Triage prioritization table (unified semantics)
-│   └── rq3_triage_priority_random.py  # Independent Random row for the triage table (per-seed × coverage, 200 repeats, 95% CI)
+│   ├── rq3_triage_priority_random.py  # Independent Random row for the triage table (per-seed × coverage, 200 repeats, 95% CI)
+│   └── paired_diff_rareddie.py     # P1-6: seed-paired PharDDIE-RareDDIE differences with 95% CI
 │
 ├── PharDDIE/                       # Few-shot model
 │   ├── pharddie_args.py            # Hyperparameters & CLI
@@ -72,7 +73,7 @@ UAID-DDI/
 │   ├── pharddie_layers.py          # SHCR: HiddenChannelReweightingTransformerConv
 │   ├── pharddie_models.py          # MVN_DDI: molecular encoder with SAGPooling
 │   ├── pharddie_matcher.py         # EmbedMatcher: ACI + SRAE + scorer
-│   ├── pharddie_trainer.py         # Training loop; dev checkpoint selection on the fixed manifest (P0-4 parity)
+│   ├── pharddie_trainer.py         # Training loop; dev checkpoint selection under the fixed-seed dynamic validation protocol
 │   ├── pharddie_train_wo_unc.py    # Ablation: train without uncertainty branch
 │   ├── pharddie_export.py          # w/o-uncertainty variant export (manifest-based)
 │   ├── pharddie_export_full.py     # Main export: fixed manifests, SHA256-verified, SEED-CHAIN-checked
@@ -230,10 +231,17 @@ python eviddie_export_zs_v2.py \
 cd PharDDIE
 python pharddie_table2.py
 
-# Table 3 — Zero-shot discrimination + calibration (EviDDIE native / +TempScale / no-skill;
-#           PharDDIE rare rows for comparison)
+# Table 3 — Zero-shot discrimination + calibration: production EviDDIE + the four
+#           frozen-head rows (Softmax / w/o EVI / w/o BSA / frozen EDL head) + TempScale
+#           + no-skill; PharDDIE rare rows for comparison
 python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv \
+    --methods "EviDDIE" "Softmax baseline" "EviDDIE w/o EVI" "EviDDIE w/o BSA" \
     --out ../EviDDIE/results/calibration_table_variants.csv --fig ../EviDDIE/reliability_diagram_new.png
+
+# Table 3 — Frozen EDL head rows (exported from the retrained evi_full heads)
+python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predictions_evi_full_frozen.csv \
+    --methods "EviDDIE (frozen EDL head)" \
+    --out ../EviDDIE/results/calibration_table_evi_full.csv
 
 # Table 4 — Uncertainty-aware prioritization (unified triage semantics, 1-shot)
 python ../shared/rq3_triage_table.py
@@ -242,6 +250,10 @@ python ../shared/rq3_triage_priority_random.py
 # Tables 5/6 — Rebuilt per-signal selective referral (matched coverage / fixed budget)
 python ../shared/rq3_selective_referral.py
 # -> PharDDIE/results/rq3_rebuilt_PharDDIE.csv (1-shot, per-seed AURC mean±SD, random 95% CI)
+
+# Seed-paired PharDDIE-RareDDIE differences (mean + 95% CI, P1-6)
+python ../shared/paired_diff_rareddie.py
+# -> PharDDIE/results/paired_diff_PharDDIE_RareDDIE.csv
 ```
 
 All table scripts abort if the underlying prediction CSVs do not cover the five training seeds, and the export scripts verify checkpoint-hash uniqueness and manifest SHA256 before writing any output.

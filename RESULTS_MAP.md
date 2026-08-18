@@ -47,6 +47,10 @@
 - **Per-seed results**: `PharDDIE/results/rareddie_seed_{seed}.txt`;
   **aggregation**: `PharDDIE/aggregate_rareddie.py` →
   `PharDDIE/results/rareddie_unified_results.txt` (mean ± population SD).
+- **Seed-paired differences (P1-6)**: `shared/paired_diff_rareddie.py` computes per-seed
+  PharDDIE−RareDDIE differences on rare events (1-shot/5-shot × AUC/ACC/F1) with
+  mean ± 95% CI (t_{0.975,4}) →
+  `PharDDIE/results/paired_diff_PharDDIE_RareDDIE.csv`; all intervals include zero.
 - Its published values are shown for reference only.
 
 ### Baseline Methods (7 methods)
@@ -81,7 +85,8 @@ earlier concatenation-based comparator used by pre-revision drafts.
   seed first**, aggregated as mean ± SD over the five seeds (P0-5); temperature scaling is
   fitted per seed on that seed's dev (common) rows and applied to its held-out rows;
   includes the analytic no-skill $p{=}0.5$ row (Brier 0.25, NLL ln 2) and prints the
-  P0-2 proper-scoring-baseline verdict. Output: `EviDDIE/results/calibration_table_variants.csv` (all three heads).
+  P0-2 proper-scoring-baseline verdict. Output: `EviDDIE/results/calibration_table_variants.csv`
+  (production EviDDIE + the frozen-head rows) and `EviDDIE/results/calibration_table_evi_full.csv`.
 - **PharDDIE rare-event rows** (same table, for side-by-side comparison): computed from
   `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (rare setting,
   1/5-shot), pooled AUROC/AUPRC/ACC + event-macro F1, mean ± SD over the five seeds.
@@ -89,13 +94,20 @@ earlier concatenation-based comparator used by pre-revision drafts.
   `EviDDIE/reliability_diagram_new.png` (Fewer | Rare panels, 10 equal-width predicted-probability
   bins with per-bin sample counts, native evidential bars + per-seed temperature-scaled
   curves). Equivalent standalone generator: `EviDDIE/eviddie_reliability_figure.py`.
-- **Same-protocol reference rows (Softmax baseline / EviDDIE w/o EVI)**: computed
-  from the frozen-backbone ablation heads with the identical script and pipeline:
-  `shared/calibration_table.py --methods "Softmax baseline" "EviDDIE w/o EVI"` →
+- **Frozen-head rows (head-only controlled comparison)**: the four frozen heads
+  (Softmax baseline, EviDDIE w/o EVI, EviDDIE w/o BSA, EviDDIE (frozen EDL head))
+  share the identical frozen backbone, identical 5,000-iteration budget, identical
+  manifest, and identical calibration pipeline, so their differences are attributable
+  to the head components alone (P0-2 head-only protocol). Sources:
+  `predictions_eviddie_new_ablation.csv` (softmax / w/o EVI / w/o BSA) and
+  `EviDDIE/results/predictions/predictions_evi_full_frozen.csv` (frozen EDL head,
+  exported from the retrained `evi_full` heads). Compute:
+  `shared/calibration_table.py --methods ...` →
   `EviDDIE/results/calibration_table_variants.csv` (with the variant reliability
-  figure `EviDDIE/results/reliability_variants.png`).
-- **High-confidence error (HCE)**: confidence > 0.9; coverage and counts reported
-  (fewer 5.9% = 240 of 4080; rare 1.7% = 18 of 1080, native EviDDIE).
+  figure `EviDDIE/results/reliability_variants.png`) and
+  `EviDDIE/results/calibration_table_evi_full.csv`.
+- **High-confidence error (HCE)**: classification error among confidence $c=\max(p,1-p)\ge0.9$;
+  coverage and counts reported (fewer 6.0\% = 245 of 4080; rare 1.5\% = 16 of 1080, native EviDDIE).
 - **Evaluation episode manifests** (P0-5): `EviDDIE/results/predictions/episode_manifests/`
   (one JSON per training seed).
 
