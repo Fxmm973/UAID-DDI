@@ -170,9 +170,10 @@ earlier concatenation-based comparator used by pre-revision drafts.
     repetitions, mean ± 95% CI.
 - **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot).
 - **Output**: `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` — the sole data source of the
-  paper's Tables 5 and 6 (e.g., fewer p-AURC 0.2006 ± 0.0046, MSP-AURC 0.4127 ± 0.0478;
-  30%-coverage risks 0.0574 / 0.4236 / 0.4000 / random 0.5010 ± 0.0038). Budgets of
-  10%/30%/50% correspond to automatic coverages of 90%/70%/50%.
+  paper's Tables 5 and 6 (e.g., fewer p-AURC 0.1686 ± 0.0162, MSP-AURC 0.0918 ± 0.0066;
+  30%-coverage risks p 0.0574 / MSP 0.0278 / latent u 0.2692 / random 0.2373 ± 0.0033;
+  AURC is the trapezoidal integral over the coverage grid c ∈ [0.05, 1.0], step 0.05).
+  Budgets of 10%/30%/50% correspond to automatic coverages of 90%/70%/50%.
 
 ---
 
