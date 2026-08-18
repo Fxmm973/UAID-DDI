@@ -118,8 +118,8 @@ class AblationTrainer:
     def _proto(self, task_name, use_bsa):
         sem = self.t.task_ebmedding[self.t.task2id[task_name]].unsqueeze(0)
         if use_bsa:
-            return self.G_m(sem).detach()
-        return self.linear_proj(sem).detach()
+            return self.G_m(sem).detach()      # backbone generator is frozen
+        return self.linear_proj(sem)           # trainable w/o BSA projection (gradient must flow)
 
     def train_variant(self, variant_name, csv_writer, max_iter):
         use_bsa = (variant_name != 'wo_BSA')
