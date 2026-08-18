@@ -1,6 +1,6 @@
-# UAID-DDI: An Uncertainty-Aware Framework for Rare Drug-Drug Interaction Prediction with Rule-Based Triage
+# UAID-DDI: A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Prediction with Selective Referral
 
-Official implementation of the paper *"An Uncertainty-Aware Framework for Rare Drug-Drug Interaction Prediction with Rule-Based Triage"*.
+Official implementation of the paper *"A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Prediction with Selective Referral"*.
 
 ## Overview
 

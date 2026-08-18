@@ -2,7 +2,7 @@
 
 ## Version Info
 - Last updated: 2026-08-18
-- Paper: `fyx_8_16(3) (2).tex` (reviewer-revision with P0-1 … P0-5 fixes)
+- Paper: `fyx_8_18 (1).tex` (reviewer revision addressing all P0/P1/P2 comments)
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI) — all values below
   are reproduced by the scripts listed here, from the per-sample prediction CSVs shipped
   in this repository.
