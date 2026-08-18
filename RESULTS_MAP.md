@@ -277,4 +277,4 @@ analysis above; these zero-shot files are exploratory and are kept for reference
 5. **Zero-shot calibration claim**: per the P0-2 revision, the paper's claim is limited
    to "reduces overconfidence relative to the softmax baseline together with usable
    discrimination"; high-confidence error remains elevated but affects only a small
-   candidate fraction (fewer 5.9%, rare 1.7%).
+   candidate fraction (fewer 6.0%, rare 1.5%).
