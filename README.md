@@ -63,8 +63,7 @@ UAID-DDI/
 │   ├── audit_logger.py             # Audit trail utilities
 │   ├── calibration_table.py        # P0-2/P0-5 Table: AUROC/AUPRC/ACC/F1/Brier/NLL/ECE/HCE (+TempScale, no-skill row, reliability diagram with per-bin counts); HCE = classification error among confidence>=0.9
 │   ├── rq3_selective_referral.py   # P0-3 rebuilt per-signal selective referral (p / MSP / margin / entropy / latent u / random; selective risk = classification error rate; per-seed AURC mean±SD; error-detection AUROC/AUPRC)
-│   ├── rq3_triage_table.py         # Triage prioritization table (unified semantics)
-│   ├── rq3_triage_priority_random.py  # Independent Random row for the triage table (per-seed × coverage, 200 repeats, 95% CI)
+│   ├── rq3_triage_table.py         # Triage prioritization table (unified semantics; includes the independent Random row with correct error-rate risk)
 │   └── paired_diff_rareddie.py     # P1-6: seed-paired PharDDIE-RareDDIE differences with 95% CI
 │
 ├── PharDDIE/                       # Few-shot model
@@ -242,9 +241,9 @@ python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predi
     --methods "EviDDIE (frozen EDL head)" \
     --out ../EviDDIE/results/calibration_table_evi_full.csv
 
-# Table 4 — Uncertainty-aware prioritization (unified triage semantics, 1-shot)
+# Table 4 — Uncertainty-aware prioritization (unified triage semantics, 1-shot;
+#           the Random row is computed inside rq3_triage_table.py)
 python ../shared/rq3_triage_table.py
-python ../shared/rq3_triage_priority_random.py
 
 # Tables 5/6 — Rebuilt per-signal selective referral (matched coverage / fixed budget)
 python ../shared/rq3_selective_referral.py

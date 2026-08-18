@@ -16,7 +16,7 @@
 | Datasets summary (Table 1) | — | Text-only table |
 | Main results 1/5-shot (Table 2) | `PharDDIE/pharddie_table2.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (+ RareDDIE re-evaluated under the unified protocol; 7 baselines transcribed from published source data) |
 | Zero-shot discrimination + calibration (Table 3) | `shared/calibration_table.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE/results/calibration_table_variants.csv`; PharDDIE rare rows from the PharDDIE CSV above |
-| Uncertainty-aware prioritization (Table 4) | `shared/rq3_triage_table.py` + `shared/rq3_triage_priority_random.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) |
+| Uncertainty-aware prioritization (Table 4) | `shared/rq3_triage_table.py` (Random row computed internally with the error-rate definition) | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) |
 | Selective referral, matched coverage (Table 5) | `shared/rq3_selective_referral.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) → `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` |
 | Selective referral, fixed budgets (Table 6) | `shared/rq3_selective_referral.py` | same CSV / same output file |
 | Reliability diagram (Fig., RQ2) | `shared/calibration_table.py --fig` (equivalently `EviDDIE/eviddie_reliability_figure.py`) | same zero-shot CSV → `EviDDIE/reliability_diagram_new.png` |
@@ -140,9 +140,9 @@ earlier concatenation-based comparator used by pre-revision drafts.
 
 ## Uncertainty-Aware Prioritization (Triage) — Table 4
 
-- **Scripts**: `shared/rq3_triage_table.py` (main rows) and
-  `shared/rq3_triage_priority_random.py` (independent Random row: per seed × coverage,
-  200 random referral repetitions, mean ± 95% CI).
+- **Scripts**: `shared/rq3_triage_table.py` (main rows and the independent Random row:
+  per seed × coverage, 200 random referral repetitions, mean ± 95% CI, risk computed
+  with the classification-error-rate definition).
 - **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot).
 - Unified action semantics (automatic = {high-priority, low-priority}, referred =
   {expert referral, deferred review}); coverage = P(u ≤ τ_u); referral rate = P(u > τ_u).
