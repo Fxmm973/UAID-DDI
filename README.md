@@ -81,7 +81,7 @@ UAID-DDI/
 │   ├── pharddie_table4_paper.py    # Legacy triage table generator (unified semantics; superseded by shared/rq3_*.py for the rebuilt per-signal tables)
 │   ├── eval_rareddie_unified.py / aggregate_rareddie.py  # RareDDIE re-evaluation under the unified protocol
 │   ├── dataset1/                   # Benchmark dataset (few-shot split) + neg_manifests/ (SHA256-recorded)
-│   ├── dataset2/                   # Dataset 2 (source of the EviDDIE training tasks)
+│   ├── dataset2/                   # Dataset 2 (reference only; not used in reported experiments)
 │   └── results/                    # Table outputs + per-seed RareDDIE results + rq3_rebuilt_PharDDIE.csv (source of Tables 5/6)
 │
 ├── EviDDIE/                        # Zero-shot model
