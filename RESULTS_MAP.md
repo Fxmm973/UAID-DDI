@@ -229,6 +229,28 @@ analysis above; these zero-shot files are exploratory and are kept for reference
 
 ---
 
+## Metric Definitions (2026-08-18 audit fixes)
+
+- **ECE**: `M=10` equal-width **predicted-probability** bins over $p$,
+  $\mathrm{ECE}=\sum_m |B_m|/N \cdot |\mathrm{acc}(B_m)-\mathrm{conf}(B_m)|$ with
+  $\mathrm{acc}(B_m)$ = mean label and $\mathrm{conf}(B_m)$ = mean $p$ per bin
+  (paper Eq. ece, revised). Implemented identically in `shared/calibration_table.py`
+  and `PharDDIE/pharddie_table3_complete.py`.
+- **HCE**: classification error rate $\mathbb{I}(\hat y_i \neq y_i)$ among samples with
+  confidence $c=\max(p,1-p)\ge0.9$ (paper Eq. hce). Fixed on 2026-08-18: the previous
+  implementation returned the negative-class proportion (`1 - mean(y)`) instead of the
+  error rate; the corrected values are in
+  `EviDDIE/results/calibration_table_variants.csv` (no-skill row: HCE undefined, `---`).
+- **Selective risk**: classification error rate on the retained set,
+  $\frac{1}{|\mathcal{A}|}\sum_{i\in\mathcal{A}}\mathbb{I}(\hat y_i \neq y_i)$
+  (paper Eq. selrisk). Fixed on 2026-08-18 in `shared/rq3_selective_referral.py`
+  (previous implementation returned `1 - mean(y)`); the corrected per-signal values are
+  in `PharDDIE/results/rq3_rebuilt_PharDDIE.csv`. Under the corrected definition the
+  entropy-based (confidence) reject option attains the lowest selective risk at matched
+  coverage, and the random-referral risk equals the model's overall error rate.
+
+---
+
 ## Known Limitations
 
 1. **Checkpoint availability**: trained checkpoints are not in the repository due to

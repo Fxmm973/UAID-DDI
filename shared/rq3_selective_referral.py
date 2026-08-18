@@ -95,22 +95,24 @@ def keep_mask_from_signal(sig_values, keep_frac, signal, rng=None):
     return mask
 
 
-def selective_risk(y_true, keep_mask):
-    kept = y_true[keep_mask]
-    if len(kept) == 0:
+def selective_risk(y_true, y_pred, keep_mask):
+    """Paper Eq. (selrisk): classification error rate (0.5-threshold) on the
+    retained (automatic) set, NOT the negative-class proportion."""
+    kept_y, kept_pred = y_true[keep_mask], y_pred[keep_mask]
+    if len(kept_y) == 0:
         return np.nan
-    return 1.0 - kept.mean()  # error rate on the retained (automatic) set
+    return float((kept_pred != kept_y).mean())
 
 
-def per_seed_curve(y_true, sig_values, signal, rng=None, n_random=200):
+def per_seed_curve(y_true, y_pred, sig_values, signal, rng=None, n_random=200):
     """Risk-coverage curve on the GRID for one seed. For 'random', the expected
-    selective risk at every coverage is the population error rate (analytic), so
-    the curve is constant."""
+    selective risk at every coverage is the population classification error rate
+    (analytic), so the curve is constant."""
     if signal == 'random':
-        return np.full(len(GRID), 1.0 - y_true.mean())
+        return np.full(len(GRID), float((y_pred != y_true).mean()))
     risks = []
     for c in GRID:
-        r = selective_risk(y_true, keep_mask_from_signal(sig_values, c, signal, rng))
+        r = selective_risk(y_true, y_pred, keep_mask_from_signal(sig_values, c, signal, rng))
         risks.append(r)
     return np.asarray(risks)
 
@@ -120,9 +122,9 @@ def aurc(risks):
     return np.trapz(risks, GRID)
 
 
-def random_referral_stats(y_true, coverage, rng, n_random=200):
+def random_referral_stats(y_true, y_pred, coverage, rng, n_random=200):
     """True random referral at a fixed coverage: mean +- 95% CI over repeats."""
-    rs = np.asarray([selective_risk(y_true, keep_mask_from_signal(
+    rs = np.asarray([selective_risk(y_true, y_pred, keep_mask_from_signal(
         y_true.astype(float), coverage, 'random', rng)) for _ in range(n_random)])
     m, s = rs.mean(), rs.std(ddof=1)
     ci = 1.96 * s / np.sqrt(len(rs))
@@ -171,7 +173,8 @@ def main():
                     sv = sd[signal].values if signal != 'random' else sd['prob'].values
                     if signal == 'u' and np.isnan(sv).all():
                         continue
-                    curve = per_seed_curve(y, sv, signal, rng=rng, n_random=args.n_random)
+                    curve = per_seed_curve(y, sd['y_pred'].values, sv, signal,
+                                          rng=rng, n_random=args.n_random)
                     per_seed_risks.append(curve)
                     per_seed_aurcs.append(aurc(curve))
                 if not per_seed_aurcs:
@@ -197,11 +200,12 @@ def main():
                         if signal == 'u' and np.isnan(sv).all():
                             continue
                         if signal == 'random':
-                            m, ci = random_referral_stats(y, c, rng, n_random=args.n_random)
+                            m, ci = random_referral_stats(y, sd['y_pred'].values, c, rng,
+                                                          n_random=args.n_random)
                             vals.append((m, ci))
                         else:
                             mask = keep_mask_from_signal(sv, c, signal, rng=rng)
-                            vals.append((selective_risk(y, mask), np.nan))
+                            vals.append((selective_risk(y, sd['y_pred'].values, mask), np.nan))
                     if vals:
                         means = [v[0] for v in vals]
                         cis = [v[1] for v in vals if not np.isnan(v[1])]

@@ -53,12 +53,22 @@ def ece_brier_nll(probs, labels, n_bins=10):
     return ece, brier, nll, counts
 
 
-def hce(probs, labels):
+def hce(probs, labels, tau=HIGH_CONF):
+    """High-confidence error rate (paper Eq. hce): classification error among
+    samples with confidence c = max(p, 1-p) >= tau."""
+    probs = np.asarray(probs)
+    labels = np.asarray(labels).astype(int)
+
     conf = np.maximum(probs, 1 - probs)
-    m = conf > HIGH_CONF
-    if m.sum() == 0:
+    mask = conf >= tau
+
+    if mask.sum() == 0:
         return np.nan, 0.0, 0
-    return float(1.0 - labels[m].mean()), float(m.mean()), int(m.sum())
+
+    pred = (probs >= 0.5).astype(int)
+    err = (pred[mask] != labels[mask]).mean()
+
+    return float(err), float(mask.mean()), int(mask.sum())
 
 
 def event_macro_f1(g):

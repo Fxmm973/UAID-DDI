@@ -22,7 +22,7 @@ def compute_ece(confidences, predictions, labels, n_bins=15):
         in_bin = (confidences > bin_boundaries[i]) & (confidences <= bin_boundaries[i+1])
         bin_size = np.sum(in_bin)
         if bin_size > 0:
-            acc_in_bin = np.mean(predictions[in_bin] == labels[in_bin])
+            acc_in_bin = np.mean(labels[in_bin])
             avg_conf_in_bin = np.mean(confidences[in_bin])
             ece += (bin_size / len(confidences)) * np.abs(acc_in_bin - avg_conf_in_bin)
     return ece
@@ -52,7 +52,7 @@ def compute_calibration_metrics(y_true, y_prob, y_pred):
     confidence = np.maximum(y_prob, 1 - y_prob)
 
     results = {}
-    results['ECE'] = compute_ece(confidence, y_pred, y_true, n_bins=15)
+    results['ECE'] = compute_ece(y_prob, y_pred, y_true, n_bins=10)
     results['Brier'] = compute_brier(y_prob, y_true)
     results['NLL'] = compute_nll(y_prob, y_true)
     results['Avg_Conf'] = np.mean(confidence)
