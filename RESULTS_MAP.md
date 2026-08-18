@@ -90,10 +90,10 @@ earlier concatenation-based comparator used by pre-revision drafts.
   bins with per-bin sample counts, native evidential bars + per-seed temperature-scaled
   curves). Equivalent standalone generator: `EviDDIE/eviddie_reliability_figure.py`.
 - **Same-protocol reference rows (Softmax baseline / EviDDIE w/o EVI)**: computed
-  from the frozen-backbone ablation heads with the identical script and pipeline
-  () →
-   (with variant reliability figure
-  ).
+  from the frozen-backbone ablation heads with the identical script and pipeline:
+  `shared/calibration_table.py --methods "Softmax baseline" "EviDDIE w/o EVI"` →
+  `EviDDIE/results/calibration_table_variants.csv` (with the variant reliability
+  figure `EviDDIE/results/reliability_variants.png`).
 - **High-confidence error (HCE)**: confidence > 0.9; coverage and counts reported
   (fewer 5.9% = 240 of 4080; rare 1.7% = 18 of 1080, native EviDDIE).
 - **Evaluation episode manifests** (P0-5): `EviDDIE/results/predictions/episode_manifests/`
