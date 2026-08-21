@@ -208,10 +208,13 @@ def test_nltkish_tokenizer_reference_pipeline():
         "drugbank", ":carrier", ":compound", "gene"]
     assert tokenize_nltkish("Hetionet::CbG::Compound:Gene") == [
         "hetionet", ":cbg", ":compound", "gene"]
-    # bundled stopword list sanity
-    assert "the" in _NLTK_EN_STOPWORDS and "and" in _NLTK_EN_STOPWORDS
+    # bundled stopword list: EXACT equality with the real NLTK english corpus
+    # (the bundled constant must match byte-exactly; it is gate-critical)
+    from nltk.corpus import stopwords
+    real = set(stopwords.words("english"))
+    assert len(_NLTK_EN_STOPWORDS) == 198
+    assert _NLTK_EN_STOPWORDS == real
     assert "drug" not in _NLTK_EN_STOPWORDS
-    assert len(_NLTK_EN_STOPWORDS) >= 150
 
 
 def test_missing_magic(tmp_path):
