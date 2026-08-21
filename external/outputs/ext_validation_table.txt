@@ -1,0 +1,15 @@
+Setting | Variant | AUROC | AUPRC | ACC | F1 | macro-F1 | n_events
+--------|---------|-------|-------|-----|----|----------|---------
+1shot | native | 0.479 ± 0.035 | 0.509 ± 0.033 | 0.498 ± 0.003 | 0.395 ± 0.361 | 0.388 ± 0.355 | 73
+1shot | native (no-skill) | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.667 ± 0.000 | 0.667 ± 0.000 | 73
+1shot | tail-corrupted | 0.487 ± 0.020 | 0.496 ± 0.015 | 0.498 ± 0.004 | 0.393 ± 0.359 | 0.392 ± 0.358 | 179
+1shot | tail-corrupted (no-skill) | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.667 ± 0.000 | 0.667 ± 0.000 | 179
+5shot | native | 0.500 ± 0.098 | 0.602 ± 0.095 | 0.500 ± 0.000 | 0.400 ± 0.365 | 0.400 ± 0.365 | 6
+5shot | native (no-skill) | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.667 ± 0.000 | 0.667 ± 0.000 | 6
+5shot | tail-corrupted | 0.481 ± 0.026 | 0.489 ± 0.025 | 0.500 ± 0.000 | 0.394 ± 0.360 | 0.393 ± 0.359 | 23
+5shot | tail-corrupted (no-skill) | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.500 ± 0.000 | 0.667 ± 0.000 | 0.667 ± 0.000 | 23
+
+# n_events: number of events entering the macro-F1 mean (events with a single
+# class in y_true are excluded); no-skill = constant p=0.5 predictor (AUROC=0.5,
+# AUPRC=positive prevalence, ACC=0.5 on balanced sets). Metrics: mean ± SD across
+# train seeds (ddof=1).
