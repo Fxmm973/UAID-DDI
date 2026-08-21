@@ -37,8 +37,7 @@ def compute_metrics(y_true, y_prob, group_by_event):
 def main():
     BASE = os.path.dirname(os.path.abspath(__file__))
     csv_paths = [
-        os.path.join(BASE, 'results/predictions/predictions_dataset1_zero_shot_variants.csv'),
-        os.path.join(BASE, '..', 'PharDDIE', 'results/predictions/predictions_dataset1_zero_shot_variants.csv'),
+        os.path.join(BASE, 'results/predictions/predictions_eviddie_new_ablation.csv'),
     ]
     df = None
     for p in csv_paths:
