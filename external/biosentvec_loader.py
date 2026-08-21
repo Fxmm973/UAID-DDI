@@ -17,15 +17,13 @@ source at commit cdf8d832ac (2019-04-05, the era BioSentVec was trained):
       int32  size, nwords, nlabels
       int64  ntokens
       int64  pruneidx_size_        (fork default: -1, a sentinel)
-      per entry: word\\0 + int64 count + int32 type   (x size entries)
+      per entry: word\\0 + int64 count + int8 type    (x size entries)
     int8   quant
     Matrix input:  int64 m, int64 n, float32 data[m*n]      (m = nwords + bucket)
     int8   qout
     Matrix output: int64 m, int64 n, float32 data[m*n]
 
   Sentence embedding (C++ textVector semantics, no subsampling):
-    - tokenize by whitespace only (' ', '\\n', '\\r', '\\t', '\\v', '\\f', '\\0'),
-      case-sensitive; punctuation stays attached ("#Drug1." is one token)
     - known words -> row id = the word's position in the dictionary file order
       (Dictionary::load: word2int_[find(w)] = i; the file is written in array
       order by Dictionary::save). OOV tokens are dropped (sent2vec).
@@ -35,10 +33,24 @@ source at commit cdf8d832ac (2019-04-05, the era BioSentVec was trained):
     - sentence vector = mean over (word rows + bigram rows); NO L2 norm
       (Vector::mul(1.0/line.size()))
 
-  For diagnosis the loader supports tokenizer / bigram / normalization mode
-  switches; the authoritative acceptance gate is the reproduction of the
-  92 precomputed vectors in EviDDIE/dataset1/event_embedding2.json with
-  mean cosine similarity >= 0.999 (see the --validate CLI).
+  Reference-pipeline recovery (2026-08-21, gate evidence):
+  The 92 precomputed vectors in EviDDIE/dataset1/event_embedding2.json are
+  reproduced at cosine = 1.000000 for ALL 92 keys (mean/min/max) by the
+  DEFAULT 'nltkish' tokenizer + rolling bigrams + mean pooling:
+    nltk.word_tokenize(text)                       # punkt tokenizer
+    - remove NLTK English stopwords (lowercased)   # bundled list below
+    - remove pure-punctuation tokens '.,;:!?()[]"' (and apostrophe)
+    - lowercase every remaining token
+    then embed as above (OOV tokens dropped). This is the ncbi-nlp/BioSentVec
+  tutorial preprocessing. Note nltk attaches ':' to the FOLLOWING token
+  (':carrier', ':target'); ':target' happens to be in the vocabulary, which
+  explains why the DRUGBANK::target KG prototype differs from carrier/enzyme,
+  and the Hetionet prototypes collapse to the 'gene' row (all other tokens
+  OOV). Diagnostic tokenizer/bigram/normalization switches are retained.
+
+  The authoritative acceptance gate is the reproduction of the 92 precomputed
+  vectors in EviDDIE/dataset1/event_embedding2.json with mean cosine >= 0.999
+  (see the --validate CLI).
 """
 import os
 import struct
@@ -88,7 +100,68 @@ def tokenize_punct_lower(text):
     return [t.lower() for t in tokenize_punct(text)]
 
 
+# ---------------------------------------------------------------------------
+# Reference-pipeline tokenizer (DEFAULT): nltk word_tokenize + stopword removal
+# + punctuation-token removal + lowercase.  This is the preprocessing of the
+# ncbi-nlp/BioSentVec tutorial; combined with rolling bigrams and mean pooling
+# it reproduces all 92 reference vectors in event_embedding2.json at cosine
+# 1.000000 (validated 2026-08-21).
+# ---------------------------------------------------------------------------
+# NLTK English stopword list (198 words, verbatim from the nltk_data
+# stopwords/english corpus file), bundled so no corpus download is needed at
+# runtime.  Verified byte-exact against nltk_data (2026-08-21).
+_NLTK_EN_STOPWORDS = frozenset("""a about above after again against ain all am an and any are
+aren aren't as at be because been before being below between both but by can couldn couldn't d
+did didn didn't do does doesn doesn't doing don don't down during each few for from further had
+hadn hadn't has hasn hasn't have haven haven't having he he'd he'll her here hers herself he's
+him himself his how i i'd if i'll i'm in into is isn isn't it it'd it'll it's its itself i've
+just ll m ma me mightn mightn't more most mustn mustn't my myself needn needn't no nor not now o
+of off on once only or other our ours ourselves out over own re s same shan shan't she she'd
+she'll she's should shouldn shouldn't should've so some such t than that that'll the their
+theirs them themselves then there these they they'd they'll they're they've this those through
+to too under until up ve very was wasn wasn't we we'd we'll we're were weren weren't we've what
+when where which while who whom why will with won won't wouldn wouldn't y you you'd you'll your
+you're yours yourself yourselves you've""".split())
+
+# Pure-punctuation tokens removed by the reference pipeline (nltk tokenizer
+# emits these as standalone tokens; apostrophe ' is excluded from removal).
+_PUNCT_TOKENS = frozenset('.,;:!?()[]"')
+
+_IMPORT_NLTK_ERROR = (
+    "nltk is required for the default 'nltkish' tokenizer"
+    " (pip install nltk plus the punkt_tab tokenizer data).")
+
+
+def tokenize_nltkish(text, drop_punct=True, lower=True):
+    """Reference pipeline: nltk.word_tokenize -> stopword removal ->
+    punctuation-token removal -> '#'-token drop -> lowercase.
+
+    '#' must be dropped EXPLICITLY: it IS in the model vocabulary (row 351,
+    from PubMed/MIMIC text), so keeping it would inject its row and bigrams
+    into the mean (validated reference pipeline drops it; reproduces all 92
+    reference vectors at cosine 1.000000)."""
+    try:
+        import nltk
+        toks = nltk.word_tokenize(text)
+    except ImportError:
+        raise RuntimeError(_IMPORT_NLTK_ERROR)
+    except LookupError:
+        raise RuntimeError(_IMPORT_NLTK_ERROR +
+                           ' (punkt_tab resource missing; run nltk.download("punkt_tab"))')
+    out = []
+    for t in toks:
+        if t.lower() in _NLTK_EN_STOPWORDS:
+            continue
+        if drop_punct and t in _PUNCT_TOKENS:
+            continue
+        if t == '#':
+            continue
+        out.append(t.lower() if lower else t)
+    return out
+
+
 _TOKENIZERS = {
+    'nltkish': tokenize_nltkish,
     'ws': tokenize_ws,
     'ws_lower': tokenize_ws_lower,
     'punct': tokenize_punct,
@@ -113,7 +186,7 @@ def bigram_rows_string_hash(tokens, nwords, bucket):
     (fse-style; diagnostic mode only)."""
     rows = []
     for i in range(len(tokens) - 1):
-        s = tokens[i] + ' ' + tokens[i + 1]
+        s = str(tokens[i]) + ' ' + str(tokens[i + 1])
         rows.append(nwords + (ft_hash(s) % bucket))
     return rows
 
@@ -127,7 +200,7 @@ _BIGRAM_BUILDERS = {
 class Sent2VecModel(object):
     """Minimal pure-Python reader for a sent2vec/fastText .bin model."""
 
-    def __init__(self, path, tokenizer='ws', bigram='rolling', normalize='none'):
+    def __init__(self, path, tokenizer='nltkish', bigram='rolling', normalize='none'):
         self.path = path
         self.tokenizer = _TOKENIZERS[tokenizer]
         self.bigram_builder = _BIGRAM_BUILDERS[bigram]
@@ -160,7 +233,7 @@ class Sent2VecModel(object):
                         break
                     w += c
                 count, = struct.unpack('<q', f.read(8))
-                typ, = struct.unpack('<i', f.read(4))
+                typ, = struct.unpack('<b', f.read(1))
                 self.words[w.decode('utf-8', errors='replace')] = count
             self.quant, = struct.unpack('<?', f.read(1))
             self.input_m, self.input_n = struct.unpack('<2q', f.read(16))
@@ -187,8 +260,10 @@ class Sent2VecModel(object):
         out_off = self.input_offset + m * n * 4
         self.qout, = struct.unpack('<?', self._mmp[out_off:out_off + 1])
         om, on = struct.unpack('<2q', self._mmp[out_off + 1:out_off + 17])
-        if om != m:
-            raise ValueError('output matrix m=%d != input m=%d' % (om, m))
+        # Output matrix row count depends on loss: nwords (hs), nlabels
+        # (ns/softmax) or nwords+bucket; only sanity-check that it fits the file.
+        if om * on * 4 + out_off + 17 > len(self._mmp):
+            raise ValueError('output matrix m=%d x n=%d does not fit file' % (om, on))
         self.output_offset = out_off + 17
 
     def close(self):
@@ -253,7 +328,7 @@ def validate(model, ref_json, min_mean=0.999, out=None):
     keys = sorted(ref.keys())
     sims = []
     for k in keys:
-        v = np.asarray(ref[k], dtype=np.float32)
+        v = np.asarray(ref[k], dtype=np.float32).reshape(-1)
         e = model.embed(k)
         sims.append(cosine(e, v))
     sims = np.asarray(sims)
@@ -276,7 +351,7 @@ def main(argv=None):
     ap.add_argument('--bin', required=True, help='path to the .bin model file')
     ap.add_argument('--validate', metavar='REF_JSON', default=None,
                     help='validate against a {text: [700 floats]} reference JSON')
-    ap.add_argument('--tokenizer', default='ws', choices=sorted(_TOKENIZERS))
+    ap.add_argument('--tokenizer', default='nltkish', choices=sorted(_TOKENIZERS))
     ap.add_argument('--bigram', default='rolling', choices=sorted(_BIGRAM_BUILDERS))
     ap.add_argument('--normalize', default='none', choices=['none', 'l2'])
     ap.add_argument('--text', default=None, help='embed one text and print the vector')

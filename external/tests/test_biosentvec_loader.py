@@ -23,8 +23,10 @@ from biosentvec_loader import (  # noqa: E402
     FASTTEXT_MAGIC,
     NGRAM_HASH_MULT,
     Sent2VecModel,
+    _NLTK_EN_STOPWORDS,
     bigram_rows_rolling,
     ft_hash,
+    tokenize_nltkish,
     tokenize_ws,
     tokenize_ws_lower,
     validate,
@@ -110,7 +112,7 @@ def write_synthetic_model(path, dim=8, bucket=16, words=("the", "quick", "brown"
         for i, w in enumerate(words):
             f.write(w.encode("utf-8") + b"\x00")
             f.write(struct.pack("<q", i * 100 + 10))
-            f.write(struct.pack("<i", 0))  # type: word
+            f.write(struct.pack("<b", 0))  # type: word (int8)
         f.write(struct.pack("<?", 0))  # quant
         f.write(struct.pack("<2q", m, dim))
         f.write(input_data.tobytes())
@@ -144,6 +146,7 @@ def test_synthetic_header_and_embed(tmp_path):
         assert model.word_row(w) == h or True  # (informational; file order wins)
 
     # embedding: mean of [word rows + bigram rows]
+    model.tokenizer = tokenize_ws  # pure-logic tests pin the ws tokenizer
     emb = model.embed("the quick brown fox")
     ids = [widx["the"], widx["quick"], widx["brown"], widx["fox"]]
     bigrams = bigram_rows_rolling(ids, model.nwords, model.bucket)
@@ -174,6 +177,7 @@ def test_validate_function(tmp_path):
     path = str(tmp_path / "mini.bin")
     input_data, widx = write_synthetic_model(path)
     model = Sent2VecModel(path)
+    model.tokenizer = tokenize_ws  # pure-logic tests pin the ws tokenizer
     ids = [widx["the"], widx["quick"], widx["brown"], widx["fox"]]
     bigrams = bigram_rows_rolling(ids, model.nwords, model.bucket)
     rows = np.asarray(ids + bigrams, dtype=np.int64)
@@ -187,6 +191,27 @@ def test_validate_function(tmp_path):
     assert mean_cos >= 0.999
     assert worst == "the quick brown fox"
     model.close()
+
+
+def test_nltkish_tokenizer_reference_pipeline():
+    # The recovered reference pipeline: nltk word_tokenize -> stopword removal
+    # -> punctuation-token removal -> lowercase.  Expected token streams for
+    # the reference event templates (validated against event_embedding2.json).
+    # '#' tokens are dropped explicitly ('#' IS in the model vocabulary, row
+    # 351); ':' tokens are pure punctuation -> removed.
+    assert tokenize_nltkish("The risk or severity of hypertension can be increased when "
+                            "#Drug2 is combined with #Drug1.") == [
+        "risk", "severity", "hypertension", "increased", "drug2", "combined", "drug1"]
+    # nltk attaches ':' to the FOLLOWING token; ':target' survives (in vocab),
+    # while ':carrier' etc. are dropped at row lookup time (OOV).
+    assert tokenize_nltkish("DRUGBANK::carrier::Compound:Gene") == [
+        "drugbank", ":carrier", ":compound", "gene"]
+    assert tokenize_nltkish("Hetionet::CbG::Compound:Gene") == [
+        "hetionet", ":cbg", ":compound", "gene"]
+    # bundled stopword list sanity
+    assert "the" in _NLTK_EN_STOPWORDS and "and" in _NLTK_EN_STOPWORDS
+    assert "drug" not in _NLTK_EN_STOPWORDS
+    assert len(_NLTK_EN_STOPWORDS) >= 150
 
 
 def test_missing_magic(tmp_path):
