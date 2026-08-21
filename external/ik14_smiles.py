@@ -8,9 +8,11 @@ ConnectivitySMILES。模块优先读取 CanonicalSMILES，缺失时回退 Connec
 每条记录写入实际使用的属性名（prop 字段）；map 顶层 __meta__ 记录来源标注。
 
 缓存/复用契约：lookup_smiles_batch 只修改传入的 cache dict，不写盘；断点持久化由
-调用方（main）经 on_progress(done, total) 回调执行。内容缺失（no_cid / no_smiles）
-与命中结果一样写入缓存；瞬时 HTTP 错误（status_code != 200、网络异常、JSON 解析
-失败）重试 2 次后仅标记 failed、不写入缓存，下次运行自动重试。"""
+调用方（main）经 on_progress(done, total) 回调执行。
+响应分类以响应体内容为准：内容缺失（200 且无结果，或 4xx 带 Fault 体如
+PUGREST.NotFound）产生 no_cid / no_smiles 并照旧写入缓存；瞬时错误（5xx/429
+无论是否带 Fault 体、非 200 且无 Fault 体、网络异常、JSON 解析失败）重试 2 次后
+仅标记 failed、不写入缓存，下次运行自动重试。"""
 import csv, json, os, sys, time, logging
 import requests
 
@@ -19,6 +21,22 @@ CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs",
 META = {"smiles_property": "connectivity_fallback",
         "note": "CanonicalSMILES deprecated by PubChem 2024-08; entries are ConnectivitySMILES"}
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+
+_TRANSIENT_STATUS = (429, 500, 502, 503, 504)
+
+def _is_transient(status, data):
+    """响应分类（以响应体内容为准）：True=瞬时错误（重试、不入缓存），False=内容缺失。
+
+    - 200：内容响应，分类由调用方按内容缺失判断；
+    - 5xx/429：瞬时错误（无论是否带 Fault 体——500/429 带 Fault 不得落成永久缓存）；
+    - 其他非 200（如 400/404）：带 Fault 体（如 PUGREST.NotFound）= 内容缺失；
+      无 Fault 体 = 瞬时错误。"""
+    if status == 200:
+        return False
+    if status in _TRANSIENT_STATUS:
+        return True
+    has_fault = isinstance(data, dict) and "Fault" in data
+    return not has_fault
 
 def get_cid(session, ik14):
     r = session.get(f"{BASE}/compound/inchikey/{ik14}/cids/JSON", timeout=30)
@@ -30,20 +48,33 @@ def get_cid(session, ik14):
 def get_property(session, cid, prop="CanonicalSMILES,ConnectivitySMILES"):
     # PubChem deprecated CanonicalSMILES (2024-08 data release) -> ConnectivitySMILES.
     # Request both; canonical name takes precedence when present.
+    # 分类同 CID 查询：内容缺失返回 {cid: props}（由调用方落 no_smiles 并缓存）；
+    # 瞬时错误（5xx/429，或非 200 且无 Fault 体）上抛，由 _lookup_one 重试、不入缓存。
     r = session.get(f"{BASE}/compound/cid/{cid}/property/{prop}/JSON", timeout=30)
-    prop_list = r.json().get("PropertyTable", {}).get("Properties", [])
+    try:
+        data = r.json()
+    except ValueError:
+        data = None  # 无法解析 → 按瞬时错误处理
+    if _is_transient(r.status_code, data):
+        raise requests.exceptions.HTTPError(f"property lookup status {r.status_code}")
+    prop_list = (data if isinstance(data, dict) else {}).get("PropertyTable", {}).get("Properties", [])
     return {str(p["CID"]): p for p in prop_list}
 
 def _lookup_once(session, ik14):
-    """单次查询（不重试）：CID 查询 + SMILES 属性查询。瞬时错误以异常上抛。"""
+    """单次查询（不重试）：CID 查询 + SMILES 属性查询。
+    内容缺失（200 且无 IdentifierList / 4xx 带 Fault 体）返回 no_cid；
+    瞬时错误以异常上抛（重试、不入缓存）。"""
     r = session.get(f"{BASE}/compound/inchikey/{ik14}/cids/JSON", timeout=30)
-    if r.status_code != 200:
+    try:
+        data = r.json()
+    except ValueError:
+        data = None  # 无法解析 → 按瞬时错误处理
+    if _is_transient(r.status_code, data):
         raise requests.exceptions.HTTPError(f"cid lookup status {r.status_code}")
-    data = r.json()
-    if not ("IdentifierList" in data and data["IdentifierList"]["CID"]):
+    if not (isinstance(data, dict) and data.get("IdentifierList", {}).get("CID")):
         return {"smiles": None, "cid": None, "prop": None, "status": "failed", "error": "no_cid"}
     cid = data["IdentifierList"]["CID"][0]
-    props = get_property(session, cid)
+    props = get_property(session, cid)  # 属性查询内做同样分类；瞬时错误上抛
     rec = props.get(str(cid), {})
     smi = rec.get("CanonicalSMILES") or rec.get("ConnectivitySMILES")
     prop = ("CanonicalSMILES" if rec.get("CanonicalSMILES")

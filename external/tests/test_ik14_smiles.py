@@ -43,7 +43,10 @@ def test_transient_http_error_retries_then_ok(monkeypatch):
         def get(self, url, timeout=30):
             self.calls += 1
             if self.calls == 1:
-                class R: status_code = 500; text = "boom"
+                class R:
+                    status_code = 500
+                    text = "boom"
+                    def json(self): return json.loads(self.text)  # 非 JSON → ValueError
                 return R()
             ik14 = url.split("/inchikey/")[1].split("/")[0]
             body = {"IdentifierList": {"CID": [12345]}} if ik14 == "AAAABBBBCCCCDD" else {"Fault": {}}
@@ -64,7 +67,10 @@ def test_transient_http_error_retries_then_ok(monkeypatch):
 def test_transient_error_not_cached_after_retries(monkeypatch):
     class Always500Session:
         def get(self, url, timeout=30):
-            class R: status_code = 500; text = "boom"
+            class R:
+                status_code = 500
+                text = "boom"
+                def json(self): return json.loads(self.text)  # 非 JSON → ValueError
             return R()
     monkeypatch.setattr("ik14_smiles.requests.Session", lambda: Always500Session())
     cache = {}
@@ -72,6 +78,65 @@ def test_transient_error_not_cached_after_retries(monkeypatch):
     v = out["QQQQQQQQQQQQQQ"]
     assert v["status"] == "failed" and v["error"].startswith("http_error:")
     assert cache == {}  # 瞬时错误不入缓存，下次运行重试
+
+def test_404_with_fault_is_content_miss_cached_no_retry(monkeypatch):
+    # 非 200 但带 Fault 体（PUGREST.NotFound）= 内容缺失 no_cid → 照旧缓存、不重试
+    class NotFoundSession:
+        def __init__(self): self.calls = 0
+        def get(self, url, timeout=30):
+            self.calls += 1
+            class R:
+                status_code = 404
+                text = json.dumps({"Fault": {"Code": "PUGREST.NotFound", "Message": "not found"}})
+                def json(self): return json.loads(self.text)
+            return R()
+    s = NotFoundSession()
+    monkeypatch.setattr("ik14_smiles.requests.Session", lambda: s)
+    cache = {}
+    out = lookup_smiles_batch(["QQQQQQQQQQQQQQ"], cache)
+    v = out["QQQQQQQQQQQQQQ"]
+    assert v["status"] == "failed" and v["error"] == "no_cid"
+    assert cache["QQQQQQQQQQQQQQ"]["error"] == "no_cid"  # 内容缺失照旧缓存
+    assert s.calls == 1  # 不触发重试
+
+def test_503_without_fault_is_transient_not_cached(monkeypatch):
+    # 非 200 且无 Fault 体 = 瞬时错误 → 重试 2 次、不写入缓存
+    class UnavailableSession:
+        def __init__(self): self.calls = 0
+        def get(self, url, timeout=30):
+            self.calls += 1
+            class R:
+                status_code = 503
+                text = "<html>Service Unavailable</html>"
+                def json(self): return json.loads(self.text)  # 非 JSON → ValueError
+            return R()
+    s = UnavailableSession()
+    monkeypatch.setattr("ik14_smiles.requests.Session", lambda: s)
+    cache = {}
+    out = lookup_smiles_batch(["QQQQQQQQQQQQQQ"], cache)
+    v = out["QQQQQQQQQQQQQQ"]
+    assert v["status"] == "failed" and v["error"].startswith("http_error:")
+    assert cache == {}  # 瞬时错误不入缓存
+    assert s.calls == 3  # 1 次 + 2 次重试
+
+def test_property_500_with_fault_not_cached_as_no_smiles(monkeypatch):
+    # property 腿：500 + Fault 体是瞬时错误，不得落成 no_smiles 永久缓存
+    class Prop500Session(FakeSession):
+        def get(self, url, timeout=30):
+            if "/property/" in url:
+                class R:
+                    status_code = 500
+                    text = json.dumps({"Fault": {"Code": "PUGREST.ServerBusy", "Message": "busy"}})
+                    def json(self): return json.loads(self.text)
+                return R()
+            return super().get(url, timeout=timeout)
+    s = Prop500Session({"AAAABBBBCCCCDD": 12345})
+    monkeypatch.setattr("ik14_smiles.requests.Session", lambda: s)
+    cache = {}
+    out = lookup_smiles_batch(["AAAABBBBCCCCDD"], cache)
+    v = out["AAAABBBBCCCCDD"]
+    assert v["status"] == "failed" and v["error"].startswith("http_error:")
+    assert cache == {}  # 500+Fault 不入缓存，下次运行重试
 
 def test_lookup_batch_writes_no_files(monkeypatch, tmp_path):
     # 库函数只改传入的 cache dict，不写盘（断点持久化在 main 的 on_progress 回调里）
