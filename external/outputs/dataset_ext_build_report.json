@@ -3,15 +3,24 @@
   "pair_overlap_with_dataset1": 304,
   "pair_overlap_rate": 0.348225,
   "n_pt_events_total": 429,
+  "n_excluded_drugs": 6,
+  "excluded_drugs": [
+    "HCHKCACWOHOZIP",
+    "HNDXBGYRMHRUFN",
+    "HPFVBGJFAYZEBE",
+    "NTTOTNSKUYCDAV",
+    "RSHAOIXHUHAZPM",
+    "ULRRHTDDELHNOW"
+  ],
+  "n_excluded_pairs": 30,
   "tiers": {
     "1shot": {
       "tier": "1shot",
-      "n_events": 185,
-      "n_discarded_events": 244,
-      "n_drugs": 389,
+      "n_events": 179,
+      "n_discarded_events": 250,
+      "n_drugs": 379,
       "n_new_drugs": 43,
-      "n_mapped_drugs": 340,
-      "n_no_smiles_drugs": 6,
+      "n_mapped_drugs": 336,
       "ik14_to_db_id_choices": {
         "AAOVKJBEBIDNHE": "DB00829",
         "AAXVEMMRQDVLJB": "DB00687",
@@ -45,7 +54,6 @@
         "BUGYDGFZZOZRHP": "DB01043",
         "BVAZQCUMNICBAQ": "DB11574",
         "BZKPWHYZMXOIDC": "DB00819",
-        "CBGUOGMQLZIXBE": "DB01013",
         "CEAZRRDELHUEMR": "DB00798",
         "CEUORZQYGODEFX": "DB01238",
         "CGIGDMFJXJATDK": "DB00328",
@@ -170,7 +178,6 @@
         "MOYKHGMNXAOIAT": "DB00883",
         "MQTOSJVFKKJCRP": "DB00207",
         "MVWVFYHBGMAFLY": "DB00246",
-        "MYPYJXKWCTUITO": "DB00512",
         "MYSWGUAQZAJSOK": "DB00537",
         "NCDNCNXCDXHOMX": "DB00503",
         "NCEXYHBECQHGNR": "DB00795",
@@ -181,7 +188,6 @@
         "NGBFQHCMQULJNZ": "DB00214",
         "NIJJYAXOARWZEE": "DB00313",
         "NJMYODHXAKYRHW": "DB00875",
-        "NLVFBUXFDBBNBW": "DB00684",
         "NNJVILVZKWQKPM": "DB00281",
         "NPYPAHLBTDXSSS": "DB01345",
         "NQDJXKOVJZTUJA": "DB00238",
@@ -206,7 +212,6 @@
         "OZWKMVRBQXNZKK": "DB00465",
         "PBAPPPCECJKMCM": "DB08893",
         "PDMMFKSKQVNJMI": "DB01420",
-        "PEDCQBHIVMGVHV": "DB09462",
         "PGBHMTALBVVCIT": "DB00452",
         "PHIQHXFUZVPYII": "DB00583",
         "PHLBKPHSAVXXEF": "DB00656",
@@ -354,14 +359,6 @@
         "ZZUFCTLCJUWOSV": "DB00695",
         "ZZVUWRFHKOJYTH": "DB01075"
       },
-      "no_smiles_drugs": [
-        "HCHKCACWOHOZIP",
-        "HNDXBGYRMHRUFN",
-        "HPFVBGJFAYZEBE",
-        "NTTOTNSKUYCDAV",
-        "RSHAOIXHUHAZPM",
-        "ULRRHTDDELHNOW"
-      ],
       "hashes": {
         "relation2ids": {
           "src": "c60c9e856f4e67c08e526953562d7487f516846dd40cf0d40abc29297558b705",
@@ -387,16 +384,23 @@
           "src": "73d4c2b7ca15dfd2f1c7fa04a528b176742688d31723157145c4f945fd1cf680",
           "dst": "73d4c2b7ca15dfd2f1c7fa04a528b176742688d31723157145c4f945fd1cf680"
         }
-      }
+      },
+      "events_dropped_by_exclusion": [
+        "PT-15772370",
+        "PT-16908764",
+        "PT-17689176",
+        "PT-17766150",
+        "PT-18281279",
+        "PT-18574440"
+      ]
     },
     "5shot": {
       "tier": "5shot",
-      "n_events": 24,
-      "n_discarded_events": 405,
-      "n_drugs": 184,
-      "n_new_drugs": 21,
-      "n_mapped_drugs": 160,
-      "n_no_smiles_drugs": 3,
+      "n_events": 23,
+      "n_discarded_events": 406,
+      "n_drugs": 175,
+      "n_new_drugs": 20,
+      "n_mapped_drugs": 155,
       "ik14_to_db_id_choices": {
         "AAOVKJBEBIDNHE": "DB00829",
         "ACWBQPMHZXGDFX": "DB00177",
@@ -415,7 +419,6 @@
         "BRUQQQPBMZOVGD": "DB00497",
         "BSYNRYMUTXBXSQ": "DB00945",
         "BUGYDGFZZOZRHP": "DB01043",
-        "CBGUOGMQLZIXBE": "DB01013",
         "CEAZRRDELHUEMR": "DB00798",
         "CEUORZQYGODEFX": "DB01238",
         "CMWTZPSULFXXJA": "DB00788",
@@ -442,7 +445,6 @@
         "HYIMSNHJOBLJNT": "DB01115",
         "IAVUPMFITXYVAF": "DB00869",
         "IEDVJHCEMCRBQM": "DB00440",
-        "IMWZZHHPURKASS": "DB00660",
         "IQPSEEYGBUAQFF": "DB00213",
         "ITRJWOMZKQRYTA": "DB01380",
         "JBIWCJUYHHGXTC": "DB00254",
@@ -471,7 +473,6 @@
         "LSQZJLSUYDQPKJ": "DB01060",
         "LXMSZDCAJNLERA": "DB00421",
         "LXNHXLLTXMVWPM": "DB00165",
-        "LZFZMUMEGBBDTC": "DB09477",
         "MAEIEVLCKWDQJH": "DB00887",
         "MBMBGCFOFBJSGT": "DB03756",
         "MBUVEWMHONZEQD": "DB00972",
@@ -491,7 +492,6 @@
         "OIGNJSKKLXVSLS": "DB00860",
         "ORFOPKXBNMVMKC": "DB00438",
         "OVBPIULPVIDEAO": "DB00158",
-        "PEDCQBHIVMGVHV": "DB09462",
         "PGBHMTALBVVCIT": "DB00452",
         "PHIQHXFUZVPYII": "DB00583",
         "PJVWKTKQMONHTI": "DB00682",
@@ -514,7 +514,6 @@
         "RZEKVGVHFLEQIL": "DB00482",
         "RZVAJINKPMORJF": "DB00316",
         "SEEPANYCNGTZFQ": "DB00359",
-        "SGUAFYQXFOLMHL": "DB00598",
         "SHGAZHPCJJPHSC": "DB00523",
         "SKZKKFZAGNVIMN": "DB08797",
         "SNICXCGAKADSCV": "DB00184",
@@ -559,11 +558,6 @@
         "ZZUFCTLCJUWOSV": "DB00695",
         "ZZVUWRFHKOJYTH": "DB01075"
       },
-      "no_smiles_drugs": [
-        "HNDXBGYRMHRUFN",
-        "NTTOTNSKUYCDAV",
-        "RSHAOIXHUHAZPM"
-      ],
       "hashes": {
         "relation2ids": {
           "src": "c60c9e856f4e67c08e526953562d7487f516846dd40cf0d40abc29297558b705",
@@ -589,7 +583,10 @@
           "src": "73d4c2b7ca15dfd2f1c7fa04a528b176742688d31723157145c4f945fd1cf680",
           "dst": "73d4c2b7ca15dfd2f1c7fa04a528b176742688d31723157145c4f945fd1cf680"
         }
-      }
+      },
+      "events_dropped_by_exclusion": [
+        "PT-17583915"
+      ]
     }
   }
 }

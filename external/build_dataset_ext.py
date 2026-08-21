@@ -13,12 +13,12 @@
   药物解析一律走 IK14 键，不做跨源 SMILES 字符串比对。
 - R13b：构建报告记录药对级泄漏检查：873 个信号对（无序、IK14 表示）出现在 dataset1
   train/dev/test/test2 任务文件（t[0],t[2] 无序药对）中的数量与比例。
-
-已知偏差（全量实测，见 dataset_ext_build_report.json）：6 个 1-shot 层药物（其中 3 个亦在
-5-shot 层）无 PubChem SMILES（no_cid / no_smiles）且不在 dataset1。按 brief 代码这些药物
-会以 ValueError 中止构建；为同时满足验收层级（1-shot=185 / 5-shot=24，层级仅按对计数
-定义）与 spec §3.6 的新药零向量兜底设计，这些药物保留在任务与 ent2ids 中（ent2embids=
--1），drug_smiles.csv 不为它们写行，并在报告 n_no_smiles_drugs 中记录。"""
+- R15：6 个无 PubChem SMILES（no_cid / no_smiles）且不在 dataset1 的药物（1-shot 层 6 个、
+  5-shot 层 3 个）——涉及这些药物的信号对在分层前剔除（不进入任何 tier 的任务、
+  drug_smiles.csv、ent2ids/ent2embids），层定义阈值（≥2 / ≥6 对）保持不变，剔除记录写入
+  构建报告（excluded_drugs / n_excluded_pairs / events_dropped_by_exclusion）。
+  实测结果：1-shot 事件数 185 → 179，5-shot 24 → 23。理由：无分子图的药物在分子编码器下
+  只能得到退化图，评分无意义（controller R15，2026-08-21）。"""
 import json, os, shutil, hashlib
 from collections import defaultdict
 
@@ -111,7 +111,7 @@ def assemble_dataset(tier_name, tasks, ik14_smiles_map, ik14_to_db_ids, ds1_smil
     # 2) drug_smiles：dataset1 原文 + 新药（IK14 或映射后的 DB ID 行）
     ds1_rows = ds1_smiles_df.to_dict("records")
     known_ids = set(ds1_smiles_df["drug_id"])
-    new_rows, mapped_choices, no_smiles = [], {}, []
+    new_rows, mapped_choices = [], {}
     for d in drugs:
         if d in known_ids:
             continue  # dataset1 已有
@@ -122,8 +122,8 @@ def assemble_dataset(tier_name, tasks, ik14_smiles_map, ik14_to_db_ids, ds1_smil
         rec = ik14_smiles_map.get(d)
         smi = rec.get("smiles") if isinstance(rec, dict) else None  # R14：忽略 __meta__ 等非 dict 条目
         if not smi:
-            no_smiles.append(d)  # 见模块 docstring：保留任务，drug_smiles 无行，零向量兜底
-            continue
+            # R15：无 SMILES 且无 dataset1 映射的药物已在 main 层剔除；此路径为不变量守卫
+            raise ValueError(f"no SMILES for drug {d}")
         new_rows.append({"drug_id": d, "smiles": smi})
     pd.DataFrame(ds1_rows + new_rows).to_csv(os.path.join(dst, "drug_smiles.csv"), index=False)
     # 3) 符号表：旧文件原文 + 新药追加（-1）
@@ -144,8 +144,8 @@ def assemble_dataset(tier_name, tasks, ik14_smiles_map, ik14_to_db_ids, ds1_smil
         assert hashes[f]["src"] == hashes[f]["dst"], f"copy mismatch for {f}"
     return {"tier": tier_name, "n_events": len(events), "n_discarded_events": total_events - len(events),
             "n_drugs": len(drugs), "n_new_drugs": len(new_rows),
-            "n_mapped_drugs": len(mapped_choices), "n_no_smiles_drugs": len(no_smiles),
-            "ik14_to_db_id_choices": mapped_choices, "no_smiles_drugs": no_smiles, "hashes": hashes}
+            "n_mapped_drugs": len(mapped_choices),
+            "ik14_to_db_id_choices": mapped_choices, "hashes": hashes}
 
 
 def main():
@@ -154,19 +154,31 @@ def main():
     df = pd.read_csv(os.path.join(REPO, "external", "raw", "ddi_pairs_50k.csv"),
                      dtype={"drug_a_ik14": "string", "drug_b_ik14": "string"})
     sig = df[df["faers_ror95_lcl_max_strict"].notnull()]
-    pairs = [(r["drug_a_ik14"], r["drug_b_ik14"],
-              "PT-" + str(int(float(r["faers_best_pt_code_strict"]))))
-             for _, r in sig.iterrows()]
-    tasks_1, tasks_5 = build_tasks(pairs)
+    pairs_all = [(r["drug_a_ik14"], r["drug_b_ik14"],
+                  "PT-" + str(int(float(r["faers_best_pt_code_strict"]))))
+                 for _, r in sig.iterrows()]
     ds1_smiles_df = pd.read_csv(os.path.join(DS1, "drug_smiles.csv"), dtype={"drug_id": "string"})
     ik14_to_db_ids = build_ik14_to_db_ids(ds1_smiles_df)
     if set(ik14_to_db_committed) != set(ik14_to_db_ids):
         raise RuntimeError(
             f"rebuilt IK14->DB map key set mismatch vs committed ik14_to_db.json "
             f"({len(ik14_to_db_committed)} vs {len(ik14_to_db_ids)})")
-    total_events = len({e for _, _, e in pairs})
-    # R13b：药对级泄漏检查（873 个信号对 vs dataset1 任务文件无序药对）
-    sig_pairs = [tuple(sorted((a, b))) for a, b, _ in pairs]
+
+    def lacks_smiles(ik14):
+        rec = ikmap.get(ik14)
+        return not (rec.get("smiles") if isinstance(rec, dict) else None)
+
+    # R15：无 SMILES 且无 dataset1 映射的药物在分层前剔除（阈值 ≥2 / ≥6 对不变）
+    excluded_drugs = sorted({d for a, b, _ in pairs_all for d in (a, b)
+                             if lacks_smiles(d) and not ik14_to_db_ids.get(d)})
+    pairs = [(a, b, e) for a, b, e in pairs_all
+             if a not in excluded_drugs and b not in excluded_drugs]
+    n_excluded_pairs = len(pairs_all) - len(pairs)
+    tasks_all_1, tasks_all_5 = build_tasks(pairs_all)  # 供 events_dropped_by_exclusion 对比
+    tasks_1, tasks_5 = build_tasks(pairs)
+    total_events = len({e for _, _, e in pairs_all})
+    # R13b：药对级泄漏检查（按 R15 保持全部 873 个信号对）
+    sig_pairs = [tuple(sorted((a, b))) for a, b, _ in pairs_all]
     ds1_pairs = dataset1_task_pairs()
     overlap = 0
     for a, b in sig_pairs:
@@ -180,11 +192,17 @@ def main():
         "pair_overlap_with_dataset1": overlap,
         "pair_overlap_rate": round(overlap / len(sig_pairs), 6),
         "n_pt_events_total": total_events,
+        "n_excluded_drugs": len(excluded_drugs),
+        "excluded_drugs": excluded_drugs,
+        "n_excluded_pairs": n_excluded_pairs,
         "tiers": {},
     }
-    for tier_name, tasks in (("1shot", tasks_1), ("5shot", tasks_5)):
-        report["tiers"][tier_name] = assemble_dataset(
-            tier_name, tasks, ikmap, ik14_to_db_ids, ds1_smiles_df, total_events)
+    for tier_name, tasks, tasks_all in (("1shot", tasks_1, tasks_all_1),
+                                        ("5shot", tasks_5, tasks_all_5)):
+        entry = assemble_dataset(tier_name, tasks, ikmap, ik14_to_db_ids,
+                                 ds1_smiles_df, total_events)
+        entry["events_dropped_by_exclusion"] = sorted(set(tasks_all) - set(tasks))
+        report["tiers"][tier_name] = entry
     json.dump(report, open(os.path.join(OUT, "dataset_ext_build_report.json"), "w"), indent=2, ensure_ascii=False)
     print(json.dumps(report, indent=2, ensure_ascii=False))
 
