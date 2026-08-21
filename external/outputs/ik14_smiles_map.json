@@ -19018,5 +19018,9 @@
     "cid": 146162158,
     "status": "ok",
     "error": null
+  },
+  "__meta__": {
+    "smiles_property": "connectivity_fallback",
+    "note": "CanonicalSMILES deprecated by PubChem 2024-08; entries are ConnectivitySMILES"
   }
 }
