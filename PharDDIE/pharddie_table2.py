@@ -22,14 +22,7 @@ def compute_metrics(y_true, y_prob, group_by_event):
     r['Macro-F1'] = np.mean(event_f1s) if event_f1s else 0.0
     return r
 
-# ============================================================
-# BASELINES: transcribed from Ren et al. (Nat. Commun., 2025)
-# published source data (Excel 41467_2025_59431_MOESM8_ESM.xlsx,
-# Sheet fig.3a).  These values were NOT regenerated in this study;
-# the comparison is an external reference.
-#
 
-# ============================================================
 BASELINES = {
     'META-DDIE': {
         'common': {'AUC':{1:(0.5298,0.0435),5:(0.5218,0.0427)},
@@ -41,8 +34,6 @@ BASELINES = {
         'rare':   {'AUC':{1:(0.5482,0.0631),5:(0.5401,0.0560)},
                    'ACC':{1:(0.5255,0.0324),5:(0.5348,0.0491)},
                    'F1': {1:(0.5170,0.0725),5:(0.4679,0.0478)}},
-    },
-  
     },
     'GMatching': {
         'rare': {'AUC':{1:(0.8711,0.0263),5:(0.9366,0.0212)},
@@ -76,9 +67,6 @@ BASELINES = {
     },
 }
 
-# ============================================================
-# Helper: load a required CSV or die with a clear message
-# ============================================================
 def _require_csv(path, label):
     if not os.path.exists(path):
         print(f"FATAL: {label} not found at '{path}'.")
@@ -87,20 +75,12 @@ def _require_csv(path, label):
     return pd.read_csv(path)
 
 def _compute_rows_from_csv(df, setting_key, shot_val, group_cols):
-    """Return (mean_series, std_series) of metrics across seeds, or (None, None)
-    if no rows match the (setting, shot) filter.
-
-    Grouping logic:
-    - If 'train_seed' column present: group by train_seed (training variability)
-    - Otherwise: group by 'seed' (negative-sampling variability, legacy mode)
-    """
     sub = df
     if 'setting' in df.columns:
         sub = sub[sub['setting'] == setting_key]
     if 'shot' in df.columns:
         sub = sub[sub['shot'] == shot_val]
 
-    # 选择分组键：优先 train_seed（训练变异），其次 seed（负样本变异）
     seed_col = 'train_seed' if 'train_seed' in df.columns else 'seed'
     if seed_col not in df.columns:
         return None, None
@@ -115,16 +95,12 @@ def _compute_rows_from_csv(df, setting_key, shot_val, group_cols):
     if not rows:
         return None, None
     rd = pd.DataFrame(rows)
-    return rd.mean(), rd.std(ddof=0)  # population SD (÷5), matching the paper and aggregate_rareddie.py
+    return rd.mean(), rd.std(ddof=0)
 
 def main():
-    # ----------------------------------------------------------
-    # 1.  Load prediction CSVs (all required – fail if missing)
-    # ----------------------------------------------------------
     phar_csv = 'results/predictions/predictions_dataset1_PharDDIE.csv'
     df_phar = _require_csv(phar_csv, 'PharDDIE predictions CSV')
 
-    # ---- 种子独立性验证：逐样本 CSV 必须覆盖 5 个训练种子 ----
     seed_col = ('train_seed' if 'train_seed' in df_phar.columns
                 else ('seed' if 'seed' in df_phar.columns else None))
     if seed_col is not None:
@@ -161,7 +137,6 @@ def main():
         return f'{val:.4f}±{std:.4f}'
 
     def baseline_fmt(method, setting, metric, shot):
-        """Look up hardcoded external-baseline value (transcribed from source)."""
         if method not in BASELINES:
             return '—'
         if setting not in BASELINES[method]:
@@ -177,7 +152,7 @@ def main():
     lines.append('=' * 135)
     lines.append('Table 2: Main Prediction Performance under Different Rare-DDI Settings.')
     lines.append('PharDDIE & ablation rows: mean ± std computed from per-seed prediction CSVs.')
-    lines.append('External baseline values (8 methods): transcribed from Ren et al.')
+    lines.append('External baseline values (7 methods): transcribed from Ren et al.')
     lines.append('  Nat. Commun. 2025 source data — NOT regenerated in this study.')
     lines.append('=' * 135)
     H = (f"{'Setting':<10} {'Shot':<6} {'Method':<28} "
@@ -187,9 +162,6 @@ def main():
 
     for s_key, s_label in SETTINGS.items():
         for shot in SHOTS:
-            # ====================================================
-            # PharDDIE (main) — computed from per-seed CSV
-            # ====================================================
             mean_s, std_s = _compute_rows_from_csv(df_phar, s_key, shot, ['seed'])
             if mean_s is not None:
                 lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE (Ours)":<28} '
@@ -201,9 +173,6 @@ def main():
                 lines.append(f'{s_label:<10} {shot:<6} {"PharDDIE (Ours)":<28} '
                              f'{"— (no CSV rows)":<22} {"—":<22} {"—":<22} {"—":<22}')
 
-            # ====================================================
-            # PharDDIE w/o VAE (ablation) — computed from CSV
-            # ====================================================
             if has_wo:
                 mean_w, std_w = _compute_rows_from_csv(df_wo, s_key, shot, ['seed'])
                 if mean_w is not None:
@@ -213,9 +182,6 @@ def main():
                                  f'{fmt(mean_w["ACC"], std_w["ACC"]):<22} '
                                  f'{fmt(mean_w["Macro-F1"], std_w["Macro-F1"]):<22}')
 
-            # ====================================================
-            # EviDDIE (0-shot) — computed from CSV
-            # ====================================================
             if has_evi:
                 mean_e, std_e = _compute_rows_from_csv(df_evi, s_key, shot, ['seed'])
                 if mean_e is not None:
@@ -225,10 +191,7 @@ def main():
                                  f'{fmt(mean_e["ACC"], std_e["ACC"]):<22} '
                                  f'{fmt(mean_e["Macro-F1"], std_e["Macro-F1"]):<22}')
 
-            # ====================================================
-            # External baselines (transcribed, not re-trained)
-            # ====================================================
-            for bm in ['META-DDIE', 'RareDDIE', 'GMatching', 'MRCGNN', 'MetaR-Pre', 'MetaR-In', 'KnowDDI', 'DSN-DDI']:
+            for bm in ['META-DDIE', 'GMatching', 'MRCGNN', 'MetaR-Pre', 'MetaR-In', 'KnowDDI', 'DSN-DDI']:
                 if shot not in [1, 5]:
                     lines.append(f'{s_label:<10} {shot:<6} {bm + " (Reported)":<28} '
                                  f'{"— (no 10-shot in paper)":<22} '
@@ -252,7 +215,7 @@ def main():
     lines.append('  - All external baselines: transcribed from Ren et al. (Nat. Commun. 2025) source data;')
     lines.append('    none of them were re-trained or re-evaluated in this study.')
     lines.append('  - Transcribed baselines only published 1/5-shot results; no 10-shot or AUPR reported.')
-    lines.append('  - META-DDIE and RareDDIE include common/fewer/rare transcribed values; the other six')
+    lines.append('  - META-DDIE includes common/fewer/rare transcribed values; the other six')
     lines.append('    methods embed only the rare-test values used in the paper Table 2 (common/fewer = \'—\').')
     lines.append('  - "PharDDIE w/o SRAE" = frozen encoder + fc_direct head (no uncertainty).')
     lines.append('  - EviDDIE is zero-shot; shown in all rows for comparison convenience.')

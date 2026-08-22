@@ -1,23 +1,12 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Complete Table 3: Calibration Performance — ALL methods.
-Reads all prediction CSVs and computes calibration metrics consistently.
-"""
 import pandas as pd
 import numpy as np
 import os
 from sklearn import metrics
 
 
-# ============================================================
-# Calibration metrics (EXACT same as pharddie_table3.py)
-# ============================================================
-
 def compute_ece(confidences, predictions, labels, n_bins=10):
-    """Expected Calibration Error, identical binning to shared/calibration_table.py
-    (np.digitize on the upper edges of 10 equal-width predicted-probability bins,
-    paper Eq. ece)."""
     confidences = np.clip(np.asarray(confidences, dtype=float), 1e-12, 1 - 1e-12)
     labels = np.asarray(labels)
     bins = np.linspace(0, 1, n_bins + 1)
@@ -32,18 +21,15 @@ def compute_ece(confidences, predictions, labels, n_bins=10):
 
 
 def compute_brier(probs, labels):
-    """Brier Score (MSE between predicted prob and true label)"""
     return np.mean((probs - labels) ** 2)
 
 
 def compute_nll(probs, labels):
-    """Negative Log-Likelihood"""
     probs_clipped = np.clip(probs, 1e-15, 1.0 - 1e-15)
     return -np.mean(labels * np.log(probs_clipped) + (1 - labels) * np.log(1 - probs_clipped))
 
 
 def compute_high_conf_error(confidences, predictions, labels, threshold=0.9):
-    """High-confidence error rate: fraction of high-conf predictions that are wrong"""
     high_conf = confidences > threshold
     if np.sum(high_conf) == 0:
         return 0.0
@@ -51,7 +37,6 @@ def compute_high_conf_error(confidences, predictions, labels, threshold=0.9):
 
 
 def compute_calibration_metrics(y_true, y_prob, y_pred):
-    """Compute all calibration metrics"""
     confidence = np.maximum(y_prob, 1 - y_prob)
 
     results = {}
@@ -69,8 +54,6 @@ def fmt(mean_val, std_val):
 
 
 def process_dataframe(df, method_col='method'):
-    """Group by seed, setting, shot, method and compute calibration metrics per seed."""
-    # 兼容两种表头：新导出写 train_seed，旧导出写 seed
     if 'train_seed' in df.columns and 'seed' not in df.columns:
         df = df.rename(columns={'train_seed': 'seed'})
     all_metrics = []
@@ -90,12 +73,10 @@ def process_dataframe(df, method_col='method'):
 
 
 def aggregate_metrics(metrics_df):
-    """Aggregate across seeds: mean ± std."""
     agg_cols = ['ECE', 'Brier', 'NLL', 'Avg_Conf', 'Acc', 'High_Conf_Error']
     summary = metrics_df.groupby(['setting', 'shot', 'method']).agg(
         {c: ['mean', 'std'] for c in agg_cols}
     ).reset_index()
-    # Flatten columns
     summary.columns = ['_'.join(c).strip('_') if isinstance(c, tuple) else c
                        for c in summary.columns]
     return summary
@@ -104,15 +85,12 @@ def aggregate_metrics(metrics_df):
 def main():
     BASE = os.path.dirname(os.path.abspath(__file__))
 
-    # Load all prediction CSVs
     dfs = {}
 
-    # 1. PharDDIE
     phar_path = os.path.join(BASE, 'results/predictions/predictions_dataset1_PharDDIE.csv')
     if os.path.exists(phar_path):
         dfs['PharDDIE'] = pd.read_csv(phar_path)
         print(f'Loaded PharDDIE: {len(dfs["PharDDIE"])} samples')
-        # ---- 种子独立性验证：校准表 PharDDIE 行必须覆盖 5 个训练种子 ----
         ph = dfs['PharDDIE']
         if 'train_seed' in ph.columns and 'seed' not in ph.columns:
             ph['seed'] = ph['train_seed']
@@ -124,13 +102,11 @@ def main():
                 f'Re-export with pharddie_export_full.py '
                 f'(5 independent checkpoints required; no fallback allowed).')
 
-    # 2. PharDDIE w/o uncertainty (VAE)
     wo_path = os.path.join(BASE, 'results/predictions/predictions_dataset1_wo_uncertainty.csv')
     if os.path.exists(wo_path):
         dfs['PharDDIE w/o VAE'] = pd.read_csv(wo_path)
         print(f'Loaded PharDDIE w/o VAE: {len(dfs["PharDDIE w/o VAE"])} samples')
 
-    # 3. Zero-shot variants (EviDDIE)
     zs_paths = [
         os.path.join(BASE, '..', 'EviDDIE', 'results', 'predictions', 'predictions_eviddie_new_ablation.csv'),
         os.path.join(BASE, 'results', 'predictions', 'predictions_eviddie_new_ablation.csv'),
@@ -141,7 +117,6 @@ def main():
             print(f'Loaded Zero-shot variants: {len(dfs["Zero-shot"])} samples from {p}')
             break
 
-    # Process all dataframes
     all_results = []
     for label, df in dfs.items():
         metrics_df = process_dataframe(df)
@@ -150,17 +125,12 @@ def main():
     combined = pd.concat(all_results, ignore_index=True)
     summary = aggregate_metrics(combined)
 
-    # Also save detail CSV
     detail_csv = os.path.join(BASE, 'results/table3_complete_detail.csv')
     combined.to_csv(detail_csv, index=False, float_format='%.6f')
     print(f'\nDetail per seed saved to: {detail_csv}')
 
-    # ============================================================
-    # Print formatted table
-    # ============================================================
     setting_order = ['common', 'fewer', 'rare']
     shot_order = [0, 1, 5, 10]
-    # Define row order: for each setting, show all methods grouped by shot
     method_order_zs = ['Softmax baseline', 'EviDDIE w/o EVI', 'EviDDIE']
     method_order_fs = ['PharDDIE', 'PharDDIE w/o VAE']
 
@@ -216,14 +186,12 @@ def main():
     out = '\n'.join(lines)
     print('\n' + out)
 
-    # Save
     txt_path = os.path.join(BASE, 'results/table3_complete.txt')
     csv_path = os.path.join(BASE, 'results/table3_complete.csv')
     with open(txt_path, 'w', encoding='utf-8') as f:
         f.write(out)
     print(f'\nSaved to: {txt_path}')
 
-    # Also save as CSV
     summary.to_csv(csv_path, index=False, float_format='%.6f')
     print(f'Saved to: {csv_path}')
 

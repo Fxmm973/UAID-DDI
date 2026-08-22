@@ -1,21 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Six-part leakage audit (reviewer-required). Writes one report per check under
-audit/leakage_reports/ and exits non-zero if any hard check fails.
-
-  1. support-query      : support triples vs query triples within each event/split
-  2. positive-negative  : positive triples vs manifest negatives (same event)
-  3. ordered-triple     : directed (d_i, e, d_j) overlap across train/dev/test/test2
-  4. unordered-pair     : undirected drug-pair overlap across splits
-  5. cross-split        : positive triples of one split used as negatives elsewhere
-  6. kg-edge-leakage    : held-out drug pairs appearing as DRKG path_graph edges
-                          (path_graph feeds the ACI neighbor encoder)
-
-Checks 1-5 are hard failures (they should never occur). Check 6 is reported
-informationally: any held-out drug pair that is also a path_graph edge is
-listed, since ACI aggregates DRKG neighbours for evaluation drugs.
-"""
 import json
 import os
 import sys
@@ -66,8 +50,6 @@ def main():
     evt = {n: evt_lists(tasks[n]) for n in SPLITS}
     allt = {n: all_triples(evt[n]) for n in SPLITS}
 
-    # ---- 1. support-query overlap ----
-    # P0-5：优先审计真实评估 episode manifest（导出脚本生成）；否则回退到静态前 K 切分。
     lines, ok1 = [], True
     em_dir = args.episode_manifests
     if em_dir and os.path.isdir(em_dir):
@@ -112,9 +94,6 @@ def main():
     if not ok1:
         fail = True
 
-    # ---- 2. positive-negative overlap (all seeds, dev/test/test2) ----
-    # 硬失败：正样本三元组被用作负样本（泄漏）。
-    # 信息性记录：同一事件内不同正样本共享同一个负样本（冗余但非泄漏）。
     lines, ok2 = [], True
     dup_total = 0
     for split in ['dev', 'test', 'test2']:
@@ -146,7 +125,6 @@ def main():
     if not ok2:
         fail = True
 
-    # ---- 3. ordered-triple cross-split ----
     lines, ok3 = [], True
     for i in range(len(SPLITS)):
         for j in range(i + 1, len(SPLITS)):
@@ -160,9 +138,6 @@ def main():
     if not ok3:
         fail = True
 
-    # ---- 4. unordered-pair cross-split ----
-    # 硬失败：同一事件下的反向无序药物对 (d_i,e,d_j)/(d_j,e,d_i) 出现在不同 split（真泄漏）。
-    # 信息性记录：不同事件共享同一药物对（事件级划分下的预期现象，论文 Limitations 已说明）。
     lines, ok4 = [], True
     def unordered_event_cond(n):
         s = set()
@@ -198,7 +173,6 @@ def main():
     if not ok4:
         fail = True
 
-    # ---- 5. cross-split positive-negative conflicts ----
     lines, ok5 = [], True
     neg_all = set()
     for split in ['dev', 'test', 'test2']:
@@ -219,8 +193,6 @@ def main():
     if not ok5:
         fail = True
 
-    # ---- 6. KG-edge leakage (HARD check per P0-5) ----
-    # ACI 应读取净化图 path_graph_train_only；任何 held-out 药物对直连边都是硬失败。
     lines, ok6 = [], True
     held = allt['test_tasks'] | allt['test2_tasks']
     held_pairs = set()
@@ -229,7 +201,7 @@ def main():
         held_pairs.add((b, a))
     pg = os.path.join(ds, 'path_graph_train_only')
     if not os.path.exists(pg):
-        pg = os.path.join(ds, 'path_graph')  # 兼容未净化的旧目录
+        pg = os.path.join(ds, 'path_graph')
     if os.path.exists(pg):
         edges = set()
         with open(pg) as f:

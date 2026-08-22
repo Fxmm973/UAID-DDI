@@ -33,21 +33,17 @@ def read_options():
     parser.add_argument("--eval_manifest_seed", default=19940419, type=int,
                         help="dev checkpoint 选择与最终评估使用的固定负样本 manifest 种子（P0-4）")
 
-    ############新增###############
 
     parser.add_argument("--proto_weight", default=2.0, type=float)
 
-    # 导出变体过滤 (2026-08-16)：消融头训练前可只导 full_evi
     parser.add_argument("--variants", default="softmax,evi_no_evi,wo_BSA,full_evi", type=str,
                         help="comma-separated variants to export (default: all four)")
     parser.add_argument("--out_csv", default="predictions_dataset1_zero_shot_variants.csv", type=str,
                         help="output CSV filename (default keeps the legacy name)")
-    # 消融训练 (2026-08-16)
     parser.add_argument("--train_seed", default=None, type=int,
                         help="ablation: which training-seed checkpoint to freeze (default: args.seed)")
     parser.add_argument("--max_iter", default=5000, type=int,
                         help="ablation: iterations per variant head")
-
 
 
     args = parser.parse_args()

@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-run_rareddie_baseline.py — 一键重评 RareDDIE 基线（统一协议）
-
-流程：5 个训练种子 × {1-shot, 5-shot} × 40,000 批次训练
-      → 每个 checkpoint 用固定负样本 manifest（seed 19940419）评估
-      → 汇总 AUC / ACC / event-macro F1 的 mean±std 写入 results/rareddie_unified_results.txt
-
-用法（在 UAID-DDI/PharDDIE 目录下）：
-  python run_rareddie_baseline.py            # 全部 10 组训练（已有 bestmodel 则跳过训练、只评估）
-  python run_rareddie_baseline.py --few 1    # 只做 1-shot
-  python run_rareddie_baseline.py --force    # 删除已有 checkpoint 强制重训
-"""
 import argparse
 import os
 import re
@@ -22,7 +10,6 @@ SHOTS = [1, 5]
 MODES = [('test', 'fewer'), ('test2', 'rare')]
 MAX_BATCHES = 40000
 
-# RareDDIE 论文发表值（Fig.3a source data），仅作为输出参照
 PUBLISHED = {
     ('test', 1): (0.8655, 0.7726, 0.7735),
     ('test', 5): (0.9351, 0.8542, 0.8560),
@@ -81,7 +68,6 @@ def main():
                 results[few][mode].append((seed, auc, acc, f1))
                 print(f'[RESULT] {few}shot {mode} seed{seed}: AUC={auc:.4f} ACC={acc:.4f} F1={f1:.4f}')
 
-    # ---- 汇总 mean±std 并写文件 ----
     os.makedirs('results', exist_ok=True)
     lines = []
     lines.append('=' * 100)
@@ -104,7 +90,7 @@ def main():
             import statistics
             def ms(i):
                 vals = [r[i] for r in rows]
-                return statistics.fmean(vals), statistics.pstdev(vals)  # ÷n，与转录口径一致
+                return statistics.fmean(vals), statistics.pstdev(vals)
             a, s_a = ms(1); c, s_c = ms(2); f, s_f = ms(3)
             pub = PUBLISHED[(mode, few)]
             lines.append(f'{few}-shot {label:5s}: AUC {a:.4f}±{s_a:.4f} | ACC {c:.4f}±{s_c:.4f} | F1 {f:.4f}±{s_f:.4f}   (论文发表值 AUC {pub[0]} ACC {pub[1]} F1 {pub[2]})')

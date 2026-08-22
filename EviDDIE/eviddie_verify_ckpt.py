@@ -1,4 +1,3 @@
-"""直接用 export_zero_shot_variants.py 的逻辑验证 checkpoint — 不做任何自定义"""
 import json, logging, numpy as np, torch, torch.nn.functional as F
 import os
 from collections import defaultdict
@@ -12,7 +11,6 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class VerifyCheckpoint:
-    """完全复刻 export_zero_shot_variants.py 的 ExportVariants 初始化逻辑"""
     def __init__(self):
         arg = read_options()
         arg.dataset = 'dataset1'; arg.semantic = 'event_embedding2.json'
@@ -21,9 +19,7 @@ class VerifyCheckpoint:
         arg.fine_tune = True; arg.aggregate = 'max'; arg.dropout = 0.2; arg.max_neighbor = 30
         args = arg
 
-        # ---- 完全复刻 ExportVariants.__init__ ----
         self.semantic_task = json.load(open(f'{arg.dataset}/{arg.semantic}'))
-        # P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
         for task in list(self.semantic_task.keys()):
             self.semantic_task[task] = np.array(self.semantic_task[task])
         self.task_ebmedding = []
@@ -32,7 +28,6 @@ class VerifyCheckpoint:
             self.task2id[i]=num; self.task_ebmedding.append(self.semantic_task[i])
         self.task_ebmedding = torch.tensor(np.vstack(self.task_ebmedding)).float().to(device)
 
-        # Load embed (same as original)
         sid={}; r2id=json.load(open(arg.dataset+'/relation2ids')); e2id=json.load(open(arg.dataset+'/ent2ids'))
         r2e=json.load(open(arg.dataset+'/relation2embids')); e2e=json.load(open(arg.dataset+'/ent2embids'))
         ee=np.load(arg.dataset+'/DRKG_TransE_entity.npy'); re=np.load(arg.dataset+'/DRKG_TransE_relation.npy')
@@ -50,7 +45,6 @@ class VerifyCheckpoint:
                                      aggregate='max', task_emb=self.task_ebmedding).to(device)
         self.matcher.eval()
 
-        # ---- Load and verify checkpoints ----
         ckpt_paths = [
             'models/dataset1/ph2p0_0shot_40kbestmodel',
             'models/dataset1/ph2p1_0shot_40kbestmodel',
@@ -134,7 +128,6 @@ if __name__=='__main__':
     for sn in ['test', 'test2']:
         acc,au,f1,n = vc.eval_split(sn)
         print(f'{sn}: samples={n}, ACC={acc:.4f}, AUROC={au:.4f}, F1={f1:.4f}')
-        # Spot-check first 5 predictions
         if au > 0.8:
             print(f'  -> CHECKPOINT IS VALID (AUROC={au:.4f})')
         else:

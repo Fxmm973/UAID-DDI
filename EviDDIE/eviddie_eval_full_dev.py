@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""完整 EviDDIE 在训练器内部 dev 口径下的评估 (2026-08-16)。
-
-目的：为消融训练曲线图提供完整模型的水平参考线。
-口径与 AblationTrainer._eval_dev 完全一致（同一 dev_rows manifest），
-保证与三条训练曲线可比。"""
 import json
 import logging
 import os
@@ -33,7 +28,6 @@ def main():
         args.semantic = 'event_embedding2.json'
         args.seed = seed
         tr = AblationTrainer(args, train_seed=seed, prefix=prefix)
-        # 注意：不能 reset_head —— 保留 checkpoint 原生 fc（完整模型头）
         acc, auroc, f1 = tr._eval_dev('full_evi', use_bsa=True)
         logging.info(f'seed={seed}: dev acc={acc:.4f} auroc={auroc:.4f} f1={f1:.4f}')
         rows.append({'train_seed': seed, 'dev_acc': acc,

@@ -1,15 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""PharDDIE vs re-evaluated RareDDIE: seed-paired mean differences + 95% CI (P1-6).
-
-Rare events (test2), 1-shot and 5-shot. PharDDIE per-seed metrics are computed
-from PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv (pooled
-AUROC/ACC, event-macro F1); RareDDIE per-seed metrics are read from
-PharDDIE/results/rareddie_seed_{seed}.txt (test2 lines). The paired difference
-is computed per training seed, then reported as mean +- 95% CI (t_{0.975,4}).
-With n=5 seeds all intervals include zero: the differences are
-point-estimate-level and are not statistically distinguishable.
-"""
 import csv
 import re
 import numpy as np
@@ -60,7 +50,7 @@ def rareddie_per_seed():
 def main():
     ph = pharddie_per_seed()
     rr = rareddie_per_seed()
-    t = stats.t.ppf(0.975, 4)  # n=5 -> df=4
+    t = stats.t.ppf(0.975, 4)
     rows = []
     print('Paired difference PharDDIE - RareDDIE (rare/test2, per-seed paired)')
     for shot in (1, 5):

@@ -15,15 +15,11 @@ class PairData(Data):
         self.num_nodes = None
 
     def __inc__(self, key, value):
-    # In case of "TypeError: __inc__() takes 3 positional arguments but 4 were given"
-    # Replace with "def __inc__(self, key, value, *args, **kwargs)"
         if key == 'edge_index':
             return torch.tensor([[self.j_indices.shape[0]], [self.i_indices.shape[0]]])
         if key in ('i_indices', 'j_indices'):
             return 1
         return super().__inc__(key, value)
-            # In case of "TypeError: __inc__() takes 3 positional arguments but 4 were given"
-            # Replace with "return super().__inc__(self, key, value, args, kwargs)"
 
 def train_generate_simple(dataset, batch_size, few, symbol2id, seed=19940419):
     logging.info('LOADING TRAINING DATA')
@@ -33,7 +29,6 @@ def train_generate_simple(dataset, batch_size, few, symbol2id, seed=19940419):
     task_pool = list(train_tasks.keys())
     num_tasks = len(task_pool)
     rel_idx = 0
-    # P0-5 (6.1.1)：局部随机数生成器
     rng = random.Random(seed)
     while True:
         if rel_idx % num_tasks == 0:
@@ -140,7 +135,6 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
     num_tasks = len(task_pool)
     rel_idx = 0
     rel2id = json.load(open(dataset + '/relation2ids'))
-    # P0-5 (6.1.1)：局部随机数生成器，不依赖全局随机状态
     rng = random.Random(seed)
     while True:
         if rel_idx % num_tasks == 0:
@@ -217,7 +211,6 @@ def train_generate(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, all_dr
         for batch in false_batch_loader:
             false_batch.append(batch)
 
-        # P0-5 (6.1.2)：运行时 episode 断言——support/query 无交叉、正负无交叉
         support_set = {tuple(x) for x in support_triples}
         query_set = {tuple(x) for x in query_triples}
         negative_set = {tuple(x) for x in false_triples}
@@ -280,8 +273,5 @@ def train_generate_(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, num_n
                 labels.append(0)
 
         yield support_pairs, query_pairs, support_left, support_right, query_left, query_right, labels
-
-
-
 
 

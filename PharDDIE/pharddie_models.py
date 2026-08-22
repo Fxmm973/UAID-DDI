@@ -43,7 +43,6 @@ class MVN_DDI(nn.Module):
         self.fdmer = MergeFD(self.in_node_features_fp, self.in_node_features_desc, self.kge_dim)
 
 
-
     def forward(self, triples):
         triples_c = copy.deepcopy(triples)
         h_data, h_data_fin, h_data_desc, t_data, t_data_fin, t_data_desc, rels, h_data_edge, t_data_edge = triples_c
@@ -75,7 +74,6 @@ class MVN_DDI(nn.Module):
         h_data_fin=0.6*repr_h[0]+0.4*repr_h[-1]
         t_data_fin=0.6*repr_t[0]+0.4*repr_t[-1]
         return h_data_fin,t_data_fin
-
 
 
 class MVN_DDI_Block(nn.Module):

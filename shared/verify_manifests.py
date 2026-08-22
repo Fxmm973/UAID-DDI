@@ -1,20 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Verify negative manifests against recorded SHA256 hashes and expected entry counts.
-
-Run from the repository root, e.g.:
-    python shared/verify_manifests.py --hash-log PharDDIE/dataset1/neg_manifests/manifest_hashes.json \
-                                      --manifest-dir PharDDIE/dataset1/neg_manifests \
-                                      --dataset PharDDIE/dataset1
-    python shared/verify_manifests.py --hash-log EviDDIE/neg_manifests/manifest_hashes.json \
-                                      --manifest-dir EviDDIE/neg_manifests \
-                                      --dataset EviDDIE/dataset1
-
-Exits 0 only if every recorded manifest exists, its SHA256 matches the recorded
-value, and (when --dataset is given) the per-event entry counts match the
-corresponding task JSON. Used by reproduce.ps1 before any export/table step.
-"""
 import json
 import hashlib
 import os

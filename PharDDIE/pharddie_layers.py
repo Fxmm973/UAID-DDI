@@ -125,32 +125,22 @@ class MergeFD(nn.Module):
         return h_fdmerge, t_fdmerge, h_data_fin, h_data_desc, t_data_fin, t_data_desc
 
 
-
-
-# ============= Selected hidden-channel reweighting (SHCR) =============
 import torch
 from torch import nn
 from torch_geometric.nn import TransformerConv
 
 class HiddenChannelReweightingTransformerConv(nn.Module):
-    """SHCR: five fixed hidden-channel indices reweighted by learnable channel
-    coefficients, fused 7:3 with a learned gate. The selected indices carry no
-    guaranteed chemical meaning after the preceding linear projection; the
-    module acts as a lightweight regularizing prior, not a chemical detector."""
 
     def __init__(self, in_channels, out_channels, heads, edge_dim, dropout):
         super().__init__()
         self.base_conv = TransformerConv(in_channels, out_channels, heads,
                                              edge_dim=edge_dim, dropout=dropout)
         self.selected_channel_names = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5']
-        # Kept under its original attribute name for checkpoint compatibility;
-        # semantics: fixed channel indices + learnable channel coefficients.
         self.pharm_weight = nn.Parameter(torch.ones(len(self.selected_channel_names)))
         self.gate_fc = nn.Linear(in_channels, 1)
 
     def extract_selected_channels(self, x):
         score = torch.zeros(x.size(0), len(self.selected_channel_names), device=x.device)
-        # Fixed channel-index selection (indices 1, 2, 0, 53, 46 of the projected representation)
         score[:, 0] = x[:, 1]
         score[:, 1] = x[:, 2]
         score[:, 2] = x[:, 0]
@@ -163,8 +153,7 @@ class HiddenChannelReweightingTransformerConv(nn.Module):
         channel_weight = torch.sigmoid(
             (channel_score * self.pharm_weight.unsqueeze(0)).sum(1, keepdim=True))
         gate = torch.sigmoid(self.gate_fc(x))
-        adaptive_weight = 0.7 * gate + 0.3 * channel_weight  # 7:3 gate-to-channel fusion
+        adaptive_weight = 0.7 * gate + 0.3 * channel_weight
         x_conv = self.base_conv(x, edge_index, edge_attr)
         return x_conv * (1 + 1.5 * adaptive_weight)
-    # ===========================================================
  

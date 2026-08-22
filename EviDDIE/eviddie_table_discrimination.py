@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-EviDDIE Zero-Shot Discrimination Table.
-Generates a table comparable to Table 2 but for the zero-shot setting.
-"""
 import pandas as pd
 import numpy as np
 import os
@@ -21,7 +17,6 @@ def compute_metrics(y_true, y_prob, group_by_event):
     else:
         r['AUC'], r['AUPR'] = np.nan, np.nan
     r['ACC'] = metrics.accuracy_score(y_true, y_pred)
-    # Balanced accuracy = (TPR + TNR) / 2
     tpr = metrics.recall_score(y_true, y_pred, pos_label=1, zero_division=0)
     tnr = metrics.recall_score(y_true, y_pred, pos_label=0, zero_division=0)
     r['Balanced ACC'] = (tpr + tnr) / 2.0
@@ -92,7 +87,6 @@ def main():
                          f'{fmt(mean_s.get("Macro-F1", None), std_s.get("Macro-F1", None)):<18}')
         lines.append('-' * 120)
 
-    # ---- Per-event AUROC（held-out events 明细，P0-2 要求）----
     lines.append('')
     lines.append('=' * 120)
     lines.append('PER-EVENT AUROC (pooled over seeds; held-out events only)')

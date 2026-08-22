@@ -20,15 +20,9 @@ from torch_geometric.utils import degree
 from eviddie_models import MVN_DDI
 
 
-# (P0-7 cleanup: SynergisticGating and other MoseDTI remnants removed)
-
-
 class Generate_Model(torch.nn.Module):
-    '''
-    Generator.
-    '''
 
-    def __init__(self, in_dim=700):  # BioSentVec output dimension
+    def __init__(self, in_dim=700):
         super().__init__()
         self.fc = torch.nn.Sequential(
             torch.nn.Linear(in_features=in_dim, out_features=256),
@@ -45,9 +39,6 @@ class Generate_Model(torch.nn.Module):
 
 
 class Distinguish_Model(torch.nn.Module):
-    '''
-    Discriminator.
-    '''
 
     def __init__(self):
         super().__init__()
@@ -106,9 +97,6 @@ class CustomDropout(nn.Module):
 
 
 class GlobalAttentionPool(nn.Module):
-    '''
-    This is the topology-aware global pooling mentioned in the paper.
-    '''
 
     def __init__(self, hidden_dim):
         super().__init__()
@@ -131,12 +119,6 @@ class RelationRepresentation(nn.Module):
                                                   with_pos=True)
 
     def forward(self, support, query=None):
-        """
-        forward
-        :param left: [batch, dim]
-        :param right: [batch, dim]
-        :return: [batch, dim]
-        """
 
         relation = self.RelationEncoder(support, query)
         return relation
@@ -156,18 +138,9 @@ class TransformerEncoder(nn.Module):
         self.rel_embed = nn.Parameter(torch.rand(1, model_dim), requires_grad=True)
 
     def repeat_dim(self, emb):
-        """
-        :param emb: [batch, t, dim]
-        :return:
-        """
         return emb.repeat(1, 1, self.num_heads)
 
     def forward(self, support, query=None):
-        """
-        :param left: [batch, dim]
-        :param right: [batch, dim]
-        :return:
-        """
         batch_size = 1
         if query == None:
             seq = torch.cat((self.rel_embed, support), dim=0)
@@ -211,28 +184,17 @@ class PositionalEncoding(nn.Module):
         self.position_encoding.weight = nn.Parameter(position_encoding, requires_grad=False)
 
     def forward(self, batch_len, seq_len):
-        """
-        :param batch_len: scalar
-        :param seq_len: scalar
-        :return: [batch, time, dim]
-        """
         input_pos = torch.tensor([[1] + [2] * (seq_len - 1) for _ in range(batch_len)])
         return self.position_encoding(input_pos)
 
 
 class GELU(nn.Module):
-    """
-    This is a smoother version of the RELU.
-    Original paper: https://arxiv.org/abs/1606.08415
-    """
 
     def forward(self, x):
         return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
 
 
 class ScaledDotProductAttention2(nn.Module):
-    """ Scaled Dot-Product Attention
-    """
 
     def __init__(self, attn_dropout=0.0):
         super(ScaledDotProductAttention2, self).__init__()
@@ -240,14 +202,6 @@ class ScaledDotProductAttention2(nn.Module):
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, q, k, v, scale=None, attn_mask=None):
-        """
-        :param attn_mask: [batch, time]
-        :param scale:
-        :param q: [batch, time, dim]
-        :param k: [batch, time, dim]
-        :param v: [batch, time, dim]
-        :return:
-        """
         attn = torch.bmm(q, k.transpose(1, 2))
         if scale:
             attn = attn * scale
@@ -260,7 +214,6 @@ class ScaledDotProductAttention2(nn.Module):
 
 
 class MultiHeadAttention2(nn.Module):
-    """ Implement without batch dim"""
 
     def __init__(self, model_dim, num_heads=8, dropout=0.0):
         super(MultiHeadAttention2, self).__init__()
@@ -278,14 +231,6 @@ class MultiHeadAttention2(nn.Module):
         self.layer_norm = nn.LayerNorm(model_dim)
 
     def forward(self, query, key, value, attn_mask=None):
-        """
-        To be efficient, multi- attention is cal-ed in a matrix totally
-        :param attn_mask:
-        :param query: [batch, time, per_dim * num_heads]
-        :param key:
-        :param value:
-        :return: [b, t, d*h]
-        """
         residual = query
         batch_size = key.size(0)
 
@@ -320,11 +265,6 @@ class PositionalWiseFeedForward(nn.Module):
         self.gelu = GELU()
 
     def forward(self, x):
-        """
-
-        :param x: [b, t, d*h]
-        :return:
-        """
         output = x.transpose(1, 2)
         output = self.w2(self.gelu(self.w1(output)))
         output = self.dropout(output.transpose(1, 2))
@@ -334,7 +274,6 @@ class PositionalWiseFeedForward(nn.Module):
 
 class EncoderLayer2(nn.Module):
     def __init__(self, model_dim=512, num_heads=8, ffn_dim=2048, dropout=0.0):
-        # ffn_dim
         super(EncoderLayer2, self).__init__()
         self.attention = MultiHeadAttention2(model_dim, num_heads, dropout)
         self.feed_forward = PositionalWiseFeedForward(model_dim, ffn_dim, dropout)
@@ -449,14 +388,6 @@ class AttentionSelectContext(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def intra_attention(self, head, rel, tail, mask):
-        """
-
-        :param head: [b, dim]
-        :param rel: [b, max, dim]
-        :param tail:
-        :param mask:
-        :return:
-        """
         head = head.unsqueeze(1).repeat(1, rel.size(1), 1)
         score = self.Bilinear(head, rel).squeeze(2)
 
@@ -467,13 +398,6 @@ class AttentionSelectContext(nn.Module):
         return head
 
     def forward(self, left, right, mask_left=None, mask_right=None):
-        """
-        :param left: (head, rel, tail)
-        :param right:
-        :param mask_right:
-        :param mask_left:
-        :return:
-        """
         head_left, rel_left, tail_left = left
         head_right, rel_right, tail_right = right
 
@@ -494,13 +418,6 @@ class AttentionSelectContext(nn.Module):
 
 
 class SRAE(nn.Module):
-    """Stochastic Reconstruction-regularized Autoencoder (SRAE).
-
-    Progressive bottleneck encoder (d -> d/2 -> d/4 -> d/8 -> d/2 -> d/4)
-    with asymmetric noise injection: Gaussian perturbation (eta=1e-2) for
-    support latents during training and near-deterministic encoding
-    (eta=1e-3) for query/evaluation latents. No KL term and no
-    standard-normal prior; the scale output is a learned noise magnitude."""
 
     def __init__(self, emb_dim):
         super(SRAE, self).__init__()
@@ -520,8 +437,6 @@ class SRAE(nn.Module):
         self.softmax = nn.Softmax()
 
     def encode(self, x):
-        """Shared trunk: d -> d/2 -> d/4 -> d/8 (ReLU) -> d/2 (SeLU),
-        then two heads producing the posterior mean and log-scale."""
         x = self.relu(self.conv_1(x))
         x = self.relu(self.conv_2(x))
         x = self.relu(self.conv_3(x))
@@ -529,8 +444,6 @@ class SRAE(nn.Module):
         return self.fc_1(x), self.fc_2(x)
 
     def sampling(self, z_mean, z_logvar, is_support, is_eval):
-        """Asymmetric noise: eta=1e-2 Gaussian for support latents during
-        training; eta=1e-3 (effectively deterministic) for query/eval."""
         std = torch.exp(0.5 * z_logvar)
         if is_eval:
             epsilon = 1e-3 * torch.ones_like(input=std)
@@ -542,7 +455,6 @@ class SRAE(nn.Module):
         return z_mean + std * epsilon
 
     def decode(self, z):
-        """Two-layer decoder mapping the compact latent code back to d."""
         z = F.selu(self.fc_3(z))
         y_out = self.fc_4(z)
         y = y_out
@@ -555,14 +467,10 @@ class SRAE(nn.Module):
         return y, z_mean, z_logvar, z
 
 
-# Temporary checkpoint-compatibility alias for legacy checkpoints and imports.
 VAE = SRAE
 
 
 class EmbedMatcher(nn.Module):
-    """
-    Matching metric based on KB Embeddings
-    """
 
     def __init__(self, embed_dim, num_symbols, use_pretrain=True, embed=None, dropout=0.2, batch_size=64,
                  finetune=False, aggregate='max', task_emb=None):
@@ -615,18 +523,15 @@ class EmbedMatcher(nn.Module):
         rel_total = 0
         self.model = MVN_DDI([n_atom_feats, 2048, 200], 17, kge_dim, kge_dim, rel_total, [64, 64],
                              [2, 2], 64, 0.0)
-        # Dual-output evidential head: raw evidence scores for the two classes;
-        # Softplus is applied in forward() to guarantee non-negative evidence.
         self.fc = nn.Sequential(
             nn.Linear(64, 128),
             nn.ReLU(),
             CustomDropout(dropout),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 2)  # dual-output evidential head
+            nn.Linear(64, 2)
         )
 
-        # ---- KG 恢复 (2026-08-16)：与 PharDDIE ACI 相同的 DRKG 邻居上下文（无药效团代理）----
         if embed is not None:
             self.symbol_emb = nn.Embedding.from_pretrained(
                 torch.tensor(embed, dtype=torch.float32), freeze=True)
@@ -659,7 +564,7 @@ class EmbedMatcher(nn.Module):
                                                               num_transformer_heads=self.num_transformer_heads,
                                                               dropout_rate=self.dropout_layers)
 
-        self.vaemodel = SRAE(emb_dim=embed_dim * 2)  # attribute name kept for checkpoint compatibility
+        self.vaemodel = SRAE(emb_dim=embed_dim * 2)
 
     def structure_encoder(self, batch):
         qdrug_data_origin, qunique_drug_pair, qrels, qdrug_pair_indices, qnode_j_for_pairs, qnode_i_for_pairs, qdrug_pair_list, qdrug_node_num_pair_list = batch
@@ -687,13 +592,11 @@ class EmbedMatcher(nn.Module):
         return query_pair
 
     def neighbor_encoder(self, connections, num_neighbors, self_feature, weak_rel):
-        """ACI 式 DRKG 邻居编码（自 PharDDIE matcher 移植）：
-        bilinear attention over first-order KG neighbors + residual gating。"""
         num_neighbors = num_neighbors.unsqueeze(1)
         relations = connections[:, :, 0].squeeze(-1)
         entities = connections[:, :, 1].squeeze(-1)
-        rel_embeds = self.dropout(self.symbol_emb(relations))   # (batch, N, embed_dim)
-        ent_embeds = self.dropout(self.symbol_emb(entities))    # (batch, N, embed_dim)
+        rel_embeds = self.dropout(self.symbol_emb(relations))
+        ent_embeds = self.dropout(self.symbol_emb(entities))
         concat_embeds = torch.cat((rel_embeds, ent_embeds), dim=-1)
         out = self.gcn_w(concat_embeds)
         weak_rel = self.Linear_weak_rel(weak_rel.unsqueeze(1).repeat(1, out.size(1), 1))
@@ -709,9 +612,6 @@ class EmbedMatcher(nn.Module):
 
     def forward(self, task_proto, query, support, query_meta=None, support_meta=None, query_batch=None,
                 support_batch=None, optim_VAE=None, is_eval=False, trainGAN=False):
-        """EviDDIE forward (KG 恢复版, 2026-08-16)：
-        CSE -> ACI 式 DRKG 邻居编码 -> 拼接 -> SRAE -> |proto - z_q| -> 原生双输出 EDL。
-        零样本（is_eval=True, support=None）只使用 task_proto，无分子 support。"""
 
         if trainGAN:
             slc, sld, src, srd = support_meta
@@ -722,7 +622,6 @@ class EmbedMatcher(nn.Module):
             _, _, _, zs = self.vaemodel(s_pair, is_support=True, is_eval=is_eval)
             return zs
 
-        # ---- Query 分支：KG 上下文 ----
         qlc, qld, qrc, qrd = query_meta
         ql_, qr_ = self.model(query_batch)
         ql = self.neighbor_encoder(qlc, qld, ql_, qr_ - ql_)
@@ -758,8 +657,8 @@ class EmbedMatcher(nn.Module):
         support_left = self.neighbor_encoder(support_left_connections, support_left_degrees)
         support_right = self.neighbor_encoder(support_right_connections, support_right_degrees)
 
-        query = torch.cat((query_left, query_right), dim=-1)  # tanh
-        support = torch.cat((support_left, support_right), dim=-1)  # tanh
+        query = torch.cat((query_left, query_right), dim=-1)
+        support = torch.cat((support_left, support_right), dim=-1)
 
         support_expand = support.expand_as(query)
 
@@ -768,9 +667,6 @@ class EmbedMatcher(nn.Module):
 
 
 class RescalMatcher(nn.Module):
-    """
-    Matching based on KB Embeddings
-    """
 
     def __init__(self, embed_dim, num_ents, num_rels, use_pretrain=True, ent_embed=None, rel_matrices=None, dropout=0.1,
                  attn_layers=1, n_head=4, batch_size=64, process_steps=4, finetune=False, aggregate='max'):
@@ -803,10 +699,6 @@ class RescalMatcher(nn.Module):
         self.query_encoder = QueryEncoder(d_model, process_steps)
 
     def neighbor_encoder(self, connections, num_neighbors):
-        '''
-        connections: (batch, 200, 2)
-        num_neighbors: (batch,)
-        '''
         num_neighbors = num_neighbors.unsqueeze(1)
         relations = connections[:, :, 0].squeeze(-1)
         entities = connections[:, :, 1].squeeze(-1)
@@ -827,11 +719,6 @@ class RescalMatcher(nn.Module):
         return out
 
     def forward(self, query, support, query_meta=None, support_meta=None):
-        '''
-        query: (batch_size, 2)
-        support: (few, 2)
-        return: (batch_size, )
-        '''
         if query_meta == None:
             support = self.dropout(self.symbol_emb(support)).view(-1, 2 * self.embed_dim)
             query = self.dropout(self.symbol_emb(query)).view(-1, 2 * self.embed_dim)
@@ -856,8 +743,8 @@ class RescalMatcher(nn.Module):
         support_left = self.neighbor_encoder(support_left_connections, support_left_degrees)
         support_right = self.neighbor_encoder(support_right_connections, support_right_degrees)
 
-        query_neighbor = torch.cat((query_left, query_right), dim=-1)  # tanh
-        support_neighbor = torch.cat((support_left, support_right), dim=-1)  # tanh
+        query_neighbor = torch.cat((query_left, query_right), dim=-1)
+        support_neighbor = torch.cat((support_left, support_right), dim=-1)
 
         support = support_neighbor
         query = query_neighbor

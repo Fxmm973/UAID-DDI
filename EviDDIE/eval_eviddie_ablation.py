@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-eval_eviddie_ablation.py - Unified-protocol evaluation of the EviDDIE
-frozen-backbone head ablation.
-
-Backbone: frozen PharDDIE molecular encoder + SRAE (pharddie_best.pt).
-Prototype: BSA generator G_m (bestmodels_G).
-Heads: fc_{softmax,evi_no_evi,full_evi}.pt trained by eviddie_train_ablation.py.
-Negatives: fixed manifest (seed 19940419, SHA256-verified; zero-shot, no support).
-
-Outputs per variant and split: AUC / ACC / event-macro F1 + ECE / Brier / NLL /
-high-confidence error, written to results/eviddie_ablation_results.csv.
-"""
 import csv
 import hashlib
 import json
@@ -28,14 +16,13 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'PharDDIE'))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# alias legacy module names for the pickled generator (same as eviddie_export_zs_v2)
 import eviddie_matcher as _em
 for _old in ['matcher_structure_acc_fp_neigh_VAE_GAN_struc',
              'matcher_structure_acc_fp_neigh_VAE_GAN_struc_ttt']:
     sys.modules[_old] = _em
 
-from pharddie_matcher import MVN_DDI, VAE          # PharDDIE backbone (frozen); VAE is the SRAE alias
-from eviddie_matcher import Generate_Model          # BSA generator
+from pharddie_matcher import MVN_DDI, VAE
+from eviddie_matcher import Generate_Model
 from eviddie_dataloader import DrugDataset, DrugDataLoader
 from shared.checkpoint import load_state_dict_safe
 

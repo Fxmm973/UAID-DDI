@@ -1,11 +1,5 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""DEPRECATED: Use eviddie_export_zs_v2.py instead.
-This script uses dynamic negative sampling (non-deterministic across runs).
-eviddie_export_zs_v2.py uses fixed negative-sample manifests with SHA256 hashes
-and is the canonical export script for paper results.
-"""
-# fmt: off
 import torch.nn.functional as F
 import csv
 from torch.autograd import Variable
@@ -148,7 +142,6 @@ class ExportVariants(object):
                 qb_data = [t.to(self.device) for t in next(iter(qbl))]
                 task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
 
-                # Forward (same as eviddie_export but use loaded fc)
                 ql_, qr_ = self.matcher.model(qb_data)
                 qn = torch.cat((ql_, qr_), dim=-1)
                 _, _, _, zq = self.matcher.vaemodel(qn, is_support=False, is_eval=True)
@@ -156,13 +149,13 @@ class ExportVariants(object):
 
                 if variant == 'softmax':
                     probs = F.softmax(fc_out, dim=1)[:, 1]
-                    unc = 1.0 - torch.max(F.softmax(fc_out, dim=1), dim=1)[0]  # 1 - max_prob
-                else:  # EDL
+                    unc = 1.0 - torch.max(F.softmax(fc_out, dim=1), dim=1)[0]
+                else:
                     evidence = F.softplus(fc_out)
                     alpha = evidence + 1
                     prob = alpha / alpha.sum(dim=1, keepdim=True)
                     probs = prob[:, 1]
-                    unc = 2.0 / alpha.sum(dim=1)  # epistemic uncertainty
+                    unc = 2.0 / alpha.sum(dim=1)
 
                 probs_np = probs.cpu().numpy()
                 unc_np = unc.cpu().numpy()

@@ -1,26 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-P0-2/P0-5 calibration + discrimination table builder for zero-shot predictions.
-
-Metrics are computed PER TRAINING SEED first and aggregated as mean +- SD
-over the five seeds (never pooled), per reviewer P0-5. Temperature scaling is
-also per-seed: T fitted on that seed's dev (common) rows, applied to that
-seed's held-out rows.
-
-Output blocks:
-  [TABLE]      AUROC / AUPRC / ACC / event-macro F1 / Brier / NLL / ECE / HCE
-               (HCE with high-confidence coverage + count), mean +- SD;
-               includes the p=0.5 no-skill row and a +TempScale row per method
-  [P0-2-STRICT-VERDICT]  proper-score baseline (Brier<0.25 AND NLL<ln2) AND
-               discrimination (AUROC>0.55) verdict per (setting, method)
-  [P0-2-BALANCE]  1:1 positive:negative pairing integrity check
-  reliability diagram PNG with per-bin sample counts
-
-Usage:
-  python shared/calibration_table.py --csv <predictions.csv> \
-      --out results/calibration_table.csv --fig results/reliability.png
-"""
 import argparse
 import numpy as np
 import pandas as pd
@@ -30,7 +9,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-HIGH_CONF = 0.9  # HCE threshold on confidence = max(p, 1-p)
+HIGH_CONF = 0.9
 LN2 = float(np.log(2))
 
 
@@ -54,8 +33,6 @@ def ece_brier_nll(probs, labels, n_bins=10):
 
 
 def hce(probs, labels, tau=HIGH_CONF):
-    """High-confidence error rate (paper Eq. hce): classification error among
-    samples with confidence c = max(p, 1-p) >= tau."""
     probs = np.asarray(probs)
     labels = np.asarray(labels).astype(int)
 
@@ -84,7 +61,6 @@ def event_macro_f1(g):
 
 
 def per_seed_metrics(g):
-    """All metrics for ONE training seed's (setting, method) group."""
     probs, labels = g['prob'].values, g['y_true'].values
     auroc = roc_auc_score(labels, probs) if len(set(labels)) > 1 else np.nan
     auprc = average_precision_score(labels, probs)
@@ -97,7 +73,6 @@ def per_seed_metrics(g):
 
 
 def aggregate(seed_metrics):
-    """mean +- SD across seeds; bin_counts are summed."""
     out = {}
     for k in seed_metrics[0]:
         vals = [m[k] for m in seed_metrics]
@@ -114,7 +89,6 @@ def aggregate(seed_metrics):
 
 
 def fit_temperature(probs, labels):
-    """Temperature scaling on binary probabilities: l=logit(p)/T, minimize NLL."""
     p = np.clip(probs, 1e-7, 1 - 1e-7)
     l = np.log(p / (1 - p))
 
@@ -181,7 +155,6 @@ def main():
     test_settings = [s for s in ['fewer', 'rare'] if s in set(df['setting'])]
 
     rows = []
-    # ---- per-seed temperature: fitted on that seed's dev rows ----
     seed_Ts = {m: {} for m in args.methods}
     for m in args.methods:
         for s, g in dev[dev['method'] == m].groupby('train_seed'):
@@ -201,7 +174,6 @@ def main():
             row.update({'setting': setting, 'method': m, 'row': m})
             rows.append(row)
 
-            # temperature-scaled row (per-seed T)
             ts_metrics = []
             for s, sg in g.groupby('train_seed'):
                 if s not in seed_Ts[m]:
@@ -217,7 +189,6 @@ def main():
 
             reliability_diagram(g['prob'].values, g['y_true'].values,
                                 axes[si][mi], title=f'{setting} - {m}')
-        # no-skill baseline row (analytic constants for p = 0.5)
         n = int(sub[sub['method'] == args.methods[0]]['n'].sum()) if 'n' in sub.columns else int(len(sub[sub['method'] == args.methods[0]]))
         rows.append({'setting': setting, 'method': '-', 'row': 'No-skill p=0.5',
                      'auroc_mean': 0.5, 'auroc_sd': 0.0, 'auprc_mean': 0.5, 'auprc_sd': 0.0,
@@ -245,7 +216,6 @@ def main():
     pd.set_option('display.width', 260)
     print(out[cols].round(4).to_string(index=False))
 
-    # ================= P0-2 strict verdict (on per-seed means) =================
     print('\n[P0-2-STRICT-VERDICT] per (setting, method) against no-skill p=0.5')
     for _, r in out.iterrows():
         if r.get('row') not in args.methods:
@@ -258,7 +228,6 @@ def main():
               f'| proper-score: {"PASS" if pass_proper else "FAIL"} | discrimination: '
               f'{"PASS" if pass_disc else "FAIL"} | verdict: {verdict}')
 
-    # ============ 1:1 positive-negative pairing integrity ============
     print('\n[P0-2-BALANCE] 1:1 positive:negative pairing check per (setting, method)')
     for s in test_settings:
         sub = df[df['setting'] == s]
@@ -272,7 +241,6 @@ def main():
             flag = 'OK' if abs(ratio - 1.0) < 0.05 else 'WARNING'
             print(f'  {s:6s} {m:22s} pos={pos} neg={neg} ratio={ratio:.4f} [{flag}]')
 
-    # ============ per-seed temperature summary ============
     for m in args.methods:
         Ts = list(seed_Ts[m].values())
         if Ts:

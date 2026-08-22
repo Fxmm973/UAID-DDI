@@ -57,7 +57,7 @@ class Trainer(object):
             self.load_embed()
         self.use_pretrain = use_pretrain
 
-        self.num_symbols = len(self.symbol2id.keys()) - 1 # one for 'PAD'
+        self.num_symbols = len(self.symbol2id.keys()) - 1
         self.pad_id = self.num_symbols
         self.matcher = EmbedMatcher(self.embed_dim, self.num_symbols, use_pretrain=self.use_pretrain, embed=self.symbol2vec, dropout=self.dropout, batch_size=self.batch_size, finetune=self.fine_tune, aggregate=self.aggregate)
         self.matcher.cuda()
@@ -83,7 +83,6 @@ class Trainer(object):
         logging.info('LOADING CANDIDATES ENTITIES')
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
 
-        # load answer dict
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
 
@@ -208,7 +207,6 @@ class Trainer(object):
             support_batch = [t.to(device) for t in support_batch]
             query_batch = [t.to(device) for t in query_batch]
             false_batch = [t.to(device) for t in false_batch]
-            # TODO more elegant solution
             support_meta = self.get_meta(support_left, support_right)
             query_meta = self.get_meta(query_left, query_right)
             false_meta = self.get_meta(false_left, false_right)

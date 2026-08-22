@@ -1,15 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-P0-4 (GPT 5.1)：共享固定评估数据构造器。
-
-PharDDIE 与 EviDDIE 的 validation/test/export 均应使用同一份固定 manifest 负样本逻辑，
-禁止各自实现不同的负样本采样。
-
-load_fixed_event_rows 返回 (rows, manifest_sha256)，其中 rows 为扁平列表：
-    (event, head_drug, relation, tail_drug, label)
-正负样本交替：每个正样本 (head, rel, positive_tail) 后紧跟其 manifest 配对的负样本。
-"""
 import hashlib
 import json
 from pathlib import Path

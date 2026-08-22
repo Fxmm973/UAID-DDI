@@ -150,11 +150,7 @@ class MVN_DDI_Block(nn.Module):
         return h_global_graph_emb, t_global_graph_emb
 
 
-# ---------- BSA: semantic-to-structure prototype mapper ----------
 class PrototypeAligner(nn.Module):
-    """
-    Maps a task semantic embedding into the structural prototype space.
-    """
 
     def __init__(self, task_dim, proto_dim):
         super().__init__()
@@ -165,5 +161,4 @@ class PrototypeAligner(nn.Module):
         )
 
     def forward(self, task_emb):
-        # task_emb: [num_tasks, task_dim]
         return self.mapper(task_emb)

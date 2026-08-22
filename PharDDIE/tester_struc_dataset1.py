@@ -67,7 +67,6 @@ class Trainer(object):
         logging.info('LOADING CANDIDATES ENTITIES')
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
 
-        # load answer dict
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
 
@@ -332,7 +331,6 @@ if __name__ == '__main__':
     logger.addHandler(ch)
     logger.addHandler(fh)
 
-    # setup random seeds
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)

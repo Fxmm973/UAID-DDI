@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""消融显著性检验：每个 (setting, metric) 上 3 个变体 vs 完整 EviDDIE 的配对 t 检验。"""
 import pandas as pd
 import numpy as np
 from sklearn import metrics

@@ -15,15 +15,11 @@ class PairData(Data):
         self.num_nodes = None
 
     def __inc__(self, key, value):
-    # In case of "TypeError: __inc__() takes 3 positional arguments but 4 were given"
-    # Replace with "def __inc__(self, key, value, *args, **kwargs)"
         if key == 'edge_index':
             return torch.tensor([[self.j_indices.shape[0]], [self.i_indices.shape[0]]])
         if key in ('i_indices', 'j_indices'):
             return 1
         return super().__inc__(key, value)
-            # In case of "TypeError: __inc__() takes 3 positional arguments but 4 were given"
-            # Replace with "return super().__inc__(self, key, value, args, kwargs)"
 
 def train_generate_simple(dataset, batch_size, few, symbol2id):
     logging.info('LOADING TRAINING DATA')
@@ -251,7 +247,6 @@ def train_generate_(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, num_n
 
         labels = [1] * len(query_triples)
 
-        # sample negtive samples for every true triples
         for triple in query_triples:
             e_h = triple[0]
             e_t = triple[2]
@@ -270,8 +265,5 @@ def train_generate_(dataset, batch_size, few, symbol2id, ent2id, e1rel_e2, num_n
                 labels.append(0)
 
         yield support_pairs, query_pairs, support_left, support_right, query_left, query_right, labels
-
-
-
 
 

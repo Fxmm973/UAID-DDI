@@ -8,10 +8,6 @@ from time import time
 from itertools import product
 
 def subgraph(node, connections, k=300, depth=2, mode='random'):
-    '''
-    random walks,
-    paths and endpoints
-    '''
     initial = node
     graph = defaultdict(list) 
     graph[node] = [[]]
@@ -38,7 +34,6 @@ def subgraph(node, connections, k=300, depth=2, mode='random'):
                 graph[endpoint].append(path)
 
     else:
-        # BFS
         nodes = set([node])
         for d in range(depth):
             new_nodes = set()
@@ -82,12 +77,11 @@ def combine_vocab(rel2id_path, ent2id_path, rel_emb, ent_emb, symbol2id_path, sy
     json.dump(symbol_id, open(symbol2id_path, 'w'))
 
 class Graph(object):
-    """methods to process KB"""
     def __init__(self, path):
         super(Graph, self).__init__()
-        self.triples = [] # the graph for path finding
+        self.triples = []
         self.dataset = path
-        with open(path + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图
+        with open(path + '/path_graph_train_only') as f:
             for line in f:
                 e1 = line.rstrip().split('\t')[0]
                 rel = line.rstrip().split('\t')[1]
@@ -96,7 +90,7 @@ class Graph(object):
                 self.triples.append([e1, rel, e2])
 
         self.connections = defaultdict(list)
-        self._connections = defaultdict(list) # inverse connections
+        self._connections = defaultdict(list)
 
         for triple in self.triples:
             e1, rel, e2 = triple
@@ -156,14 +150,6 @@ class Graph(object):
         return ' - '.join(symbols)
 
     def pair_feature(self, pair, k=300, depth=3, mode='random'):
-        '''
-        some graph patterns around two entity nodes
-        how many random walks: k
-        '''
-        # # generate subgraph for left/right node
-        # p = Pool(processes=2)
-        # graphs = p.starmap(subgraph, [(pair[0], self.connections, k, depth), (pair[1], self._connections, k, depth)])
-        # p.close()
         graphs = []
         graphs.append(subgraph(pair[0], self.connections, k, depth, mode=mode))
         graphs.append(subgraph(pair[1], self._connections, k, depth, mode=mode))
@@ -227,9 +213,6 @@ class Graph(object):
 
 
     def train_generate(self, few=5, batch_size=50, num_neg=1):
-        '''
-        data generator for training
-        '''
         dataset = self.dataset
         print('LOAD TRAINING DATA')
         train_tasks = json.load(open(dataset + '/train_tasks.json'))

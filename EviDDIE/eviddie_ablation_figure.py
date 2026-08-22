@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""EviDDIE 消融主图 (2026-08-16)：AUROC + F1 两面板，3 settings × 4 variants，
-5-seed mean±std，F1 面板标注配对 t 检验显著性 (*p<0.10, **p<0.05 vs EviDDIE)。"""
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -11,8 +9,8 @@ from sklearn import metrics
 from scipy import stats
 
 CSV_PATH = 'results/predictions/predictions_eviddie_new_ablation.csv'
-OUT_MAIN = 'EviDDIE_Ablation_Study.png'          # 正文主图（覆盖旧图）
-OUT_SUPP = 'EviDDIE_Ablation_Study_4metrics.png'  # 补充材料（4 指标）
+OUT_MAIN = 'EviDDIE_Ablation_Study.png'
+OUT_SUPP = 'EviDDIE_Ablation_Study_4metrics.png'
 
 METHOD_ORDER = ['Softmax baseline', 'EviDDIE w/o BSA', 'EviDDIE w/o EVI', 'EviDDIE']
 SETTING_ORDER = ['common', 'fewer', 'rare']
@@ -62,7 +60,6 @@ def build_results(df):
 
 
 def sig_stars(df, setting, metric):
-    """配对比 t 检验：消融变体 vs EviDDIE。返回 {variant: (star, y_offset)}"""
     stars = {}
     full_g = df[(df.setting == setting) & (df.method == 'EviDDIE')]
     full_vals = []
@@ -87,7 +84,6 @@ def main():
     results = build_results(df)
     x = range(len(SETTING_ORDER))
 
-    # ---- 正文主图：AUROC + F1 ----
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
     for method in METHOD_ORDER:
         aus = [results[(s, method)]['auroc'] for s in SETTING_ORDER]
@@ -101,7 +97,6 @@ def main():
                      marker=MARKERS[method], linestyle=LINESTYLES[method],
                      linewidth=2, markersize=8, capsize=3, markeredgewidth=0.5)
 
-    # F1 面板：显著性星号（消融变体 vs EviDDIE）
     for si, setting in enumerate(SETTING_ORDER):
         stars = sig_stars(df, setting, 'f1')
         for vi, v in enumerate(VARIANT_ABL):
@@ -126,7 +121,6 @@ def main():
     plt.savefig(OUT_MAIN, dpi=200, bbox_inches='tight', facecolor='white')
     print(f'Saved main figure -> {OUT_MAIN}')
 
-    # ---- 补充材料：4 指标 2×2 ----
     fig2, axes = plt.subplots(2, 2, figsize=(13, 10))
     for ax, k in zip(axes.flat, METRICS):
         for method in METHOD_ORDER:
@@ -148,7 +142,6 @@ def main():
     plt.savefig(OUT_SUPP, dpi=200, bbox_inches='tight', facecolor='white')
     print(f'Saved supplement figure -> {OUT_SUPP}')
 
-    # ---- 表格：正文用（F1 显著，其余 ns）----
     print('\n===== 正文消融表（4指标 mean±std，F1显著性）=====')
     print(f'{"method":<22}{"setting":<9}{"AUROC":<18}{"F1":<20}{"ACC":<18}{"AUPR":<18}')
     for setting in SETTING_ORDER:

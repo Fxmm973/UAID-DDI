@@ -24,12 +24,10 @@ class CoAttentionLayer(nn.Module):
     def forward(self, receiver, attendant):
         keys = receiver @ self.w_k
         queries = attendant @ self.w_q
-        # values = receiver @ self.w_v
         values = receiver
 
         e_activations = queries.unsqueeze(-3) + keys.unsqueeze(-2) + self.bias
         e_scores = torch.tanh(e_activations) @ self.a
-        # e_scores = e_activations @ self.a
         attentions = e_scores
         return attentions
 
@@ -63,7 +61,6 @@ class RESCAL(nn.Module):
         return f"{self.__class__.__name__}({self.n_rels}, {self.rel_emb.weight.shape})"
 
 
-# intra rep
 class IntraGraphAttention(nn.Module):
     def __init__(self, input_dim, dp, head, edge, head_out_feats):
         super().__init__()
@@ -77,7 +74,6 @@ class IntraGraphAttention(nn.Module):
         return intra_rep
 
 
-# inter rep
 class InterGraphAttention(nn.Module):
     def __init__(self, input_dim, dp, head, edge, head_out_feats):
         super().__init__()

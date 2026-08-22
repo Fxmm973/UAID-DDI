@@ -1,20 +1,11 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""
-导出 EviDDIE zero-shot 消融变体预测（v2：使用固定负样本 manifest）
-改动：
-- 从预生成的 manifest JSON 读取负样本，不再动态采样
-- SEEDS 扩展到 5 个
-- 负样本固定后跨方法一致
-"""
 import sys
 import os
 import hashlib
 
-# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 
-# 旧模块名 → 新模块名映射（兼容旧 checkpoint 的 pickle 路径）
 import eviddie_matcher
 import eviddie_modules
 import eviddie_models
@@ -44,14 +35,10 @@ METHOD_MAP = {'softmax': 'Softmax baseline', 'evi_no_evi': 'EviDDIE w/o EVI',
               'wo_BSA': 'EviDDIE w/o BSA', 'full_evi': 'EviDDIE',
               'evi_full': 'EviDDIE (frozen EDL head)'}
 SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
-# fc output channel convention: 0 = negative, 1 = positive; prob = alpha[:,1]/S.
 CLASS_ORDER = ('negative', 'positive')
 
 
 def resolve_checkpoint(train_seed, prefix='eviddie_0shot', base_dir='models'):
-    """Accept both the flat trainer naming (<base_dir>/<prefix>_seed<seed>bestmodel)
-    and the directory layout (<base_dir>/<prefix>_seed<seed>/bestmodel).
-    KG 恢复 (2026-08-16)：五种子正式训练 prefix 为 eviddie_new_s1..s5。"""
     flat_m = f'{base_dir}/{prefix}_seed{train_seed}bestmodel'
     flat_g = f'{base_dir}/{prefix}_seed{train_seed}bestmodel_G'
     dir_m = f'{base_dir}/{prefix}_seed{train_seed}/bestmodel'
@@ -62,7 +49,6 @@ def resolve_checkpoint(train_seed, prefix='eviddie_0shot', base_dir='models'):
 
 
 def load_neg_manifest(dataset, split, seed):
-    """Load pre-generated negative manifest."""
     path = f'neg_manifests/{split}_seed{seed}_negatives.json'
     with open(path) as f:
         return json.load(f)
@@ -75,8 +61,6 @@ class ExportVariants(object):
         logging.info(f"Device: {self.device}")
 
         self.semantic_task = json.load(open(f'{arg.dataset}/{arg.semantic}'))
-        # P0-7: inference uses the raw BioSentVec embeddings (no semantic noise).
-        # P0-2 审计：显式形状检查（700 维）+ 固定 key 排序，防止原型错位。
         ordered_keys = sorted(list(self.semantic_task.keys()))
         for task in ordered_keys:
             vector = np.asarray(self.semantic_task[task], dtype=np.float32).reshape(-1)
@@ -102,8 +86,6 @@ class ExportVariants(object):
         self.matcher.eval()
 
         ckpt = torch.load(arg.pretrained_model, map_location=self.device)
-        # P0-3 (GPT 4.1)：禁止旧单输出检查点的 1->2 拼接转换——该转换未经 EDL 损失训练，
-        # 不能产生可信的双类 Dirichlet evidence。旧检查点直接硬失败，提示重训。
         head_weight = ckpt.get('fc.5.weight')
         head_bias = ckpt.get('fc.5.bias')
         if head_weight is None or head_bias is None:
@@ -112,10 +94,6 @@ class ExportVariants(object):
             raise RuntimeError(
                 'Legacy single-output checkpoint is unsupported. '
                 'Retrain EviDDIE with the native two-class evidential head.')
-        # KG 恢复 (2026-08-16)：symbol_emb / gcn_w / Bilinear / Linear_* 是当前
-        # EmbedMatcher 的训练参数（ACI 式 DRKG 邻居编码器），必须从五种子 checkpoint
-        # 加载，否则导出时 KG 模块会回到随机初始化、与训练模型不一致。
-        # 仅删除 P0-7 已废弃组件的防御性残留键。
         for k in list(ckpt.keys()):
             if any(x in k for x in ['NeighborAggregator', 'siamese',
                                      'support_encoder', 'query_encoder']):
@@ -126,8 +104,6 @@ class ExportVariants(object):
 
         self.G_m = torch.load(arg.g_model_path, map_location=self.device, weights_only=False)
         self.G_m.eval()
-        # w/o BSA: a linear projection replaces the GAN generator (trained by
-        # eviddie_train_ablation.py); loaded lazily only when needed.
         self.linear_proj = None
         self.linear_proj_loaded = False
 
@@ -138,8 +114,6 @@ class ExportVariants(object):
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset+'/e1rel_e2.json'))
 
-        # ---- 加载负样本 manifest（关键改动）----
-        # P0-5 (6.1.3)：收集真实评估 episode，导出结束后存档
         self.episode_manifest = {}
         self.neg_manifests = {}
         for split in ['dev', 'test', 'test2']:
@@ -170,7 +144,6 @@ class ExportVariants(object):
                 e1,rel,e2=line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel],self.symbol2id[e2]))
         for ent,id_ in self.ent2id.items():
-            # KG 恢复 (2026-08-16)：与 eviddie_trainer.py 一致，无邻居实体用空列表（度数 0、全 PAD）
             nb=self.e1_rele2.get(ent, [])
             if len(nb)>max_: random.shuffle(nb); nb=nb[:max_]
             self.e1_degrees[id_]=len(nb)
@@ -184,7 +157,6 @@ class ExportVariants(object):
         return (lc,ld,rc,rd)
 
     def load_head(self, variant, head_dir=None):
-        # the ablation trainer sanitizes '/' in variant names ('w/o BSA' -> 'w_o BSA')
         name = variant.replace('/', '_')
         base = head_dir if head_dir is not None else self.save_dir
         path = f'{base}/fc_{name}.pt'
@@ -217,27 +189,23 @@ class ExportVariants(object):
         else: test_tasks=json.load(open(self.dataset+'/test2_tasks.json'))
         rel2id=json.load(open(self.dataset+'/relation2ids'))
 
-        # 读取预生成的固定负样本
         neg_manifest = self.neg_manifests[mode][eval_seed]
 
         with torch.no_grad():
             for query_ in test_tasks.keys():
-                query_triples = test_tasks[query_][0:]  # few=0 for zero-shot
+                query_triples = test_tasks[query_][0:]
                 if not query_triples: continue
 
-                # 从固定 manifest 读取负样本（不再动态采样）
                 manifest_entries = neg_manifest.get(query_, [])
                 false_triples = []
                 for entry in manifest_entries:
                     d_i, d_j, d_k, rel = entry
                     false_triples.append([d_i, rel, d_k])
 
-                # 确保数量匹配
                 if len(false_triples) != len(query_triples):
                     logging.warning(f'{query_}: manifest has {len(false_triples)} negs but {len(query_triples)} queries, skipping')
                     continue
 
-                # P0-5 (6.1.3)：记录真实评估 episode（零样本：无 support）
                 self.episode_manifest[f'{mode}:{query_}'] = {
                     'query_positives': [list(x) for x in query_triples],
                     'query_negatives': [list(x) for x in false_triples],
@@ -262,7 +230,6 @@ class ExportVariants(object):
                 else:
                     task_emb = self.G_m(self.task_ebmedding[self.task2id[query_]]).detach()
 
-                # KG 恢复 (2026-08-16)：与 matcher forward 相同的 ACI 式 DRKG 邻居上下文
                 ql_, qr_ = self.matcher.model(qb_data)
                 ql = self.matcher.neighbor_encoder(q_meta[0], q_meta[1], ql_, qr_ - ql_)
                 qr = self.matcher.neighbor_encoder(q_meta[2], q_meta[3], qr_, qr_ - ql_)
@@ -288,8 +255,6 @@ class ExportVariants(object):
                 unc_np = unc.cpu().numpy()
                 gt = np.concatenate([np.ones(n_pos), np.zeros(len(all_triples)-n_pos)])
 
-                # ---- P0-2 审计断言：类别顺序、标签拼接与概率范围 ----
-                # fc 输出通道约定：0 = 负类 (negative)，1 = 正类 (positive)
                 assert CLASS_ORDER == ('negative', 'positive'), 'class order convention changed'
                 assert int(gt[:n_pos].sum()) == n_pos, 'positive labels must fill the first n_pos rows'
                 assert int(gt[n_pos:].sum()) == 0, 'negative labels must fill the remaining rows'
@@ -316,9 +281,8 @@ if __name__ == '__main__':
     args.save_dir = 'models/dataset1'
 
     TRAINING_SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
-    EVAL_MANIFEST_SEED = 19940419  # 固定负样本种子
+    EVAL_MANIFEST_SEED = 19940419
     MODES = ['dev', 'test', 'test2']
-    # KG 恢复 (2026-08-16)：五种子正式训练的 per-seed prefix（与训练命令一一对应）
     SEED_PREFIX = {
         19940419: 'eviddie_new_s1',
         20230801: 'eviddie_new_s2',
@@ -327,7 +291,6 @@ if __name__ == '__main__':
         20240910: 'eviddie_new_s5',
     }
 
-    # ---- P0-3 / GPT 4.4：逐样本 CSV 元数据 ----
     def sha256_file(p):
         return hashlib.sha256(open(p, 'rb').read()).hexdigest()
 
@@ -348,10 +311,9 @@ if __name__ == '__main__':
 
     out_dir = 'results/predictions'
     os.makedirs(out_dir, exist_ok=True)
-    # 2026-08-16：--out_csv 指定新文件名，避免覆盖旧模型的 legacy 预测 CSV
     out_csv = os.path.join(out_dir, args.out_csv)
 
-    import hashlib  # 种子独立性验证
+    import hashlib
     ckpt_hashes = []
 
     with open(out_csv, 'w', newline='', encoding='utf-8') as f:
@@ -370,7 +332,6 @@ if __name__ == '__main__':
                     f'Per-seed exports must use the checkpoint of the corresponding training seed.')
             ckpt_hashes.append(hashlib.sha256(open(args.pretrained_model, 'rb').read()).hexdigest())
             eval_seed = EVAL_MANIFEST_SEED
-            # P0-3 / GPT 4.4：每个 CSV 行携带完整元数据
             args.run_meta = {
                 'run_id': f'eviddie-{train_seed}-{eval_seed}',
                 'checkpoint_sha256': ckpt_hashes[-1],
@@ -382,22 +343,18 @@ if __name__ == '__main__':
             random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
             if torch.cuda.is_available(): torch.cuda.manual_seed_all(eval_seed)
 
-            # 2026-08-16：--variants 过滤（消融头训练前可只导 full_evi）
             export_variants = [v.strip() for v in args.variants.split(',') if v.strip()]
             for variant in export_variants:
                 method = METHOD_MAP[variant]
                 logging.info(f'===== train_seed={train_seed} {method} =====')
                 ex = ExportVariants(args)
                 if variant == 'full_evi':
-                    # the formal model keeps its per-seed native dual-output EDL head
                     logging.info('[HEAD] full_evi: keeping the checkpoint native EDL head.')
                 else:
-                    # 2026-08-16：消融头按 per-seed 独立目录保存（eviddie_train_ablation.py v4）
                     head_dir = f'models/ablation_{SEED_PREFIX[train_seed]}_seed{train_seed}'
                     ex.load_head(variant, head_dir=head_dir)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed, method, variant)
-                # P0-5 (6.1.3)：保存真实评估 episode manifest（每个 (train_seed, variant) 一份）
                 if variant == 'full_evi':
                     em_dir = 'results/predictions/episode_manifests'
                     os.makedirs(em_dir, exist_ok=True)
@@ -413,7 +370,6 @@ if __name__ == '__main__':
                     logging.info(f'[P0-5] Episode manifest saved: {em_path} '
                                  f'({len(ex.episode_manifest)} episodes)')
 
-        # ---- 种子独立性验证：5 train_seed -> 5 不同 checkpoint 路径 -> 5 不同哈希 ----
         if len(set(ckpt_hashes)) != len(ckpt_hashes):
             raise RuntimeError(
                 f'EviDDIE zero-shot: checkpoint hashes are not unique across training seeds: '

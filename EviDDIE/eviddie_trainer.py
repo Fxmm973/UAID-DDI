@@ -6,7 +6,6 @@ import logging
 import sys
 import os
 
-# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 
 import numpy as np
@@ -29,7 +28,7 @@ import pickle
 from torch_geometric.data import Batch, Data
 from sklearn import metrics
 from eviddie_recorder import ExperimentRecorder
-from shared.eval_manifest import load_fixed_event_rows  # P0-4: fixed-manifest evaluation data builder
+from shared.eval_manifest import load_fixed_event_rows
 
 
 def do_compute_metrics(probas_pred, target):
@@ -73,12 +72,8 @@ class Trainer(object):
 
         self.semantic_task = json.load(open(f'{self.dataset}/{self.semantic}'))
 
-        # P0-7: training-time semantic augmentation only. Prototypes are
-        # perturbed during training for robustness; all inference/export
-        # paths use the raw BioSentVec embeddings without noise.
-        # P0-2 audit: explicit 700-dim shape check + fixed key ordering + rng-seeded noise.
         rng = np.random.default_rng(self.seed)
-        ordered_keys = sorted(list(self.semantic_task.keys()))  # fixed ordering to prevent prototype misalignment
+        ordered_keys = sorted(list(self.semantic_task.keys()))
         noise_scale = float(getattr(self, 'semantic_noise', 0.3))
         for task in tqdm(ordered_keys):
             vector = np.asarray(self.semantic_task[task], dtype=np.float32).reshape(-1)
@@ -95,14 +90,13 @@ class Trainer(object):
 
         self.task_ebmedding = torch.tensor(np.vstack(self.task_ebmedding)).float().to(self.device)
 
-        # P0-4: dev checkpoint selection uses the fixed manifest (hash recorded)
         self.dev_rows, self.dev_manifest_sha256 = load_fixed_event_rows(
             self.dataset, split='dev',
             manifest_seed=getattr(self, 'eval_manifest_seed', 19940419))
         logging.info(f'[P0-4] Fixed dev manifest loaded: {len(self.dev_rows)} rows, '
                      f'sha256={self.dev_manifest_sha256}')
 
-        self.num_symbols = len(self.symbol2id.keys()) - 1  # one for 'PAD'
+        self.num_symbols = len(self.symbol2id.keys()) - 1
         self.pad_id = self.num_symbols
         self.matcher = EmbedMatcher(self.embed_dim, self.num_symbols, use_pretrain=self.use_pretrain,
                                     embed=self.symbol2vec, dropout=self.dropout, batch_size=self.batch_size,
@@ -126,7 +120,6 @@ class Trainer(object):
         self.num_ents = len(self.ent2id.keys())
 
         logging.info('BUILDING CONNECTION MATRIX')
-        # KG 恢复 (2026-08-16)：get_meta/matcher forward 需要 DRKG 邻居连接与度数
         degrees = self.build_connection(max_=self.max_neighbor)
 
         logging.info('LOADING CANDIDATES ENTITIES')
@@ -144,7 +137,6 @@ class Trainer(object):
 
         self.G_optim = torch.optim.Adam(self.G_m.parameters(), lr=1e-4)
 
-        # initialize the experiment recorder
         result_file = f'result_{self.prefix}.txt' if hasattr(self, 'prefix') else 'result.txt'
         self.recorder = ExperimentRecorder(project_name="ZetaDDIE", result_file=result_file)
         self.recorder.record_hyperparameters(arg)
@@ -229,8 +221,6 @@ class Trainer(object):
 
         degrees = {}
         for ent, id_ in self.ent2id.items():
-            # KG 恢复 (2026-08-16)：dataset1 有 8909/16837 个实体不在 path_graph；
-            # 无邻居实体 -> 空列表 -> 度数 0、全 PAD，neighbor_encoder 靠 PAD 掩码 + 残差门控退化为自身特征
             neighbors = self.e1_rele2.get(ent, [])
             if len(neighbors) > max_:
                 random.shuffle(neighbors)
@@ -252,8 +242,6 @@ class Trainer(object):
         self.matcher.load_state_dict(torch.load(self.save_path))
 
     def get_meta(self, left, right):
-        # KG 恢复 (2026-08-16)：matcher forward 需要 DRKG 邻居 meta；
-        # 实现与 eviddie_export_zs_v2.py 的 get_meta 保持一致（self.device 替代 .cuda()）。
         left_connections = Variable(
             torch.LongTensor(np.stack([self.connections[_, :, :] for _ in left], axis=0))).to(self.device)
         left_degrees = Variable(torch.FloatTensor([self.e1_degrees[_] for _ in left])).to(self.device)
@@ -269,7 +257,6 @@ class Trainer(object):
             self.train_standard()
 
     def train_standard(self):
-        """Standard training loop."""
         logging.info('START STANDARD TRAINING...')
         losses = deque([], self.log_every)
 
@@ -288,7 +275,6 @@ class Trainer(object):
             support_batch = [t.to(self.device) for t in support_batch]
             query_batch = [t.to(self.device) for t in query_batch]
             false_batch = [t.to(self.device) for t in false_batch]
-            # TODO more elegant solution
             support_meta = self.get_meta(support_left, support_right)
             query_meta = self.get_meta(query_left, query_right)
             false_meta = self.get_meta(false_left, false_right)
@@ -329,53 +315,22 @@ class Trainer(object):
             self.G_m.eval()
             task_emb = self.G_m(self.task_ebmedding[self.task2id[task_name]]).detach()
             self.G_m.train()
-            ####old##############new#######################
-            # # legacy: query_scores actually returned the alpha parameters
-            # query_alpha, loss2_p = self.matcher(task_emb, query, support, query_meta, support_meta, query_batch,
-            #                                     support_batch, self.optim_VAE, trainGAN=False)
-            # false_alpha, loss2_n = self.matcher(task_emb, query, support, false_meta, support_meta, false_batch,
-            #                                     support_batch, self.optim_VAE, trainGAN=False)
-            #
-            # # legacy: use the new evidential loss
-            # loss_p = loss_fn(query_alpha, 'pos', self.batch_nums)
-            # loss_n = loss_fn(false_alpha, 'neg', self.batch_nums)
-            # loss_main = (loss_p + loss_n) / 2
-            #
-            # # legacy: compute predicted probabilities for logging
-            # with torch.no_grad():
-            #     q_p = query_alpha / torch.sum(query_alpha, dim=1, keepdim=True)
-            #     f_p = false_alpha / torch.sum(false_alpha, dim=1, keepdim=True)
-            #     probas_pred.append(np.concatenate([q_p[:, 1].cpu(), f_p[:, 1].cpu()]))
-            #
-            # loss = loss_main + loss2_p + loss2_n
-            #
-            #
-            #
-            #
-            # lT[0] = loss.detach()
-            # loss += loss2
 
-            ####################new#############
-            # 1. Forward pass: obtain evidence alpha and the SRAE loss
             query_alpha, loss2_p = self.matcher(task_emb, query, support, query_meta, support_meta, query_batch,
                                                 support_batch, self.optim_VAE, trainGAN=False)
             false_alpha, loss2_n = self.matcher(task_emb, query, support, false_meta, support_meta, false_batch,
                                                 support_batch, self.optim_VAE, trainGAN=False)
 
-            # 2. Compute the evidential loss
             loss_p = loss_fn(query_alpha, 'pos', self.batch_nums)
             loss_n = loss_fn(false_alpha, 'neg', self.batch_nums)
             loss_main = (loss_p + loss_n) / 2
 
-            # 3. Compute probabilities and labels for logging
             with torch.no_grad():
                 q_p = query_alpha / torch.sum(query_alpha, dim=1, keepdim=True)
                 f_p = false_alpha / torch.sum(false_alpha, dim=1, keepdim=True)
                 probas_pred.append(np.concatenate([q_p[:, 1].cpu().numpy(), f_p[:, 1].cpu().numpy()]))
-                # complete the ground_truth record, otherwise metric computation fails
                 ground_truth.append(np.concatenate([np.ones(q_p.shape[0]), np.zeros(f_p.shape[0])]))
 
-            # 4. Total loss: EDL + SRAE reconstruction only
             loss = (2.0 * loss_main) + loss2_p + loss2_n
 
             lT[0] = loss_main.detach()
@@ -390,7 +345,6 @@ class Trainer(object):
             self.optim.step()
 
             if (self.batch_nums + 1) % self.eval_every == 0:
-                # P0-4: dev checkpoint evaluation uses the fixed manifest (no random.choice)
                 dev_metrics = self.evaluate_fixed_dev()
                 valauc = dev_metrics['pooled_auroc']
                 valap = dev_metrics['pooled_auprc']
@@ -400,9 +354,8 @@ class Trainer(object):
                     bestvalauc = valauc
                     bestvalap = valap
                     self.save(self.save_path + f'bestmodel')
-                    torch.save(self.G_m, self.save_path + f'bestmodel_G')  # save generator
-                    torch.save(self.D_m, self.save_path + f'bestmodel_D')  # save critic
-                    # P0-3: save checkpoint metadata (dev manifest hash fixed under P0-4)
+                    torch.save(self.G_m, self.save_path + f'bestmodel_G')
+                    torch.save(self.D_m, self.save_path + f'bestmodel_D')
                     save_checkpoint_metadata(
                         self.save_path + 'bestmodel_meta.json',
                         train_seed=getattr(args, 'seed', None),
@@ -411,7 +364,6 @@ class Trainer(object):
                         dev_metric_value=float(valauc),
                         dev_manifest_sha256=self.dev_manifest_sha256,
                     )
-                    # record the latest evaluation as best
                     if hasattr(self, 'recorder'):
                         self.recorder.experiment_data['best_models']['dev'] = {
                             'batch_num': self.batch_nums,
@@ -427,7 +379,6 @@ class Trainer(object):
                                                                                          np.concatenate(ground_truth))
                 logging.info(
                     f'loss: {loss:.4f}, acc: {acc:.4f}, roc: {auroc:.4f}, f1: {f1_score:.4f}, p: {precision:.4f}, r: {recall:.4f}, int-ap: {int_ap:.4f}, ap: {ap:.4f}')
-                # log the training step
                 metrics_dict = {
                     'acc': acc, 'auroc': auroc, 'f1_score': f1_score,
                     'precision': precision, 'recall': recall, 'int_ap': int_ap, 'ap': ap
@@ -441,7 +392,6 @@ class Trainer(object):
                 self.recorder.finalize()
                 break
     def _predict_fixed_rows(self, rows):
-        """P0-4: forward fixed-manifest rows (positive/negative interleaved) per event; returns (probs, labels)."""
         rel2id = json.load(open(self.dataset + '/relation2ids'))
         rows_by_event = {}
         for (evt, head, rel, tail, lab) in rows:
@@ -476,7 +426,6 @@ class Trainer(object):
         return np.concatenate(probas), np.concatenate(labels)
 
     def evaluate_fixed_dev(self):
-        """P0-4: dev checkpoint selection evaluates on the fixed manifest (no random.choice)."""
         self.matcher.eval()
         yp, yt = self._predict_fixed_rows(self.dev_rows)
         if len(yp) == 0:
@@ -491,12 +440,10 @@ class Trainer(object):
         return {'pooled_auroc': auroc, 'pooled_auprc': ap, 'acc': acc, 'f1': f1}
 
     def eval_acc(self, mode='dev', meta=False):
-        # P0-4: test/test2 evaluation is forbidden during training; allowed only after checkpoint lock (test_())
         if mode != 'dev' and not getattr(self, '_locked_eval', False):
             raise RuntimeError(
                 'test/test2 evaluation is forbidden before checkpoint locking (P0-4). '
                 'Use the locked evaluation entry (--test) after training.')
-        # P0-4: all evaluation modes read the fixed manifest (no random.choice)
         split = {'dev': 'dev', 'test': 'test', 'test2': 'test2'}[mode]
         rows, mh = load_fixed_event_rows(self.dataset, split=split,
                                          manifest_seed=getattr(args, 'eval_manifest_seed', 19940419))
@@ -513,22 +460,13 @@ class Trainer(object):
     def test_(self):
         self.load()
         logging.info('Pre-trained model loaded')
-        # P0-4: test/test2 evaluation allowed only after checkpoint lock
         self._locked_eval = True
         testauc = self.eval_acc(meta=self.meta, mode='test')
         test2auc = self.eval_acc(meta=self.meta, mode='test2')
-        # finalize test records
         self.recorder.finalize()
 
 
 def make_target(target_type, batch_size, device='cpu'):
-    """EDL training objective (class-order convention matches the export scripts;
-    see tests/test_evidential_class_order.py).
-
-    fc output channel convention: 0 = negative class, 1 = positive class.
-    - positive 'pos' -> [0, 1]
-    - negative 'neg' -> [1, 0]
-    """
     if target_type == 'pos':
         y = torch.tensor([[0, 1]], dtype=torch.float32)
     elif target_type == 'neg':
@@ -540,11 +478,6 @@ def make_target(target_type, batch_size, device='cpu'):
 
 def save_checkpoint_metadata(path, train_seed, best_step, dev_metric_name,
                              dev_metric_value, dev_manifest_sha256):
-    """P0-3: checkpoint metadata JSON (train seed / best step / class order / head type).
-
-    Used by export/table scripts to verify that the matcher and generator of the
-    same seed match and the class order is fixed.
-    """
     payload = {
         'format_version': 2,
         'head_type': 'dirichlet_two_class',
@@ -562,14 +495,10 @@ def save_checkpoint_metadata(path, train_seed, best_step, dev_metric_name,
 
 
 class EvidentialLoss(nn.Module):
-    """
-    EviDDIE evidential loss: expected mean-squared error plus an annealed
-    KL regularizer over the Dirichlet evidence distribution.
-    """
 
     def __init__(self, annealing_step=500):
         super(EvidentialLoss, self).__init__()
-        self.annealing_step = annealing_step  # anneals the KL regularizer weight over training
+        self.annealing_step = annealing_step
 
     def kl_divergence(self, alpha):
         ones = torch.ones([1, 2], dtype=torch.float32).to(DEVICE)
@@ -580,31 +509,23 @@ class EvidentialLoss(nn.Module):
         return first_term + second_term.sum(dim=1, keepdim=True)
 
     def forward(self, alpha, target_type, batch_num):
-        # target_type: 'pos' = positive, 'neg' = negative
         y = make_target(target_type, alpha.size(0), DEVICE)
 
         S = torch.sum(alpha, dim=1, keepdim=True)
-        # 1. Expected mean squared error
         p = alpha / S
         err = (y - p) ** 2
         var = p * (1 - p) / (S + 1)
         loss_mse = torch.mean(torch.sum(err + var, dim=1))
 
-        # 2. KL regularization (penalizes evidence of the incorrect class)
         annealing_coef = min(1.0, batch_num / self.annealing_step)
         alpha_hat = y + (1 - y) * alpha
         loss_kl = annealing_coef * torch.mean(self.kl_divergence(alpha_hat))
 
         return loss_mse + loss_kl
 
-    ################################################
-
 
 if __name__ == '__main__':
     args = read_options()
-    # P0-7: per-seed independent checkpoints - the checkpoint prefix always
-    # encodes the training seed, so the matcher (bestmodel) and generator
-    # (bestmodel_G) checkpoints are never shared across seeds.
     args.save_path = f'models/{args.prefix}_seed{args.seed}'
 
     logger = logging.getLogger()
@@ -624,7 +545,6 @@ if __name__ == '__main__':
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    # torch.cuda.manual_seed_all(args.seed)
 
     device = DEVICE
     loss_fn = EvidentialLoss(annealing_step=10000)

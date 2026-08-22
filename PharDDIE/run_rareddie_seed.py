@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-run_rareddie_seed.py — 单种子窗口版：一个窗口跑一个种子
-每个窗口内串行：1-shot 训练(40k)→评估 → 5-shot 训练(40k)→评估
-结果写入 results/rareddie_seed_{seed}.txt（五个窗口互不冲突）
-用法（五个窗口分别运行）：
-  python run_rareddie_seed.py --seed 19940419
-  python run_rareddie_seed.py --seed 20230801
-  python run_rareddie_seed.py --seed 20240115
-  python run_rareddie_seed.py --seed 20240520
-  python run_rareddie_seed.py --seed 20240910
-跑完五个窗口后：python aggregate_rareddie.py 输出 mean±std 汇总
-"""
 import argparse
 import os
 import re

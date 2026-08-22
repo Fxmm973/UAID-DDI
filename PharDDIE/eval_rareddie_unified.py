@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-eval_rareddie_unified.py — 统一协议重评 RareDDIE（在 UAID-DDI/PharDDIE 目录下运行）
-协议与 PharDDIE 完全一致：
-  - support = 每事件前 few 个三元组
-  - 负样本 = 固定 manifest（seed 19940419，SHA256 校验）
-  - 指标 = pooled AUC / ACC + event-macro F1
-训练种子：19940419, 20230801, 20240115, 20240520, 20240910（与 PharDDIE 相同）
-用法（每种子一条，训练完成后）：
-  python eval_rareddie_unified.py --few 1 --mode test2 --seed 19940419 \
-      --checkpoint models/rareddie_1shot_seed19940419bestmodel
-"""
 import argparse, json, hashlib, os
 import numpy as np
 import torch
@@ -133,7 +122,6 @@ class UnifiedEval(object):
                     continue
                 support_triples = triples[:self.few]
                 query_triples = triples[self.few:]
-                # ---- 负样本读固定 manifest（与 pharddie_export_full.py 逐条对齐）----
                 entries = self.manifest.get(query_, [])[self.few:]
                 if len(entries) != len(query_triples):
                     raise RuntimeError(f'{query_}: manifest {len(entries)} vs queries {len(query_triples)}')

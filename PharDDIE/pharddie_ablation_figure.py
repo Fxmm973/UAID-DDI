@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-PharDDIE component-ablation figure (paper Figs. component ablation, 1/5-shot).
-
-Reads PharDDIE/results/validation/ablation_results.csv (archived from the
-authors' experiment records result_ph2p0_{1,5,10}shot_40k.txt) and plots the
-ablation variants against each other. See
-results/validation/provenance.md for the protocol caveats (pre-unified
-protocol; the figures in the paper are the authoritative rendering).
-
-Usage:  python pharddie_ablation_figure.py [--csv results/validation/ablation_results.csv]
-"""
 import argparse
 import os
 

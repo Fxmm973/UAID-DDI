@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-SHCR proxy-weight sensitivity figure (paper Figs. weight selection, 1/5-shot).
-
-Reads PharDDIE/results/validation/weight_sweep.csv (archived from the authors'
-experiment log 药效团数据.xlsx) and plots the selected metrics against the
-proxy weight for the 1-shot and 5-shot settings.
-
-Usage:  python pharddie_weight_figure.py [--csv results/validation/weight_sweep.csv]
-"""
 import argparse
 import os
 

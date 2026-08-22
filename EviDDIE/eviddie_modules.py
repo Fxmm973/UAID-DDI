@@ -12,14 +12,7 @@ from torch import optim
 from torch.autograd import Variable
 
 class Path(nn.Module):
-    """convolution to encode every paths beween an entity pair"""
     def __init__(self, input_dim, num_symbols, use_pretrain=True, embed_path='', dropout=0.5, k_sizes = [3], k_num=100):
-        '''
-        Parameters:
-        input_dim: size of relation/entity embeddings
-        num_symbols: total number of entities and relations
-        use_pretraIn: use pretrained KB embeddings or not
-        '''
         super(Path, self).__init__()
         self.symbol_emb = nn.Embedding(num_symbols + 1, input_dim, padding_idx=num_symbols)
         self.k_sizes = k_sizes
@@ -35,10 +28,6 @@ class Path(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, path):
-        '''
-        Inputs:
-        path: batch * max_len(7)
-        '''
         path = self.symbol_emb(path)
         path = path.unsqueeze(1)
 
@@ -51,7 +40,6 @@ class Path(nn.Module):
         return path
 
 class ScaledDotProductAttention(nn.Module):
-    ''' Scaled Dot-Product Attention '''
 
     def __init__(self, d_model, attn_dropout=0.1):
         super(ScaledDotProductAttention, self).__init__()
@@ -79,7 +67,6 @@ class ScaledDotProductAttention(nn.Module):
         return output, attn
 
 class LayerNormalization(nn.Module):
-    ''' Layer normalization module '''
 
     def __init__(self, d_hid, eps=1e-3):
         super(LayerNormalization, self).__init__()
@@ -100,7 +87,6 @@ class LayerNormalization(nn.Module):
         return ln_out
 
 class MultiHeadAttention(nn.Module):
-    ''' Multi-Head Attention module '''
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
         super(MultiHeadAttention, self).__init__()
@@ -157,7 +143,6 @@ class MultiHeadAttention(nn.Module):
         return self.layer_norm(outputs + residual), attns
 
 class PositionwiseFeedForward(nn.Module):
-    ''' A two-feed-forward-layer module '''
 
     def __init__(self, d_hid, d_inner_hid, dropout=0.1):
         super(PositionwiseFeedForward, self).__init__()
@@ -175,7 +160,6 @@ class PositionwiseFeedForward(nn.Module):
         return self.layer_norm(output + residual)
 
 class SupportEncoder(nn.Module):
-    """docstring for SupportEncoder"""
     def __init__(self, d_model, d_inner, dropout=0.1):
         super(SupportEncoder, self).__init__()
         self.proj1 = nn.Linear(d_model, d_inner)
@@ -196,7 +180,6 @@ class SupportEncoder(nn.Module):
 
 
 class EncoderLayer(nn.Module):
-    ''' Compose with two layers '''
 
     def __init__(self, d_model, d_inner_hid, n_head, d_k, d_v, dropout=0.1):
         super(EncoderLayer, self).__init__()
@@ -210,11 +193,9 @@ class EncoderLayer(nn.Module):
 
 
 class ContextAwareEncoder(nn.Module):
-    """Use self-attention here"""
     def __init__(self, num_layers, d_model, d_inner_hid, n_head, d_k, d_v, dropout = 0.1):
         super(ContextAwareEncoder, self).__init__()
         self.num_layers = num_layers
-        #
         self.layer_stack = nn.ModuleList([EncoderLayer(d_model, d_inner_hid, n_head, d_k, d_v, dropout=dropout) for _ in range(self.num_layers)])
 
     def forward(self, elements, enc_slf_attn_mask=None):
@@ -226,27 +207,14 @@ class ContextAwareEncoder(nn.Module):
         return enc_output
 
 class QueryEncoder(nn.Module):
-    """docstring for QueryEncoder"""
     def __init__(self, input_dim, process_step=4):
         super(QueryEncoder, self).__init__()
         self.input_dim = input_dim
         self.process_step = process_step
-        # self.batch_size = batch_size
         self.process = nn.LSTMCell(input_dim, 2*input_dim)
 
-        # initialize the hidden states, TODO: try to train the initial state
-        # self.h0 = Variable(torch.zeros(self.batch_size, 2*input_dim)).cuda()
-        # self.c0 = Variable(torch.zeros(self.batch_size, 2*input_dim)).cuda()
 
     def forward(self, support, query):
-        '''
-        support: (few, support_dim)
-        query: (batch_size, query_dim)
-        support_dim = query_dim
-
-        return:
-        (batch_size, query_dim)
-        '''
         assert support.size()[1] == query.size()[1]
 
         if self.process_step == 0:
@@ -262,6 +230,5 @@ class QueryEncoder(nn.Module):
             r = torch.matmul(attn, support)
             h_r = torch.cat((h, r), dim=1)
         return h
-
 
 

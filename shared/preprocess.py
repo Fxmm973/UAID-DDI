@@ -12,7 +12,6 @@ from rdkit.Chem import AllChem
 import pandas as pd
 import numpy as np
 import os
-# Resolve data paths relative to the project root (parent of shared/)
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 df_drugs_smiles = pd.read_csv(os.path.join(_BASE_DIR, 'PharDDIE', 'dataset1', 'drug_smiles.csv'))
@@ -210,8 +209,6 @@ def drug_structure_construct_peb(batch):
 
 class DrugDataset(Dataset):
     def __init__(self, tri_list, disjoint_split=True, shuffle=False):
-        ''''disjoint_split: Consider whether entities should appear in one and only one split of the dataset
-        '''
         self.tri_list = []
         for h, t, r, *_ in tri_list:
             if ((h in MOL_EDGE_LIST_FEAT_MTX) and (t in MOL_EDGE_LIST_FEAT_MTX)):
