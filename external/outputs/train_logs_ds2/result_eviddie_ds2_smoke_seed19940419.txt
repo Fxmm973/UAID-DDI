@@ -1,0 +1,60 @@
+================================================================================
+实验记录 - ZetaDDIE
+================================================================================
+
+【实验基本信息】
+项目名称: ZetaDDIE
+开始时间: 2026-08-22 11:05:04
+结束时间: 2026-08-22 11:07:45
+实验时长: 00:02:41
+
+【超参数配置】
+  aggregate: max
+  batch_size: 256
+  dataset: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\EviDDIE\dataset2
+  dropout: 0.2
+  embed_dim: 128
+  embed_model: TransE
+  eval_every: 1000
+  eval_manifest_seed: 19940419
+  few: 10
+  fine_tune: True
+  grad_clip: 5.0
+  log_every: 50
+  lr: 0.001
+  margin: 5.0
+  max_batches: 300
+  max_iter: 5000
+  max_neighbor: 30
+  neg_num: 1
+  no_meta: False
+  out_csv: predictions_dataset1_zero_shot_variants.csv
+  prefix: eviddie_ds2_smoke
+  process_steps: 2
+  proto_weight: 2.0
+  random_embed: False
+  seed: 19940419
+  semantic: event_embedding2.json
+  semantic_noise: 0.3
+  test: False
+  train_few: 10
+  train_seed: None
+  variants: softmax,evi_no_evi,wo_BSA,full_evi
+  weight_decay: 0.0
+
+【训练历史 (最近10条)】
+  Batch 0: Loss=1.2436
+    Metrics: acc=0.5059, auroc=0.4967, f1_score=0.6684, precision=0.5030, recall=0.9961, int_ap=0.4883, ap=0.4916
+  Batch 50: Loss=2.5819
+    Metrics: acc=0.4971, auroc=0.4978, f1_score=0.5649, precision=0.4978, recall=0.6530, int_ap=0.4979, ap=0.4980
+  Batch 100: Loss=1.1131
+    Metrics: acc=0.5052, auroc=0.5085, f1_score=0.5427, precision=0.5045, recall=0.5871, int_ap=0.5052, ap=0.5052
+  Batch 150: Loss=1.1027
+    Metrics: acc=0.5062, auroc=0.5088, f1_score=0.5370, precision=0.5054, recall=0.5729, int_ap=0.5057, ap=0.5057
+  Batch 200: Loss=1.1332
+    Metrics: acc=0.5069, auroc=0.5101, f1_score=0.5341, precision=0.5062, recall=0.5652, int_ap=0.5065, ap=0.5065
+  Batch 250: Loss=1.1242
+    Metrics: acc=0.5113, auroc=0.5154, f1_score=0.5400, precision=0.5101, recall=0.5736, int_ap=0.5107, ap=0.5107
+  ... (共 6 条记录)
+
+================================================================================

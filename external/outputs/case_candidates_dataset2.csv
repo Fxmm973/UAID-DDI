@@ -1,0 +1,11 @@
+rank,drug_a,drug_b,a_name,b_name,event,prob_mean,u_mean,r,faers_prr_max_strict,faers_ror95_lcl_max_strict,n_faers_reports
+1,DB01352,DB12161,Aprobarbital,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.57643007,0.775770976,0.12925235200035168,,,
+2,DB01483,DB12161,Barbital,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.57885148,0.778748218,0.12807192146333732,,,
+3,DB00599,DB12161,Thiopental,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.576057476,0.778743878,0.12745624318886808,,,
+4,DB00849,DB12161,Methylphenobarbital,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.5761633460000001,0.7789909319999999,0.12733732411522158,,,
+5,DB00418,DB12161,Secobarbital,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.577009756,0.780068548,0.1269025934552457,,,
+6,DB00690,DB12161,Flurazepam,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.573973716,0.781523734,0.12539963425382447,,,
+7,DB01355,DB12161,Hexobarbital,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.576276224,0.7824448719999999,0.12537184767567672,,,
+8,DB01595,DB12161,Nitrazepam,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.573173762,0.7822281999999999,0.12482108186351165,,,
+9,DB00231,DB12161,Temazepam,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.5742852020000001,0.7827605,0.12475743013987904,,,
+10,DB00897,DB12161,Triazolam,Deutetrabenazine,The risk or severity of sedation and somnolence increase,0.574980096,0.783405606,0.12453746545518184,,,

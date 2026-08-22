@@ -1,0 +1,102 @@
+{
+  "The risk or severity of hyponatremia increase": {
+    "bridge_to": "The risk or severity of hyperkalemia can be increased when #Drug1 is c",
+    "cos": 0.7066
+  },
+  "an increase in the absorption resulting in an increased serum concentration and potentially a worsening of adverse effects cause": {
+    "bridge_to": "#Drug1 can cause an increase in the absorption of #Drug2 resulting in ",
+    "cos": 0.9853
+  },
+  "The risk or severity of renal failure increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.7146
+  },
+  "The risk or severity of renal failure and hypertension increase": {
+    "bridge_to": "The risk or severity of hypertension can be increased when #Drug2 is c",
+    "cos": 0.7811
+  },
+  "the thrombogenic activities increase": {
+    "bridge_to": "#Drug1 may increase the thrombogenic activities of #Drug2.",
+    "cos": 0.8384
+  },
+  "The risk or severity of neutropenia increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.6677
+  },
+  "The risk or severity of renal failure hypotension and hyperkalemia increase": {
+    "bridge_to": "The risk or severity of hyperkalemia can be increased when #Drug1 is c",
+    "cos": 0.7847
+  },
+  "The risk or severity of angioedema increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.6544
+  },
+  "the neuromuscular blocking activities decrease": {
+    "bridge_to": "#Drug1 may decrease the neuromuscular blocking activities of #Drug2.",
+    "cos": 0.8773
+  },
+  "the hypokalemic activities increase": {
+    "bridge_to": "#Drug1 may increase the hypokalemic activities of #Drug2.",
+    "cos": 0.8376
+  },
+  "The risk or severity of fluid retention increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.677
+  },
+  "The risk or severity of myopathy and weakness increase": {
+    "bridge_to": "The risk or severity of adverse effects can be increased when #Drug1 i",
+    "cos": 0.591
+  },
+  "The risk or severity of electrolyte imbalance increase": {
+    "bridge_to": "The risk or severity of hyperkalemia can be increased when #Drug1 is c",
+    "cos": 0.6452
+  },
+  "the stimulatory activities decrease": {
+    "bridge_to": "#Drug1 may increase the stimulatory activities of #Drug2.",
+    "cos": 0.8208
+  },
+  "The risk or severity of sedation and somnolence increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.661
+  },
+  "The risk or severity of hypertension decrease": {
+    "bridge_to": "The risk or severity of hypertension can be increased when #Drug2 is c",
+    "cos": 0.8262
+  },
+  "The risk or severity of QTc prolongation decrease": {
+    "bridge_to": "The risk or severity of QTc prolongation can be increased when #Drug1 ",
+    "cos": 0.9037
+  },
+  "The risk or severity of neutropenia and thrombocytopenia increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.6031
+  },
+  "The risk or severity of hyperthermia and oligohydrosis increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.6557
+  },
+  "The serum concentration of the active metabolites increase": {
+    "bridge_to": "The serum concentration of the active metabolites of #Drug2 can be inc",
+    "cos": 0.842
+  },
+  "The risk or severity of QTc prolongation and hypotension increase": {
+    "bridge_to": "The risk or severity of QTc prolongation can be increased when #Drug1 ",
+    "cos": 0.8849
+  },
+  "The risk or severity of Tachycardia and drowsiness increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.6878
+  },
+  "The absorption decrease": {
+    "bridge_to": "#Drug1 can cause a decrease in the absorption of #Drug2 resulting in a",
+    "cos": 0.6507
+  },
+  "the vasopressor activities increase": {
+    "bridge_to": "#Drug1 may increase the vasopressor activities of #Drug2.",
+    "cos": 0.8377
+  },
+  "The risk or severity of hypotension and CNS depression increase": {
+    "bridge_to": "The risk or severity of hypotension can be increased when #Drug1 is co",
+    "cos": 0.7421
+  }
+}

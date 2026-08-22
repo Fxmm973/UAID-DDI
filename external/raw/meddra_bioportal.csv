@@ -1,0 +1,245 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" class="h-100">
+<head>
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-KF3SKHPEGW"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-KF3SKHPEGW');
+</script>
+
+	<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+
+	<!-- Force IE to use latest rendering engine -->
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+
+    <!-- Google Webmaster Tools verifications -->
+  	<meta name="google-site-verification" content="IBxfKu6VbYH9atd5OLu2zXVD2ZRWi9SgMKTi8nvw3ks" />
+
+	<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="7fi-ZiM7T18FWXROHBjjEBy6Ruf36c5Ob7gWKHVXpWISKX37QZieqjQO0GE6rlwVXdk333YTrGnckRErqYzKkw" />
+
+	<title>NCBO BioPortal</title>
+
+	<link rel="shortcut icon" href="/fav.ico" type="image/x-icon" />
+
+	<!-- Fonts -->
+	<link href='//fonts.googleapis.com/css?family=Droid+Sans:400' rel='stylesheet' type='text/css'>
+
+	<!-- CSS -->
+	<link rel="stylesheet" href="/assets/flag-icon-a2bcb8f6f6dc88ba7ac3e2ff733b3b05257c9bc6b1b315126e33291bc90251bd.css" data-turbo-track="reload" />
+  <link rel="stylesheet" href="/assets/application-c98d1297f0dd2c2a1d69f2cfa5eb28de617beb2159d6027c25921104a41dc3e4.css" />
+
+  <!-- JavaScript -->
+	<script src="/assets/application_esbuild-820bc31843dff112f7d176b22b7e60d3c95c191a7f543b00cf9467f12bf9d9cc.js" data-turbo-track="reload" type="module"></script>
+  <script src="/assets/vendor-be68951bfc816664b63cab2e749feb0cd89479f9eea5fb2ff4f3ab61cbae96d8.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
+  <script src="//ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.min.js"></script>
+
+  <script>
+    jQuery(document).data({bp: {config: {"org":"NCBO","org_url":"https://www.bioontology.org","site":"BioPortal","org_site":"NCBO BioPortal","ui_url":"https://bioportal.bioontology.org","apikey":"8b5b7825-538d-40e0-9e9e-5ab9274a9aeb","userapikey":"8b5b7825-538d-40e0-9e9e-5ab9274a9aeb","rest_url":"https://data.bioontology.org","proxy_url":"https://services.data.bioontology.org","biomixer_url":"//biomixer.bioontology.org"}, user: {}}});
+    jQuery(document).data().bp.ontology = null || {};
+    jQuery(document).data().bp.submission_latest = null || {};
+    jQuery(document).data().bp.ont_viewer = {};
+    jQuery(document).data().bp.ont_chart = {};
+  </script>
+
+  <!-- BioPortal-specific JavaScript is loaded in _footer.html.erb. -->  
+</head>
+<body class="errors internal_server_error d-flex flex-column h-100">
+  <header>
+		<nav class='navbar navbar-expand-lg navbar-dark navbar-custom fixed-top'>
+<div class='container-fluid'>
+<a class="navbar-brand" href="/"><img src="/assets/logos/bioportal-logo-c4574d9e6b15ce60a7f10c4ebe794011e56d8440e6f77f99e563d99035fdc235.png" /></a>
+<button name="button" type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#topNavigationToggler" aria-controls="topNavigationToggler" aria-expanded="false" aria-label="Toggle navigation"><span class='navbar-toggler-icon'></span>
+</button><div class='navbar-collapse collapse' id='topNavigationToggler'>
+<ul class='navbar-nav me-auto'>
+<li class='nav-item'>
+<a class="nav-link" href="/ontologies">Ontologies</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link" href="/search">Search</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link" href="/annotator">Annotator</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link" href="/recommender">Recommender</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link" href="/mappings">Mappings</a>
+</li>
+</ul>
+<ul class='navbar-nav'>
+<li class='nav-item'>
+<a class="btn btn-login me-2" href="/login?redirect=https%3A%2F%2Fbioportal.bioontology.org%2Fontologies%2FMEDDRA%3Fp%3Dclasses%26download_format%3Dcsv%26apikey%3Ddd8696c9-06aa-44b5-b2c7-28ba13513f0f%26conceptid%3Ddownload">Login</a>
+</li>
+<li class='nav-item dropdown'>
+<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" href="#">Support
+</a><ul class='dropdown-menu dropdown-menu-end'>
+<li>
+<a id="submitFeedbackMenuItem" class="dropdown-item" rel="nofollow" data-controller="popup" data-action="click-&gt;popup#open" href="/feedback">Submit feedback</a>
+</li>
+<li>
+<hr class='dropdown-divider'>
+</li>
+<li>
+<h6 class='dropdown-header'>Documentation</h6>
+</li>
+<li>
+<a target="_blank" class="dropdown-item" href="https://www.bioontology.org/wiki/BioPortal_Help">Help</a>
+</li>
+<li>
+<a target="_blank" class="dropdown-item" href="https://github.com/ncbo/bioportal_web_ui/releases">Release notes</a>
+</li>
+<li>
+<a target="_blank" class="dropdown-item" href="https://www.bioontology.org/about-us/#cite-bioportal">How to cite</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+
+	</header>
+	<turbo-frame id="cookie_notice" src="/cookies"></turbo-frame>
+	<turbo-frame id="modal"></turbo-frame>
+  
+  <main class="flex-shrink-0">
+		<div class="container-fluid">
+			<div id='site-notice'>
+</div>
+
+  <div id="bd">
+	 <div id="bd" style="clear: both; text-align: center; margin-top: 100px; margin-bottom: 100px;">  <h1>We're sorry, but something went wrong. Please try again later.</h1>
+</div>
+  </div>
+</div>
+</div>
+</main>
+<footer class='footer mt-auto py-4'>
+<div class='container'>
+<div class='row'>
+<div class='col-6 col-md mb-3'>
+<h6>PRODUCTS</h6>
+<ul class='nav flex-column list-unstyled'>
+<li class='nav-item'>
+<a class="nav-link p-0" href="/">BioPortal</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="http://data.bioontology.org/documentation">BioPortal REST API</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://ontoportal.github.io/documentation/administration">BioPortal Virtual Appliance</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="http://www.bioontology.org/wiki/NCBO_Widgets">NCBO Web Widgets</a>
+</li>
+</ul>
+</div>
+<div class='col-6 col-md mb-3 footer-support'>
+<h6>SUPPORT</h6>
+<ul class='nav flex-column list-unstyled'>
+<li class='nav-item'>
+<a class="nav-link p-0" rel="nofollow" data-controller="popup" data-action="click-&gt;popup#open" href="/feedback">Contact Us</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/wiki/BioPortal_Help">Documentation</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/wiki/">NCBO Wiki</a>
+</li>
+</ul>
+</div>
+<div class='col-6 col-md mb-3'>
+<h6>ABOUT</h6>
+<ul class='nav flex-column list-unstyled'>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/about-us/">About Us</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/about-us/#mission">Mission & Vision</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/about-us/#team">Team</a>
+</li>
+<li class='nav-item'>
+<a class="nav-link p-0" href="/projects">Projects</a>
+</li>
+</ul>
+</div>
+<div class='col-12 col-md'>
+<h6>CONNECT</h6>
+<ul class='list-inline'>
+<li class='list-inline-item'>
+<a target="_blank" href="https://www.facebook.com/National-Center-for-Biomedical-Ontology-127444774011153/"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" class="svg-icon svg-icon-2x"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"></path></svg>
+</a></li>
+<li class='list-inline-item'>
+<a target="_blank" href="https://twitter.com/bioontology"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="svg-icon svg-icon-2x"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"></path></svg>
+</a></li>
+<li class='list-inline-item'>
+<a target="_blank" href="https://github.com/ncbo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="svg-icon svg-icon-2x"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path></svg>
+</a></li>
+</ul>
+</div>
+</div>
+<div class='row legal-text'>
+<div class='col'>
+The <strong>National Center for Biomedical Ontology</strong> was founded as one of the National Centers for  Biomedical Computing, supported by the National Human Genome Research Institute, the National Heart Lung Blood  Institute, and the NIH Common Fund under grant U54-HG004028. The resource is now supported in part by grant  5U24GM143402 from the National Institute of General Medical Sciences.
+
+</div>
+</div>
+<div class='row pt-1 legal-text'>
+<div class='col'>
+BioPortal is free and open to all users, with no login required.
+</div>
+</div>
+<div class='row pt-1 legal-text'>
+<div class='col'>
+Powered by <a href="https://franz.com/agraph/" target="_blank">AllegroGraph</a>.
+
+</div>
+</div>
+<div class='row pt-1 legal-text'>
+<div class='col'>
+Copyright &copy; 2005‑2026, The Board of Trustees of Leland Stanford Junior University. All rights reserved.
+
+</div>
+</div>
+<div class='row pt-2'>
+<div class='col'>
+<ul class='list-inline nav'>
+<li class='list-inline-item nav-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/about-us/#cite-bioportal">Cite Us</a>
+</li>
+<li class='list-inline-item'>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 512" aria-hidden="true" class="svg-icon"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path></svg>
+</li>
+<li class='list-inline-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/privacy/">Privacy Policy</a>
+</li>
+<li class='list-inline-item'>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 512" aria-hidden="true" class="svg-icon"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path></svg>
+</li>
+<li class='list-inline-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/terms/">Terms of Use</a>
+</li>
+<li class='list-inline-item'>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 512" aria-hidden="true" class="svg-icon"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path></svg>
+</li>
+<li class='list-inline-item'>
+<a class="nav-link p-0" target="_blank" href="https://www.bioontology.org/terms/#use-of-cookies">Use of Cookies</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</footer>
+<script src="/assets/application-32cb4031487fe6ff58116fe6cef7b83eed6459e669a80c0461f3b8d54d1a7f9f.js"></script>
+
+
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2e808cce8bebefa',t:'MTc4NzI5ODQ5NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"cdc4b629bc3f4fc8b360fd09d577d690"}' crossorigin="anonymous"></script>
+</body>
+</html>

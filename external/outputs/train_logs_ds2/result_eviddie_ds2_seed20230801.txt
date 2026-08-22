@@ -1,0 +1,80 @@
+================================================================================
+实验记录 - ZetaDDIE
+================================================================================
+
+【实验基本信息】
+项目名称: ZetaDDIE
+开始时间: 2026-08-22 11:10:02
+结束时间: 2026-08-22 15:07:12
+实验时长: 03:57:09
+
+【超参数配置】
+  aggregate: max
+  batch_size: 256
+  dataset: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\EviDDIE\dataset2
+  dropout: 0.2
+  embed_dim: 128
+  embed_model: TransE
+  eval_every: 1000
+  eval_manifest_seed: 19940419
+  few: 10
+  fine_tune: True
+  grad_clip: 5.0
+  log_every: 50
+  lr: 0.001
+  margin: 5.0
+  max_batches: 20000
+  max_iter: 5000
+  max_neighbor: 30
+  neg_num: 1
+  no_meta: False
+  out_csv: predictions_dataset1_zero_shot_variants.csv
+  prefix: eviddie_ds2
+  process_steps: 2
+  proto_weight: 2.0
+  random_embed: False
+  seed: 20230801
+  semantic: event_embedding2.json
+  semantic_noise: 0.3
+  test: False
+  train_few: 10
+  train_seed: None
+  variants: softmax,evi_no_evi,wo_BSA,full_evi
+  weight_decay: 0.0
+
+【最佳模型记录】
+  DEV 最佳模型 (Batch 2999):
+    auroc: 0.6321
+    时间: 2026-08-22 11:42:58
+
+【评估结果摘要】
+  DEV 最新评估结果:
+    acc: 0.5089
+    auroc: 0.5121
+    f1_score: 0.6117
+    ap: 0.4942
+
+【训练历史 (最近10条)】
+  Batch 19500: Loss=1.1770
+    Metrics: acc=0.6423, auroc=0.7189, f1_score=0.6907, precision=0.6083, recall=0.7990, int_ap=0.7229, ap=0.7106
+  Batch 19550: Loss=1.4231
+    Metrics: acc=0.6422, auroc=0.7189, f1_score=0.6908, precision=0.6082, recall=0.7993, int_ap=0.7229, ap=0.7106
+  Batch 19600: Loss=1.4877
+    Metrics: acc=0.6422, auroc=0.7190, f1_score=0.6909, precision=0.6082, recall=0.7997, int_ap=0.7231, ap=0.7107
+  Batch 19650: Loss=1.2704
+    Metrics: acc=0.6422, auroc=0.7190, f1_score=0.6910, precision=0.6081, recall=0.8000, int_ap=0.7232, ap=0.7107
+  Batch 19700: Loss=1.4661
+    Metrics: acc=0.6422, auroc=0.7190, f1_score=0.6911, precision=0.6080, recall=0.8004, int_ap=0.7232, ap=0.7107
+  Batch 19750: Loss=1.1504
+    Metrics: acc=0.6422, auroc=0.7191, f1_score=0.6912, precision=0.6080, recall=0.8007, int_ap=0.7234, ap=0.7108
+  Batch 19800: Loss=1.5715
+    Metrics: acc=0.6422, auroc=0.7191, f1_score=0.6913, precision=0.6079, recall=0.8011, int_ap=0.7234, ap=0.7108
+  Batch 19850: Loss=0.9965
+    Metrics: acc=0.6422, auroc=0.7192, f1_score=0.6914, precision=0.6079, recall=0.8014, int_ap=0.7236, ap=0.7108
+  Batch 19900: Loss=0.7629
+    Metrics: acc=0.6423, auroc=0.7193, f1_score=0.6915, precision=0.6079, recall=0.8017, int_ap=0.7237, ap=0.7109
+  Batch 19950: Loss=1.2359
+    Metrics: acc=0.6423, auroc=0.7194, f1_score=0.6916, precision=0.6078, recall=0.8020, int_ap=0.7238, ap=0.7109
+  ... (共 400 条记录)
+
+================================================================================

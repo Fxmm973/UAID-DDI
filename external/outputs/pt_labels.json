@@ -1,0 +1,2576 @@
+{
+  "10064018": {
+    "label": "FAERS adverse event PT-10064018",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "10338343": {
+    "label": "FAERS adverse event PT-10338343",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "10460455": {
+    "label": "FAERS adverse event PT-10460455",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11090837": {
+    "label": "FAERS adverse event PT-11090837",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11168563": {
+    "label": "FAERS adverse event PT-11168563",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11377039": {
+    "label": "FAERS adverse event PT-11377039",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11519456": {
+    "label": "FAERS adverse event PT-11519456",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11687892": {
+    "label": "FAERS adverse event PT-11687892",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11695453": {
+    "label": "FAERS adverse event PT-11695453",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "11933757": {
+    "label": "FAERS adverse event PT-11933757",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12133900": {
+    "label": "FAERS adverse event PT-12133900",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12159038": {
+    "label": "FAERS adverse event PT-12159038",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12375546": {
+    "label": "FAERS adverse event PT-12375546",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12527267": {
+    "label": "FAERS adverse event PT-12527267",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12582538": {
+    "label": "FAERS adverse event PT-12582538",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12736721": {
+    "label": "FAERS adverse event PT-12736721",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12778309": {
+    "label": "FAERS adverse event PT-12778309",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12913352": {
+    "label": "FAERS adverse event PT-12913352",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "12943377": {
+    "label": "FAERS adverse event PT-12943377",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13028661": {
+    "label": "FAERS adverse event PT-13028661",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13113133": {
+    "label": "FAERS adverse event PT-13113133",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13230219": {
+    "label": "FAERS adverse event PT-13230219",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13443027": {
+    "label": "FAERS adverse event PT-13443027",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13557728": {
+    "label": "FAERS adverse event PT-13557728",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13864958": {
+    "label": "FAERS adverse event PT-13864958",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13906408": {
+    "label": "FAERS adverse event PT-13906408",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "13949161": {
+    "label": "FAERS adverse event PT-13949161",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14007393": {
+    "label": "FAERS adverse event PT-14007393",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14328480": {
+    "label": "FAERS adverse event PT-14328480",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14458518": {
+    "label": "FAERS adverse event PT-14458518",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14487552": {
+    "label": "FAERS adverse event PT-14487552",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14501669": {
+    "label": "FAERS adverse event PT-14501669",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14550837": {
+    "label": "FAERS adverse event PT-14550837",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14659800": {
+    "label": "FAERS adverse event PT-14659800",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14719399": {
+    "label": "FAERS adverse event PT-14719399",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14730049": {
+    "label": "FAERS adverse event PT-14730049",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14758294": {
+    "label": "FAERS adverse event PT-14758294",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14912564": {
+    "label": "FAERS adverse event PT-14912564",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14945214": {
+    "label": "FAERS adverse event PT-14945214",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "14946175": {
+    "label": "FAERS adverse event PT-14946175",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15104610": {
+    "label": "FAERS adverse event PT-15104610",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15204755": {
+    "label": "FAERS adverse event PT-15204755",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15233925": {
+    "label": "FAERS adverse event PT-15233925",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15269722": {
+    "label": "FAERS adverse event PT-15269722",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15320213": {
+    "label": "FAERS adverse event PT-15320213",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15376706": {
+    "label": "FAERS adverse event PT-15376706",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15385363": {
+    "label": "FAERS adverse event PT-15385363",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15395911": {
+    "label": "FAERS adverse event PT-15395911",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15396329": {
+    "label": "FAERS adverse event PT-15396329",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15462312": {
+    "label": "FAERS adverse event PT-15462312",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15497122": {
+    "label": "FAERS adverse event PT-15497122",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15536769": {
+    "label": "FAERS adverse event PT-15536769",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15543164": {
+    "label": "FAERS adverse event PT-15543164",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15559773": {
+    "label": "FAERS adverse event PT-15559773",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15561246": {
+    "label": "FAERS adverse event PT-15561246",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15590239": {
+    "label": "FAERS adverse event PT-15590239",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15626751": {
+    "label": "FAERS adverse event PT-15626751",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15668157": {
+    "label": "FAERS adverse event PT-15668157",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15754815": {
+    "label": "FAERS adverse event PT-15754815",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15760197": {
+    "label": "FAERS adverse event PT-15760197",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15772370": {
+    "label": "FAERS adverse event PT-15772370",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15790729": {
+    "label": "FAERS adverse event PT-15790729",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15810342": {
+    "label": "FAERS adverse event PT-15810342",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15826450": {
+    "label": "FAERS adverse event PT-15826450",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15840982": {
+    "label": "FAERS adverse event PT-15840982",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15922271": {
+    "label": "FAERS adverse event PT-15922271",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15932044": {
+    "label": "FAERS adverse event PT-15932044",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15942296": {
+    "label": "FAERS adverse event PT-15942296",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15944987": {
+    "label": "FAERS adverse event PT-15944987",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15950550": {
+    "label": "FAERS adverse event PT-15950550",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15956472": {
+    "label": "FAERS adverse event PT-15956472",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "15988482": {
+    "label": "FAERS adverse event PT-15988482",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16020197": {
+    "label": "FAERS adverse event PT-16020197",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16020885": {
+    "label": "FAERS adverse event PT-16020885",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16021802": {
+    "label": "FAERS adverse event PT-16021802",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16022530": {
+    "label": "FAERS adverse event PT-16022530",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16031872": {
+    "label": "FAERS adverse event PT-16031872",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16038950": {
+    "label": "FAERS adverse event PT-16038950",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16045925": {
+    "label": "FAERS adverse event PT-16045925",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16062577": {
+    "label": "FAERS adverse event PT-16062577",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16075454": {
+    "label": "FAERS adverse event PT-16075454",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16081383": {
+    "label": "FAERS adverse event PT-16081383",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16104538": {
+    "label": "FAERS adverse event PT-16104538",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16123123": {
+    "label": "FAERS adverse event PT-16123123",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16142556": {
+    "label": "FAERS adverse event PT-16142556",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16205762": {
+    "label": "FAERS adverse event PT-16205762",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16215378": {
+    "label": "FAERS adverse event PT-16215378",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16227017": {
+    "label": "FAERS adverse event PT-16227017",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16238186": {
+    "label": "FAERS adverse event PT-16238186",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16242351": {
+    "label": "FAERS adverse event PT-16242351",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16242893": {
+    "label": "FAERS adverse event PT-16242893",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16259298": {
+    "label": "FAERS adverse event PT-16259298",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16275751": {
+    "label": "FAERS adverse event PT-16275751",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16280284": {
+    "label": "FAERS adverse event PT-16280284",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16311781": {
+    "label": "FAERS adverse event PT-16311781",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16351380": {
+    "label": "FAERS adverse event PT-16351380",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16361903": {
+    "label": "FAERS adverse event PT-16361903",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16371801": {
+    "label": "FAERS adverse event PT-16371801",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16382811": {
+    "label": "FAERS adverse event PT-16382811",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16388032": {
+    "label": "FAERS adverse event PT-16388032",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16445009": {
+    "label": "FAERS adverse event PT-16445009",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16456054": {
+    "label": "FAERS adverse event PT-16456054",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16460942": {
+    "label": "FAERS adverse event PT-16460942",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16542855": {
+    "label": "FAERS adverse event PT-16542855",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16556159": {
+    "label": "FAERS adverse event PT-16556159",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16567470": {
+    "label": "FAERS adverse event PT-16567470",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16575464": {
+    "label": "FAERS adverse event PT-16575464",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16595695": {
+    "label": "FAERS adverse event PT-16595695",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16599628": {
+    "label": "FAERS adverse event PT-16599628",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16609123": {
+    "label": "FAERS adverse event PT-16609123",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16609127": {
+    "label": "FAERS adverse event PT-16609127",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16672131": {
+    "label": "FAERS adverse event PT-16672131",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16705763": {
+    "label": "FAERS adverse event PT-16705763",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16749091": {
+    "label": "FAERS adverse event PT-16749091",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16782182": {
+    "label": "FAERS adverse event PT-16782182",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16782479": {
+    "label": "FAERS adverse event PT-16782479",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16783023": {
+    "label": "FAERS adverse event PT-16783023",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16803939": {
+    "label": "FAERS adverse event PT-16803939",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16819566": {
+    "label": "FAERS adverse event PT-16819566",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16879674": {
+    "label": "FAERS adverse event PT-16879674",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16886720": {
+    "label": "FAERS adverse event PT-16886720",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16908764": {
+    "label": "FAERS adverse event PT-16908764",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16910479": {
+    "label": "FAERS adverse event PT-16910479",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16914645": {
+    "label": "FAERS adverse event PT-16914645",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16919055": {
+    "label": "FAERS adverse event PT-16919055",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16919513": {
+    "label": "FAERS adverse event PT-16919513",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16922088": {
+    "label": "FAERS adverse event PT-16922088",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16949302": {
+    "label": "FAERS adverse event PT-16949302",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16959444": {
+    "label": "FAERS adverse event PT-16959444",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16960956": {
+    "label": "FAERS adverse event PT-16960956",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "16987624": {
+    "label": "FAERS adverse event PT-16987624",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17007949": {
+    "label": "FAERS adverse event PT-17007949",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17018164": {
+    "label": "FAERS adverse event PT-17018164",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17027985": {
+    "label": "FAERS adverse event PT-17027985",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17037492": {
+    "label": "FAERS adverse event PT-17037492",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17040020": {
+    "label": "FAERS adverse event PT-17040020",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17061617": {
+    "label": "FAERS adverse event PT-17061617",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17062893": {
+    "label": "FAERS adverse event PT-17062893",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17070244": {
+    "label": "FAERS adverse event PT-17070244",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17094124": {
+    "label": "FAERS adverse event PT-17094124",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17147371": {
+    "label": "FAERS adverse event PT-17147371",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17211068": {
+    "label": "FAERS adverse event PT-17211068",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17212834": {
+    "label": "FAERS adverse event PT-17212834",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17216475": {
+    "label": "FAERS adverse event PT-17216475",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17228333": {
+    "label": "FAERS adverse event PT-17228333",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17231346": {
+    "label": "FAERS adverse event PT-17231346",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17232821": {
+    "label": "FAERS adverse event PT-17232821",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17239113": {
+    "label": "FAERS adverse event PT-17239113",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17242847": {
+    "label": "FAERS adverse event PT-17242847",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17243525": {
+    "label": "FAERS adverse event PT-17243525",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17245973": {
+    "label": "FAERS adverse event PT-17245973",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17265366": {
+    "label": "FAERS adverse event PT-17265366",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17265807": {
+    "label": "FAERS adverse event PT-17265807",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17270774": {
+    "label": "FAERS adverse event PT-17270774",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17282696": {
+    "label": "FAERS adverse event PT-17282696",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17289678": {
+    "label": "FAERS adverse event PT-17289678",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17307005": {
+    "label": "FAERS adverse event PT-17307005",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17324685": {
+    "label": "FAERS adverse event PT-17324685",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17332255": {
+    "label": "FAERS adverse event PT-17332255",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17344740": {
+    "label": "FAERS adverse event PT-17344740",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17344815": {
+    "label": "FAERS adverse event PT-17344815",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17352484": {
+    "label": "FAERS adverse event PT-17352484",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17355430": {
+    "label": "FAERS adverse event PT-17355430",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17358898": {
+    "label": "FAERS adverse event PT-17358898",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17376441": {
+    "label": "FAERS adverse event PT-17376441",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17388400": {
+    "label": "FAERS adverse event PT-17388400",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17393646": {
+    "label": "FAERS adverse event PT-17393646",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17393692": {
+    "label": "FAERS adverse event PT-17393692",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17415500": {
+    "label": "FAERS adverse event PT-17415500",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17415512": {
+    "label": "FAERS adverse event PT-17415512",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17423563": {
+    "label": "FAERS adverse event PT-17423563",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17428893": {
+    "label": "FAERS adverse event PT-17428893",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17433139": {
+    "label": "FAERS adverse event PT-17433139",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17442002": {
+    "label": "FAERS adverse event PT-17442002",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17486877": {
+    "label": "FAERS adverse event PT-17486877",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17499875": {
+    "label": "FAERS adverse event PT-17499875",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17515909": {
+    "label": "FAERS adverse event PT-17515909",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17529495": {
+    "label": "FAERS adverse event PT-17529495",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17546232": {
+    "label": "FAERS adverse event PT-17546232",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17551938": {
+    "label": "FAERS adverse event PT-17551938",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17556663": {
+    "label": "FAERS adverse event PT-17556663",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17557039": {
+    "label": "FAERS adverse event PT-17557039",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17563099": {
+    "label": "FAERS adverse event PT-17563099",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17565033": {
+    "label": "FAERS adverse event PT-17565033",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17569231": {
+    "label": "FAERS adverse event PT-17569231",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17574861": {
+    "label": "FAERS adverse event PT-17574861",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17579945": {
+    "label": "FAERS adverse event PT-17579945",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17581843": {
+    "label": "FAERS adverse event PT-17581843",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17583650": {
+    "label": "FAERS adverse event PT-17583650",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17583695": {
+    "label": "FAERS adverse event PT-17583695",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17583915": {
+    "label": "FAERS adverse event PT-17583915",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17609134": {
+    "label": "FAERS adverse event PT-17609134",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17611633": {
+    "label": "FAERS adverse event PT-17611633",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17622671": {
+    "label": "FAERS adverse event PT-17622671",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17631643": {
+    "label": "FAERS adverse event PT-17631643",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17631658": {
+    "label": "FAERS adverse event PT-17631658",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17652580": {
+    "label": "FAERS adverse event PT-17652580",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17657630": {
+    "label": "FAERS adverse event PT-17657630",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17661894": {
+    "label": "FAERS adverse event PT-17661894",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17680640": {
+    "label": "FAERS adverse event PT-17680640",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17681228": {
+    "label": "FAERS adverse event PT-17681228",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17689176": {
+    "label": "FAERS adverse event PT-17689176",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17715869": {
+    "label": "FAERS adverse event PT-17715869",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17727802": {
+    "label": "FAERS adverse event PT-17727802",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17730751": {
+    "label": "FAERS adverse event PT-17730751",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17736335": {
+    "label": "FAERS adverse event PT-17736335",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17750120": {
+    "label": "FAERS adverse event PT-17750120",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17754350": {
+    "label": "FAERS adverse event PT-17754350",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17760047": {
+    "label": "FAERS adverse event PT-17760047",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17766150": {
+    "label": "FAERS adverse event PT-17766150",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17767676": {
+    "label": "FAERS adverse event PT-17767676",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17769550": {
+    "label": "FAERS adverse event PT-17769550",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17777361": {
+    "label": "FAERS adverse event PT-17777361",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17800300": {
+    "label": "FAERS adverse event PT-17800300",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17801016": {
+    "label": "FAERS adverse event PT-17801016",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17803586": {
+    "label": "FAERS adverse event PT-17803586",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17820281": {
+    "label": "FAERS adverse event PT-17820281",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17829120": {
+    "label": "FAERS adverse event PT-17829120",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17832409": {
+    "label": "FAERS adverse event PT-17832409",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17836581": {
+    "label": "FAERS adverse event PT-17836581",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17841554": {
+    "label": "FAERS adverse event PT-17841554",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17845288": {
+    "label": "FAERS adverse event PT-17845288",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17847829": {
+    "label": "FAERS adverse event PT-17847829",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17850643": {
+    "label": "FAERS adverse event PT-17850643",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17850898": {
+    "label": "FAERS adverse event PT-17850898",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17851409": {
+    "label": "FAERS adverse event PT-17851409",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17851687": {
+    "label": "FAERS adverse event PT-17851687",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17854606": {
+    "label": "FAERS adverse event PT-17854606",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17873637": {
+    "label": "FAERS adverse event PT-17873637",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17888714": {
+    "label": "FAERS adverse event PT-17888714",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17888745": {
+    "label": "FAERS adverse event PT-17888745",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17890589": {
+    "label": "FAERS adverse event PT-17890589",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17891409": {
+    "label": "FAERS adverse event PT-17891409",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17910342": {
+    "label": "FAERS adverse event PT-17910342",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17911946": {
+    "label": "FAERS adverse event PT-17911946",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17920011": {
+    "label": "FAERS adverse event PT-17920011",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17920922": {
+    "label": "FAERS adverse event PT-17920922",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17920933": {
+    "label": "FAERS adverse event PT-17920933",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17924382": {
+    "label": "FAERS adverse event PT-17924382",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17925871": {
+    "label": "FAERS adverse event PT-17925871",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17926051": {
+    "label": "FAERS adverse event PT-17926051",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17926716": {
+    "label": "FAERS adverse event PT-17926716",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17936618": {
+    "label": "FAERS adverse event PT-17936618",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17943881": {
+    "label": "FAERS adverse event PT-17943881",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17952919": {
+    "label": "FAERS adverse event PT-17952919",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17954704": {
+    "label": "FAERS adverse event PT-17954704",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17956747": {
+    "label": "FAERS adverse event PT-17956747",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17966309": {
+    "label": "FAERS adverse event PT-17966309",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17974835": {
+    "label": "FAERS adverse event PT-17974835",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17980670": {
+    "label": "FAERS adverse event PT-17980670",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17987374": {
+    "label": "FAERS adverse event PT-17987374",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "17999685": {
+    "label": "FAERS adverse event PT-17999685",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18009330": {
+    "label": "FAERS adverse event PT-18009330",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18011646": {
+    "label": "FAERS adverse event PT-18011646",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18015884": {
+    "label": "FAERS adverse event PT-18015884",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18015894": {
+    "label": "FAERS adverse event PT-18015894",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18021133": {
+    "label": "FAERS adverse event PT-18021133",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18025347": {
+    "label": "FAERS adverse event PT-18025347",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18038298": {
+    "label": "FAERS adverse event PT-18038298",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18038360": {
+    "label": "FAERS adverse event PT-18038360",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18049921": {
+    "label": "FAERS adverse event PT-18049921",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18051284": {
+    "label": "FAERS adverse event PT-18051284",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18051934": {
+    "label": "FAERS adverse event PT-18051934",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18055703": {
+    "label": "FAERS adverse event PT-18055703",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18066643": {
+    "label": "FAERS adverse event PT-18066643",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18077195": {
+    "label": "FAERS adverse event PT-18077195",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18095155": {
+    "label": "FAERS adverse event PT-18095155",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18096488": {
+    "label": "FAERS adverse event PT-18096488",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18112391": {
+    "label": "FAERS adverse event PT-18112391",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18115904": {
+    "label": "FAERS adverse event PT-18115904",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18136403": {
+    "label": "FAERS adverse event PT-18136403",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18136587": {
+    "label": "FAERS adverse event PT-18136587",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18137514": {
+    "label": "FAERS adverse event PT-18137514",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18139068": {
+    "label": "FAERS adverse event PT-18139068",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18142157": {
+    "label": "FAERS adverse event PT-18142157",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18146455": {
+    "label": "FAERS adverse event PT-18146455",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18172273": {
+    "label": "FAERS adverse event PT-18172273",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18177452": {
+    "label": "FAERS adverse event PT-18177452",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18182838": {
+    "label": "FAERS adverse event PT-18182838",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18188236": {
+    "label": "FAERS adverse event PT-18188236",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18189677": {
+    "label": "FAERS adverse event PT-18189677",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18190624": {
+    "label": "FAERS adverse event PT-18190624",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18203028": {
+    "label": "FAERS adverse event PT-18203028",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18223122": {
+    "label": "FAERS adverse event PT-18223122",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18223309": {
+    "label": "FAERS adverse event PT-18223309",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18228476": {
+    "label": "FAERS adverse event PT-18228476",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18233419": {
+    "label": "FAERS adverse event PT-18233419",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18234726": {
+    "label": "FAERS adverse event PT-18234726",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18235145": {
+    "label": "FAERS adverse event PT-18235145",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18238789": {
+    "label": "FAERS adverse event PT-18238789",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18257545": {
+    "label": "FAERS adverse event PT-18257545",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18263190": {
+    "label": "FAERS adverse event PT-18263190",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18263300": {
+    "label": "FAERS adverse event PT-18263300",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18263331": {
+    "label": "FAERS adverse event PT-18263331",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18265723": {
+    "label": "FAERS adverse event PT-18265723",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18265813": {
+    "label": "FAERS adverse event PT-18265813",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18267456": {
+    "label": "FAERS adverse event PT-18267456",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18268459": {
+    "label": "FAERS adverse event PT-18268459",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18272342": {
+    "label": "FAERS adverse event PT-18272342",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18273452": {
+    "label": "FAERS adverse event PT-18273452",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18273901": {
+    "label": "FAERS adverse event PT-18273901",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18274582": {
+    "label": "FAERS adverse event PT-18274582",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18277086": {
+    "label": "FAERS adverse event PT-18277086",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18278687": {
+    "label": "FAERS adverse event PT-18278687",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18278864": {
+    "label": "FAERS adverse event PT-18278864",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18281279": {
+    "label": "FAERS adverse event PT-18281279",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18285675": {
+    "label": "FAERS adverse event PT-18285675",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18285727": {
+    "label": "FAERS adverse event PT-18285727",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18300148": {
+    "label": "FAERS adverse event PT-18300148",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18300777": {
+    "label": "FAERS adverse event PT-18300777",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18305960": {
+    "label": "FAERS adverse event PT-18305960",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18321048": {
+    "label": "FAERS adverse event PT-18321048",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18321060": {
+    "label": "FAERS adverse event PT-18321060",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18328537": {
+    "label": "FAERS adverse event PT-18328537",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18330685": {
+    "label": "FAERS adverse event PT-18330685",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18331313": {
+    "label": "FAERS adverse event PT-18331313",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18339940": {
+    "label": "FAERS adverse event PT-18339940",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18339943": {
+    "label": "FAERS adverse event PT-18339943",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18343320": {
+    "label": "FAERS adverse event PT-18343320",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18351401": {
+    "label": "FAERS adverse event PT-18351401",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18358513": {
+    "label": "FAERS adverse event PT-18358513",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18362779": {
+    "label": "FAERS adverse event PT-18362779",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18365026": {
+    "label": "FAERS adverse event PT-18365026",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18397121": {
+    "label": "FAERS adverse event PT-18397121",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18433766": {
+    "label": "FAERS adverse event PT-18433766",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18445486": {
+    "label": "FAERS adverse event PT-18445486",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18458393": {
+    "label": "FAERS adverse event PT-18458393",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18458967": {
+    "label": "FAERS adverse event PT-18458967",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18461347": {
+    "label": "FAERS adverse event PT-18461347",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18465107": {
+    "label": "FAERS adverse event PT-18465107",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18467595": {
+    "label": "FAERS adverse event PT-18467595",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18470693": {
+    "label": "FAERS adverse event PT-18470693",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18475368": {
+    "label": "FAERS adverse event PT-18475368",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18477203": {
+    "label": "FAERS adverse event PT-18477203",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18484467": {
+    "label": "FAERS adverse event PT-18484467",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18494803": {
+    "label": "FAERS adverse event PT-18494803",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18498370": {
+    "label": "FAERS adverse event PT-18498370",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18498415": {
+    "label": "FAERS adverse event PT-18498415",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18501316": {
+    "label": "FAERS adverse event PT-18501316",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18503799": {
+    "label": "FAERS adverse event PT-18503799",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18512590": {
+    "label": "FAERS adverse event PT-18512590",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18517210": {
+    "label": "FAERS adverse event PT-18517210",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18543536": {
+    "label": "FAERS adverse event PT-18543536",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18545023": {
+    "label": "FAERS adverse event PT-18545023",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18545667": {
+    "label": "FAERS adverse event PT-18545667",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18553947": {
+    "label": "FAERS adverse event PT-18553947",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18559991": {
+    "label": "FAERS adverse event PT-18559991",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18561528": {
+    "label": "FAERS adverse event PT-18561528",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18570794": {
+    "label": "FAERS adverse event PT-18570794",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18574440": {
+    "label": "FAERS adverse event PT-18574440",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18578181": {
+    "label": "FAERS adverse event PT-18578181",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18586948": {
+    "label": "FAERS adverse event PT-18586948",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18596109": {
+    "label": "FAERS adverse event PT-18596109",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18615065": {
+    "label": "FAERS adverse event PT-18615065",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18619003": {
+    "label": "FAERS adverse event PT-18619003",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18629231": {
+    "label": "FAERS adverse event PT-18629231",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18631859": {
+    "label": "FAERS adverse event PT-18631859",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18660295": {
+    "label": "FAERS adverse event PT-18660295",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18661928": {
+    "label": "FAERS adverse event PT-18661928",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18663418": {
+    "label": "FAERS adverse event PT-18663418",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18665049": {
+    "label": "FAERS adverse event PT-18665049",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18665461": {
+    "label": "FAERS adverse event PT-18665461",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18672493": {
+    "label": "FAERS adverse event PT-18672493",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18688248": {
+    "label": "FAERS adverse event PT-18688248",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18690392": {
+    "label": "FAERS adverse event PT-18690392",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18690915": {
+    "label": "FAERS adverse event PT-18690915",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18690962": {
+    "label": "FAERS adverse event PT-18690962",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18708717": {
+    "label": "FAERS adverse event PT-18708717",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18712929": {
+    "label": "FAERS adverse event PT-18712929",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18714522": {
+    "label": "FAERS adverse event PT-18714522",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18749337": {
+    "label": "FAERS adverse event PT-18749337",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18777482": {
+    "label": "FAERS adverse event PT-18777482",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18813849": {
+    "label": "FAERS adverse event PT-18813849",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18845347": {
+    "label": "FAERS adverse event PT-18845347",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18853150": {
+    "label": "FAERS adverse event PT-18853150",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18863910": {
+    "label": "FAERS adverse event PT-18863910",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18886153": {
+    "label": "FAERS adverse event PT-18886153",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18886306": {
+    "label": "FAERS adverse event PT-18886306",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18893294": {
+    "label": "FAERS adverse event PT-18893294",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18917265": {
+    "label": "FAERS adverse event PT-18917265",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18927750": {
+    "label": "FAERS adverse event PT-18927750",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18936985": {
+    "label": "FAERS adverse event PT-18936985",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18955421": {
+    "label": "FAERS adverse event PT-18955421",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18959913": {
+    "label": "FAERS adverse event PT-18959913",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "18968304": {
+    "label": "FAERS adverse event PT-18968304",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19056156": {
+    "label": "FAERS adverse event PT-19056156",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19065415": {
+    "label": "FAERS adverse event PT-19065415",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19077454": {
+    "label": "FAERS adverse event PT-19077454",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19079031": {
+    "label": "FAERS adverse event PT-19079031",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19083777": {
+    "label": "FAERS adverse event PT-19083777",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19085736": {
+    "label": "FAERS adverse event PT-19085736",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19098136": {
+    "label": "FAERS adverse event PT-19098136",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19236117": {
+    "label": "FAERS adverse event PT-19236117",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19240245": {
+    "label": "FAERS adverse event PT-19240245",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19302266": {
+    "label": "FAERS adverse event PT-19302266",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19407092": {
+    "label": "FAERS adverse event PT-19407092",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19445656": {
+    "label": "FAERS adverse event PT-19445656",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19449872": {
+    "label": "FAERS adverse event PT-19449872",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19662254": {
+    "label": "FAERS adverse event PT-19662254",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19741722": {
+    "label": "FAERS adverse event PT-19741722",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19766205": {
+    "label": "FAERS adverse event PT-19766205",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19797293": {
+    "label": "FAERS adverse event PT-19797293",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19797353": {
+    "label": "FAERS adverse event PT-19797353",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19835177": {
+    "label": "FAERS adverse event PT-19835177",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "19899923": {
+    "label": "FAERS adverse event PT-19899923",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20051071": {
+    "label": "FAERS adverse event PT-20051071",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20144389": {
+    "label": "FAERS adverse event PT-20144389",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20152334": {
+    "label": "FAERS adverse event PT-20152334",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20345566": {
+    "label": "FAERS adverse event PT-20345566",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20484484": {
+    "label": "FAERS adverse event PT-20484484",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20507704": {
+    "label": "FAERS adverse event PT-20507704",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20523982": {
+    "label": "FAERS adverse event PT-20523982",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20539094": {
+    "label": "FAERS adverse event PT-20539094",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20620790": {
+    "label": "FAERS adverse event PT-20620790",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20680995": {
+    "label": "FAERS adverse event PT-20680995",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20684252": {
+    "label": "FAERS adverse event PT-20684252",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20684478": {
+    "label": "FAERS adverse event PT-20684478",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20711130": {
+    "label": "FAERS adverse event PT-20711130",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20783964": {
+    "label": "FAERS adverse event PT-20783964",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20834221": {
+    "label": "FAERS adverse event PT-20834221",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "20937945": {
+    "label": "FAERS adverse event PT-20937945",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "21612999": {
+    "label": "FAERS adverse event PT-21612999",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "21673063": {
+    "label": "FAERS adverse event PT-21673063",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "7302622": {
+    "label": "FAERS adverse event PT-7302622",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "8203402": {
+    "label": "FAERS adverse event PT-8203402",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "8859257": {
+    "label": "FAERS adverse event PT-8859257",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "9745027": {
+    "label": "FAERS adverse event PT-9745027",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "9871221": {
+    "label": "FAERS adverse event PT-9871221",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  },
+  "9877038": {
+    "label": "FAERS adverse event PT-9877038",
+    "source": "fallback",
+    "n_evidence": 0,
+    "pmids": []
+  }
+}
