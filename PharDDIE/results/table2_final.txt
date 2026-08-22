@@ -6,7 +6,7 @@ External baseline values (8 methods): transcribed from Ren et al.
 =======================================================================================================================================
 Setting    Shot   Method                       AUC ↑                  AUPR ↑                 ACC ↑                  Macro-F1 ↑            
 ---------------------------------------------------------------------------------------------------------------------------------------
-common     1      PharDDIE (Ours)              0.7326±0.0200          0.7577±0.0155          0.6822±0.0235          0.6256±0.0242         
+common     1      PharDDIE (Ours)              0.7326±0.0179          0.7577±0.0138          0.6822±0.0210          0.6256±0.0216         
 common     1      META-DDIE (Reported)         0.5298±0.0435          —                      0.5181±0.0281          0.4251±0.0729         
 common     1      RareDDIE (Reported)          0.8492±0.0108          —                      0.7681±0.0104          0.7759±0.0079         
 common     1      GMatching (Reported)         —                      —                      —                      —                     
@@ -15,7 +15,7 @@ common     1      MetaR-Pre (Reported)         —                      —     
 common     1      MetaR-In (Reported)          —                      —                      —                      —                     
 common     1      KnowDDI (Reported)           —                      —                      —                      —                     
 common     1      DSN-DDI (Reported)           —                      —                      —                      —                     
-common     5      PharDDIE (Ours)              0.8126±0.0422          0.8303±0.0437          0.7514±0.0358          0.7274±0.0577         
+common     5      PharDDIE (Ours)              0.8126±0.0378          0.8303±0.0391          0.7514±0.0320          0.7274±0.0516         
 common     5      META-DDIE (Reported)         0.5218±0.0427          —                      0.5111±0.0209          0.3878±0.0878         
 common     5      RareDDIE (Reported)          0.9105±0.0076          —                      0.8332±0.0076          0.8392±0.0074         
 common     5      GMatching (Reported)         —                      —                      —                      —                     
@@ -34,7 +34,7 @@ common     10     MetaR-In (Reported)          — (no 10-shot in paper) —    
 common     10     KnowDDI (Reported)           — (no 10-shot in paper) —                      —                      —                     
 common     10     DSN-DDI (Reported)           — (no 10-shot in paper) —                      —                      —                     
 ---------------------------------------------------------------------------------------------------------------------------------------
-fewer      1      PharDDIE (Ours)              0.8634±0.0039          0.8775±0.0106          0.7638±0.0166          0.7406±0.0050         
+fewer      1      PharDDIE (Ours)              0.8634±0.0035          0.8775±0.0095          0.7638±0.0149          0.7406±0.0045         
 fewer      1      META-DDIE (Reported)         0.5481±0.0644          —                      0.5283±0.0313          0.4731±0.0996         
 fewer      1      RareDDIE (Reported)          0.8655±0.0119          —                      0.7726±0.0145          0.7736±0.0048         
 fewer      1      GMatching (Reported)         —                      —                      —                      —                     
@@ -43,7 +43,7 @@ fewer      1      MetaR-Pre (Reported)         —                      —     
 fewer      1      MetaR-In (Reported)          —                      —                      —                      —                     
 fewer      1      KnowDDI (Reported)           —                      —                      —                      —                     
 fewer      1      DSN-DDI (Reported)           —                      —                      —                      —                     
-fewer      5      PharDDIE (Ours)              0.9231±0.0130          0.9336±0.0117          0.8388±0.0137          0.8298±0.0335         
+fewer      5      PharDDIE (Ours)              0.9231±0.0116          0.9336±0.0104          0.8388±0.0122          0.8298±0.0299         
 fewer      5      META-DDIE (Reported)         0.5432±0.0185          —                      0.5216±0.0094          0.3715±0.0987         
 fewer      5      RareDDIE (Reported)          0.9351±0.0050          —                      0.8542±0.0074          0.8560±0.0090         
 fewer      5      GMatching (Reported)         —                      —                      —                      —                     
@@ -62,7 +62,7 @@ fewer      10     MetaR-In (Reported)          — (no 10-shot in paper) —    
 fewer      10     KnowDDI (Reported)           — (no 10-shot in paper) —                      —                      —                     
 fewer      10     DSN-DDI (Reported)           — (no 10-shot in paper) —                      —                      —                     
 ---------------------------------------------------------------------------------------------------------------------------------------
-rare       1      PharDDIE (Ours)              0.9295±0.0093          0.9409±0.0072          0.8459±0.0167          0.8284±0.0304         
+rare       1      PharDDIE (Ours)              0.9295±0.0083          0.9409±0.0064          0.8459±0.0149          0.8284±0.0272         
 rare       1      META-DDIE (Reported)         0.5482±0.0631          —                      0.5255±0.0324          0.5170±0.0725         
 rare       1      RareDDIE (Reported)          0.9392±0.0273          —                      0.8408±0.0202          0.8507±0.0186         
 rare       1      GMatching (Reported)         0.8711±0.0263          —                      0.8000±0.0367          0.8099±0.0384         
@@ -71,7 +71,7 @@ rare       1      MetaR-Pre (Reported)         0.7938±0.0449          —      
 rare       1      MetaR-In (Reported)          0.7318±0.0638          —                      0.6786±0.0644          0.6892±0.0622         
 rare       1      KnowDDI (Reported)           0.7282±0.0034          —                      0.6183±0.0088          0.4296±0.0209         
 rare       1      DSN-DDI (Reported)           0.6174±0.0653          —                      0.6000±0.0537          0.5293±0.0721         
-rare       5      PharDDIE (Ours)              0.9612±0.0112          0.9662±0.0141          0.8741±0.0198          0.8646±0.0252         
+rare       5      PharDDIE (Ours)              0.9612±0.0100          0.9662±0.0126          0.8741±0.0178          0.8646±0.0226         
 rare       5      META-DDIE (Reported)         0.5401±0.0560          —                      0.5348±0.0491          0.4679±0.0478         
 rare       5      RareDDIE (Reported)          0.9879±0.0096          —                      0.9328±0.0234          0.9370±0.0206         
 rare       5      GMatching (Reported)         0.9366±0.0212          —                      0.8448±0.0289          0.8494±0.0290         

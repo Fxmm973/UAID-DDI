@@ -11,7 +11,7 @@ Steps (resume-safe; completed steps are skipped):
   3) train five full EviDDIE seeds (eviddie_trainer.py, 20k batches each)
   4) back up the legacy zero-shot CSV, then export the four variants x five
      seeds x dev/test/test2 with the fixed manifests
-     (eviddie_export_zs_v2.py -> results/predictions/predictions_dataset1_zero_shot_variants.csv)
+     (eviddie_export_zs_v2.py -> results/predictions/predictions_eviddie_new_ablation.csv)
   5) aggregate calibration (ECE/Brier/NLL/HCE) and discrimination
      (pooled AUROC/ACC/event-macro F1) per variant, mean +/- SD over the five
      training seeds -> results/eviddie_p0_2_results.csv
@@ -89,7 +89,7 @@ def disc_metrics(y, p, ev):
 
 
 def aggregate():
-    csv_path = 'results/predictions/predictions_dataset1_zero_shot_variants.csv'
+    csv_path = 'results/predictions/predictions_eviddie_new_ablation.csv'
     df = pd.read_csv(csv_path)
     print('\n===== Aggregated results (mean +/- SD over 5 training seeds) =====')
     rows = []

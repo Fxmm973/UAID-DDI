@@ -41,7 +41,7 @@ def audit_event(y, p):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--csv', default='results/predictions/predictions_dataset1_zero_shot_variants.csv')
+    ap.add_argument('--csv', default='results/predictions/predictions_eviddie_new_ablation.csv')
     args = ap.parse_args()
 
     if not os.path.exists(args.csv):

@@ -36,8 +36,8 @@
   predictions of the five independently trained checkpoints
   (`models/dataset1/models_drugbank_{1,5}shot_str_seed{seed}/bestmodel`), evaluated
   with the fixed negative-sampling manifest (eval seed 19940419).
-- **Compute script**: `PharDDIE/pharddie_table2.py` (mean ± SD across the five training
-  seeds; refuses to run unless the CSV covers 5 seeds).
+- **Compute script**: `PharDDIE/pharddie_table2.py` (mean ± population SD, ddof = 0,
+  across the five training seeds; refuses to run unless the CSV covers 5 seeds).
 
 ### RareDDIE (re-evaluated under the unified protocol)
 - **Source**: the official RareDDIE implementation (vendored under `PharDDIE/`) was

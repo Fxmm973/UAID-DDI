@@ -14,17 +14,20 @@ from sklearn import metrics
 # Calibration metrics (EXACT same as pharddie_table3.py)
 # ============================================================
 
-def compute_ece(confidences, predictions, labels, n_bins=15):
-    """Expected Calibration Error"""
-    bin_boundaries = np.linspace(0, 1, n_bins + 1)
+def compute_ece(confidences, predictions, labels, n_bins=10):
+    """Expected Calibration Error, identical binning to shared/calibration_table.py
+    (np.digitize on the upper edges of 10 equal-width predicted-probability bins,
+    paper Eq. ece)."""
+    confidences = np.clip(np.asarray(confidences, dtype=float), 1e-12, 1 - 1e-12)
+    labels = np.asarray(labels)
+    bins = np.linspace(0, 1, n_bins + 1)
+    bin_ids = np.digitize(confidences, bins[1:-1])
     ece = 0.0
-    for i in range(n_bins):
-        in_bin = (confidences > bin_boundaries[i]) & (confidences <= bin_boundaries[i+1])
-        bin_size = np.sum(in_bin)
-        if bin_size > 0:
-            acc_in_bin = np.mean(labels[in_bin])
-            avg_conf_in_bin = np.mean(confidences[in_bin])
-            ece += (bin_size / len(confidences)) * np.abs(acc_in_bin - avg_conf_in_bin)
+    for b in range(n_bins):
+        m = bin_ids == b
+        if m.sum() == 0:
+            continue
+        ece += (m.sum() / len(confidences)) * np.abs(labels[m].mean() - confidences[m].mean())
     return ece
 
 
@@ -129,8 +132,8 @@ def main():
 
     # 3. Zero-shot variants (EviDDIE)
     zs_paths = [
-        os.path.join(BASE, '..', 'EviDDIE', 'results', 'predictions', 'predictions_dataset1_zero_shot_variants.csv'),
-        os.path.join(BASE, 'results', 'predictions', 'predictions_dataset1_zero_shot_variants.csv'),
+        os.path.join(BASE, '..', 'EviDDIE', 'results', 'predictions', 'predictions_eviddie_new_ablation.csv'),
+        os.path.join(BASE, 'results', 'predictions', 'predictions_eviddie_new_ablation.csv'),
     ]
     for p in zs_paths:
         if os.path.exists(p):
@@ -199,7 +202,7 @@ def main():
 
     lines.append('')
     lines.append('Notes:')
-    lines.append('  - ECE = Expected Calibration Error (15 equal-width bins).')
+    lines.append('  - ECE = Expected Calibration Error (10 equal-width bins, paper Eq. ece).')
     lines.append('  - Brier = Brier Score (MSE).')
     lines.append('  - NLL = Negative Log-Likelihood.')
     lines.append('  - Avg_Conf = Average confidence = mean(max(p, 1-p)).')
