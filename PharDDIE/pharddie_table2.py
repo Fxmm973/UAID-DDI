@@ -28,11 +28,7 @@ def compute_metrics(y_true, y_prob, group_by_event):
 # Sheet fig.3a).  These values were NOT regenerated in this study;
 # the comparison is an external reference.
 #
-# 格式: BASELINES[method][setting][metric][shot] = (mean, std)
-# 注: 这些 baseline 只有 1-shot 和 5-shot，无 10-shot；无 AUPR。
-#     META-DDIE/RareDDIE 转录了 common/fewer/rare 三个 setting 的值；
-#     其余 6 个方法只转录论文 Table 2 使用的 rare 测试值
-#     （common/fewer 行输出 '—'，见文末 Notes）。
+
 # ============================================================
 BASELINES = {
     'META-DDIE': {
@@ -46,16 +42,7 @@ BASELINES = {
                    'ACC':{1:(0.5255,0.0324),5:(0.5348,0.0491)},
                    'F1': {1:(0.5170,0.0725),5:(0.4679,0.0478)}},
     },
-    'RareDDIE': {
-        'common': {'AUC':{1:(0.8492,0.0108),5:(0.9105,0.0076)},
-                   'ACC':{1:(0.7681,0.0104),5:(0.8332,0.0076)},
-                   'F1': {1:(0.7759,0.0079),5:(0.8392,0.0074)}},
-        'fewer':  {'AUC':{1:(0.8655,0.0119),5:(0.9351,0.0050)},
-                   'ACC':{1:(0.7726,0.0145),5:(0.8542,0.0074)},
-                   'F1': {1:(0.7736,0.0048),5:(0.8560,0.0090)}},
-        'rare':   {'AUC':{1:(0.9392,0.0273),5:(0.9879,0.0096)},
-                   'ACC':{1:(0.8408,0.0202),5:(0.9328,0.0234)},
-                   'F1': {1:(0.8507,0.0186),5:(0.9370,0.0206)}},
+  
     },
     'GMatching': {
         'rare': {'AUC':{1:(0.8711,0.0263),5:(0.9366,0.0212)},
