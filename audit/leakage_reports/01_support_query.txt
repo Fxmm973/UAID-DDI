@@ -1,3 +1,3 @@
 AUDIT 1: support-query overlap
 ==============================
-PASS: no static support-query overlap in any split. (NOTE: --episode-manifests not provided; runtime assertions cover training episodes.)
+PASS: audited 280 real evaluation episodes from PharDDIE/results/predictions/episode_manifests; no support-query or positive-negative overlap.
