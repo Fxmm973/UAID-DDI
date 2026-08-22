@@ -107,7 +107,9 @@ UAID-DDI/
     └── training_logs/              # Per-seed training logs (PharDDIE 1/5-shot, EviDDIE 0-shot)
 ```
 
-> **Large files not included**: DRKG TransE entity embeddings (`DRKG_TransE_entity.npy`, ~200 MB), Morgan fingerprint features, DrugBank-derived training-task files, and trained model checkpoints (16-33 MB each). Their SHA256 values are recorded in `audit/checkpoints_sha256.md`; the binaries can be regenerated with the provided scripts or obtained from the authors (Zenodo deposit on acceptance).
+> **Included binaries**: DRKG TransE entity/relation embeddings (`PharDDIE/dataset1/DRKG_TransE_entity.npy`, `EviDDIE/dataset1/DRKG_TransE_entity.npy`, ~30 MB each), EviDDIE production checkpoints and ablation heads (`EviDDIE/models/`), RareDDIE five-seed checkpoints and single-file PharDDIE checkpoints (`PharDDIE/models/`). **Not in the repository** (size limits; Zenodo deposit on acceptance): the FAERS-based external-validation raw data (`external/faers`, ~4.8 GB), the BioSentVec model binary (~22.5 GB), and Morgan fingerprint features. SHA256 records are in `audit/checkpoints_sha256.md`.
+>
+> **Reproduction entry points**: `result_regeneration.ps1` regenerates all reported tables and audits from the released prediction CSVs; `reproduce_from_training.ps1` runs the full pipeline (five-seed training via `train_all_seeds.ps1` -> exports -> tables). The PharDDIE per-seed main checkpoints (`models/dataset1/models_drugbank_{1,5}shot_str_seed{seed}/bestmodel`) are not yet all published; the regeneration path does not require them.
 
 ---
 

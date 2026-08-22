@@ -207,7 +207,7 @@ earlier concatenation-based comparator used by pre-revision drafts.
 
 | File | Approx. Size | How to Obtain |
 |------|-------------|---------------|
-| `DRKG_TransE_entity.npy` | ~200 MB | Third-party pre-trained artifact from the DRKG release; relation embeddings are included |
+| `DRKG_TransE_entity.npy` | ~30 MB x2 | Third-party pre-trained artifact from the DRKG release (TransE, trained on the full DRKG including drug-drug edges); now committed under `PharDDIE/dataset1/` and `EviDDIE/dataset1/` |
 | DrugBank-derived training-task files (`train_tasks.json`) | ~20 MB | License-restricted; regenerate from DrugBank with the provided preprocessing scripts |
 | Trained checkpoints (`.pth`) | 16–33 MB each | Regenerate with the training scripts, or contact authors; SHA256 in `audit/checkpoints_sha256.md`; Zenodo deposit on acceptance |
 | BioSentVec encoder weights | ~1 GB | Download from the official BioSentVec release (precomputed event embeddings are included) |
