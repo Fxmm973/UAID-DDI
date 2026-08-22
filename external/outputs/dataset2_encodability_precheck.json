@@ -1,0 +1,7 @@
+{
+  "n_dataset2_drugs": 1258,
+  "in_ent2ids": 1258,
+  "missing_from_ent2ids": [],
+  "smiles_parseable": 1258,
+  "smiles_unparseable": 0
+}

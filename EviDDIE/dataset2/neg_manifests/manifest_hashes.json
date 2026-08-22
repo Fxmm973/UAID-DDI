@@ -1,0 +1,22 @@
+{
+  "test2_seed19940419": {
+    "path": "neg_manifests/test2_seed19940419_negatives.json",
+    "sha256": "e62f8a6f32803faa0a30e452fc6487a96ed8c9d9fca0ab49a588ea55f7a68cdf"
+  },
+  "test2_seed20230801": {
+    "path": "neg_manifests/test2_seed20230801_negatives.json",
+    "sha256": "e8c589650f396853b61e338396eb47f5755f7a1b806066deb1d6ab64ede4a9df"
+  },
+  "test2_seed20240115": {
+    "path": "neg_manifests/test2_seed20240115_negatives.json",
+    "sha256": "a66c28e9269566f1f8db7f1d7e5123f3981da9cc2d592662a0f45472260b3260"
+  },
+  "test2_seed20240520": {
+    "path": "neg_manifests/test2_seed20240520_negatives.json",
+    "sha256": "90fb34b549a7a5a2f60275db9bd6e9e9c77d3d509e86d4094a77db659bbe98fd"
+  },
+  "test2_seed20240910": {
+    "path": "neg_manifests/test2_seed20240910_negatives.json",
+    "sha256": "2d9bc7c09c38cb1af505022ae4f8d1e93a1a048a6168d755db6d6bc74e8da65f"
+  }
+}

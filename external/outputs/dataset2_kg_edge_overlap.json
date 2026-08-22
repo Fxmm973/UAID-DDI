@@ -1,0 +1,25 @@
+{
+  "n_test2_triples": 1872,
+  "n_test2_unordered_pairs": 1840,
+  "path_graph_train_only": {
+    "n_edges": 76230,
+    "n_distinct_unordered_endpoint_pairs": 68763,
+    "n_drug_drug_edges": 0,
+    "sha256": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365"
+  },
+  "path_graph": {
+    "n_edges": 76230,
+    "n_distinct_unordered_endpoint_pairs": 68763,
+    "n_drug_drug_edges": 0,
+    "sha256": "404168c27668455a3cc1ad9004b7f4271c546007814a62709b2f1dbe08f5950d"
+  },
+  "overlap_train_only": 0,
+  "overlap_train_only_rate": 0.0,
+  "overlap_train_only_pairs": [],
+  "overlap_path_graph": 0,
+  "overlap_path_graph_rate": 0.0,
+  "overlap_path_graph_pairs": [],
+  "path_graph_files_same_edge_set": true,
+  "report_only": true,
+  "note": "REPORT ONLY — the graph was not modified. DRKG contains no drug-drug edges, so no test2 (drug, drug) pair can be an edge; the overlap reflects whether any edge endpoint pair equals a tested drug pair."
+}
