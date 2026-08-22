@@ -39,13 +39,18 @@ CLASS_ORDER = ('negative', 'positive')
 
 
 def resolve_checkpoint(train_seed, prefix='eviddie_0shot', base_dir='models'):
-    flat_m = f'{base_dir}/{prefix}_seed{train_seed}bestmodel'
-    flat_g = f'{base_dir}/{prefix}_seed{train_seed}bestmodel_G'
-    dir_m = f'{base_dir}/{prefix}_seed{train_seed}/bestmodel'
-    dir_g = f'{base_dir}/{prefix}_seed{train_seed}/bestmodel_G'
-    m = flat_m if os.path.exists(flat_m) else dir_m
-    g = flat_g if os.path.exists(flat_g) else dir_g
-    return m, g
+    candidates = []
+    for bd in (base_dir, os.path.join(base_dir, 'dataset1')):
+        candidates.append((f'{bd}/{prefix}_seed{train_seed}bestmodel',
+                           f'{bd}/{prefix}_seed{train_seed}bestmodel_G',
+                           f'{bd}/{prefix}_seed{train_seed}/bestmodel',
+                           f'{bd}/{prefix}_seed{train_seed}/bestmodel_G'))
+    for flat_m, flat_g, dir_m, dir_g in candidates:
+        if os.path.exists(flat_m) or os.path.exists(dir_m):
+            return (flat_m if os.path.exists(flat_m) else dir_m,
+                    flat_g if os.path.exists(flat_g) else dir_g)
+    return (f'{base_dir}/{prefix}_seed{train_seed}bestmodel',
+            f'{base_dir}/{prefix}_seed{train_seed}bestmodel_G')
 
 
 def load_neg_manifest(dataset, split, seed):
