@@ -128,7 +128,7 @@ def _compute_rows_from_csv(df, setting_key, shot_val, group_cols):
     if not rows:
         return None, None
     rd = pd.DataFrame(rows)
-    return rd.mean(), rd.std()
+    return rd.mean(), rd.std(ddof=0)  # population SD (÷5), matching the paper and aggregate_rareddie.py
 
 def main():
     # ----------------------------------------------------------
