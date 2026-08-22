@@ -16,9 +16,6 @@
 | Datasets summary (Table 1) | — | Text-only table |
 | Main results 1/5-shot (Table 2) | `PharDDIE/pharddie_table2.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (+ RareDDIE re-evaluated under the unified protocol; 7 baselines transcribed from published source data) |
 | Zero-shot discrimination + calibration (Table 3) | `shared/calibration_table.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE/results/calibration_table_variants.csv`; PharDDIE rare rows from the PharDDIE CSV above |
-| Selective-referral performance / confidence-based prioritization (Table 4) | `shared/rq3_triage_table.py` (Random row computed internally with the error-rate definition) | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) |
-| Selective referral, matched coverage (Table 5) | `shared/rq3_selective_referral.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) → `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` |
-| Selective referral, fixed budgets (Table 6) | `shared/rq3_selective_referral.py` | same CSV / same output file |
 | Reliability diagram (Fig., RQ2) | `shared/calibration_table.py --fig` (equivalently `EviDDIE/eviddie_reliability_figure.py`) | same zero-shot CSV → `EviDDIE/reliability_diagram_new.png` |
 | EviDDIE head ablation, final metrics (Fig.) | `EviDDIE/eviddie_ablation_figure.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE_Ablation_Study.png` (+ `EviDDIE_Ablation_Study_4metrics.png`) |
 | EviDDIE head ablation, training dynamics (Fig.) | `EviDDIE/eviddie_ablation_curves_figure.py` | `EviDDIE/results/ablation_curves_eviddie_new_s{1..5}_seed*.csv` + `EviDDIE/results/full_evi_dev_internal.csv` → `EviDDIE_Ablation_Curves.png` |
@@ -135,57 +132,6 @@ earlier concatenation-based comparator used by pre-revision drafts.
   (paired $t$-tests per setting × metric: w/o BSA significant on common and fewer F1,
   w/o EVI significant on rare F1, $p<0.05$; AUROC/AUPRC differences $p>0.3$).
 - **Summary**: `EviDDIE/eviddie_ablation_summary.py` → `EviDDIE/results/ablation_summary_eviddie_new.csv`.
-
----
-
-## Selective-Referral Performance / Confidence-Based Prioritization — Table 4
-
-- **Scripts**: `shared/rq3_triage_table.py` (main rows and the independent Random row:
-  per seed × coverage, 200 random referral repetitions, mean ± 95% CI, risk computed
-  with the classification-error-rate definition).
-- **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot).
-- Unified action semantics (automatic = {high-priority, low-priority}, referred =
-  {expert referral, deferred review}); coverage = P(u ≤ τ_u); referral rate = P(u > τ_u).
-- **Signals**: 1-shot uses $u_{\text{entropy}} = H(p)$ (a confidence-derived baseline,
-  not epistemic uncertainty); 5-shot uses $u_{\text{latent}}$ (SRAE latent dispersion).
-  Test scores are mapped through the validation empirical CDF.
-- **Summary file**: `PharDDIE/results/table4_paper.txt` (legacy generator
-  `PharDDIE/pharddie_table4_paper.py` kept for provenance).
-
----
-
-## Selective Referral, Rebuilt Per-Signal — Tables 5 & 6
-
-- **Script**: `shared/rq3_selective_referral.py` (P0-3 protocol, 2026-08-16).
-  - Signals are separate strategies, each keeping/referring candidates by its own
-    ranking: raw positive score $p$ (candidate-priority semantics), MSP = max(p, 1−p),
-    margin |p−0.5|, entropy H(p), the model's native $u$ (latent dispersion for
-    PharDDIE), and **true random referral**.
-  - MSP / margin / entropy rank-equivalence for binary classification is verified
-    numerically (Spearman $\rho = \pm 1$) and printed.
-  - Risk–coverage curves and AURC are computed **per seed first**, then aggregated as
-    mean ± SD (never pooled) — per P0-3.
-  - Error-detection AUROC/AUPRC is reported for the native $u$ signal and for MSP.
-  - Random baseline: independent referral sets per (seed, coverage/budget), 200
-    repetitions, mean ± 95% CI.
-- **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot).
-- **Output**: `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` — the sole data source of the
-  paper's Tables 5 and 6 (e.g., fewer p-AURC 0.1686 ± 0.0162, MSP-AURC 0.0918 ± 0.0066;
-  30%-coverage risks p 0.0574 / MSP 0.0278 / latent u 0.2692 / random 0.2373 ± 0.0033;
-  AURC is the trapezoidal integral over the coverage grid c ∈ [0.05, 1.0], step 0.05).
-  Budgets of 10%/30%/50% correspond to automatic coverages of 90%/70%/50%.
-
----
-
-## Zero-Shot RQ3 Exploration (not in the paper)
-
-`EviDDIE/results/rq3_eviddie_new.csv` and `EviDDIE/results/rq3_rebuilt_eviddie_zs.csv`
-contain the same per-signal selective-referral analysis applied to the **zero-shot
-EviDDIE** predictions (shot = 0). The paper's Tables 5/6 use the 1-shot PharDDIE
-analysis above; these zero-shot files are exploratory and are kept for reference only.
-
----
-
 ## Architecture ↔ Code Mapping
 
 ### PharDDIE
@@ -254,14 +200,6 @@ analysis above; these zero-shot files are exploratory and are kept for reference
   implementation returned the negative-class proportion (`1 - mean(y)`) instead of the
   error rate; the corrected values are in
   `EviDDIE/results/calibration_table_variants.csv` (no-skill row: HCE undefined, `---`).
-- **Selective risk**: classification error rate on the retained set,
-  $\frac{1}{|\mathcal{A}|}\sum_{i\in\mathcal{A}}\mathbb{I}(\hat y_i \neq y_i)$
-  (paper Eq. selrisk). Fixed on 2026-08-18 in `shared/rq3_selective_referral.py`
-  (previous implementation returned `1 - mean(y)`); the corrected per-signal values are
-  in `PharDDIE/results/rq3_rebuilt_PharDDIE.csv`. Under the corrected definition the
-  entropy-based (confidence) reject option attains the lowest selective risk at matched
-  coverage, and the random-referral risk equals the model's overall error rate.
-
 ---
 
 ## Known Limitations
