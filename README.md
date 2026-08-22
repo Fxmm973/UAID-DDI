@@ -107,7 +107,13 @@ UAID-DDI/
     └── training_logs/              # Per-seed training logs (PharDDIE 1/5-shot, EviDDIE 0-shot)
 ```
 
-> **Large files not included**: DRKG TransE entity embeddings (`DRKG_TransE_entity.npy`, ~200 MB), Morgan fingerprint features, DrugBank-derived training-task files, and trained model checkpoints (16-33 MB each). Their SHA256 values are recorded in `audit/checkpoints_sha256.md`; the binaries can be regenerated with the provided scripts or obtained from the authors (Zenodo deposit on acceptance).
+> **Included binaries**: DRKG TransE entity/relation embeddings (`PharDDIE/dataset1/DRKG_TransE_entity.npy`, `EviDDIE/dataset1/DRKG_TransE_entity.npy`, ~30 MB each), EviDDIE production checkpoints and ablation heads (`EviDDIE/models/`), RareDDIE five-seed checkpoints and single-file PharDDIE checkpoints (`PharDDIE/models/`). **Not in the repository** (size limits; Zenodo deposit on acceptance): the FAERS-based external-validation raw data (`external/faers`, ~4.8 GB), the BioSentVec model binary (~22.5 GB), and Morgan fingerprint features. SHA256 records are in `audit/checkpoints_sha256.md`.
+>
+> **DRKG embedding provenance**: the TransE embeddings are third-party pre-trained artifacts from the public DRKG release (https://github.com/gnn4dr/DRKG; announced 2020, Gysi et al., PNAS 2021), trained on the complete DRKG graph including drug–drug edges. They are used verbatim; adjacency-level sanitization of `path_graph` does not remove information that may remain inside these vectors (see Limitations in the paper). SHA256 values are recorded in `audit/checkpoints_sha256.md`.
+>
+> **Sanitized-graph fail-closed verification**: every training/export entry point that builds the neighbor index (`path_graph`) first verifies the on-disk graph against `audit/sanitized_graph_manifest.json` and aborts on any mismatch (`shared/verify_sanitized_graph.py`; run `shared/build_sanitized_path_graph.py --dataset <dir>` to (re)build the sanitized graph and its manifest entry). This covers `pharddie_trainer.py`, `pharddie_train_wo_unc.py`, `pharddie_export_full.py`, `pharddie_export.py`, `eval_rareddie_unified.py`, `eviddie_trainer.py`, `eviddie_train_variants.py`, `eviddie_export_zs_v2.py`, and `eviddie_export_variants.py`. Superseded legacy scripts (`eviddie_train_zs.py`, `eviddie_export_zs.py`, `tester_struc_dataset1.py`, `trainer_structure_acc_fp_neigh_VAE_struc.py`) are retained for reference only and are not part of the reproduction pipeline.
+>
+> **Reproduction entry points**: `result_regeneration.ps1` regenerates all reported tables and audits from the released prediction CSVs; `reproduce_from_training.ps1` runs the full pipeline (five-seed training via `train_all_seeds.ps1` -> exports -> tables). The PharDDIE per-seed main checkpoints (`models/dataset1/models_drugbank_{1,5}shot_str_seed{seed}/bestmodel`) are not yet all published; the regeneration path does not require them.
 
 ---
 

@@ -50,3 +50,20 @@ and `EviDDIE/neg_manifests/manifest_hashes.json`.
 ## BioSentVec Event Embedding Files (precomputed; keys are the event description templates)
 
 - `EviDDIE/dataset1/event_embedding2.json`: `5f343b64a720eaa6ba6413a6a8b52edc3315f08528ee16460a0d7766b4e6631c` (1386481 bytes)
+
+## DRKG TransE Embeddings (third-party pre-trained; committed under both model branches)
+
+Provenance: the Drug Repurposing Knowledge Graph (DRKG) public release
+(https://github.com/gnn4dr/DRKG; announced 2020, described in Gysi et al.,
+PNAS 2021). The TransE entity/relation embeddings are the pre-trained
+artifacts from that release and were trained on the complete DRKG graph,
+including drug–drug interaction edges. They are used verbatim (no
+fine-tuning on the held-out pairs); the adjacency-level sanitization of
+`path_graph` does not remove information that may remain inside these
+vectors — see the paper's Limitations for the embedding-level leakage
+caveat.
+
+- `PharDDIE/dataset1/DRKG_TransE_entity.npy`: `b50624561689b4e68ac98984850e27ccb790ed6dd33b6c09f108c24ceeb60bfe` (30712960 bytes)
+- `PharDDIE/dataset1/DRKG_TransE_relation.npy`: `73d4c2b7ca15dfd2f1c7fa04a528b176742688d31723157145c4f945fd1cf680` (44160 bytes)
+- `EviDDIE/dataset1/DRKG_TransE_entity.npy`: `b50624561689b4e68ac98984850e27ccb790ed6dd33b6c09f108c24ceeb60bfe` (30712960 bytes)
+- `EviDDIE/dataset1/DRKG_TransE_relation.npy`: `73d4c2b7ca15dfd2f1c7fa04a528b176742688d31723157145c4f945fd1cf680` (44160 bytes)

@@ -1,0 +1,15 @@
+Git commit: 13edc1641c4e76d43ed4994e1817dde6f6912f33
+Timestamp: 2026-08-22_201929
+Python: Python 3.13.5
+PASS: Step 1a: Verify PharDDIE manifests
+PASS: Step 1b: Verify EviDDIE manifests
+PASS: Step 1c: Build sanitized path graph
+PASS: Step 1d: Six-part leakage audit
+PASS: Step 2a: Table 2 (few-shot main results)
+PASS: Step 2b: Table 3 zero-shot rows (canonical)
+PASS: Step 2c: Table 3 frozen-EDL-head rows
+PASS: Step 2d: Table 3 PharDDIE rows (1-shot)
+PASS: Step 2e: Table 3 PharDDIE rows (5-shot)
+PASS: Step 2f: Audit real evaluation episodes
+Full report: C:\Users\Admin\UAID-DDI-sync-check\audit\regeneration_report_2026-08-22_201929.txt
+Audit logs: C:\Users\Admin\UAID-DDI-sync-check\audit\table_logs/

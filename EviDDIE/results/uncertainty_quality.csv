@@ -1,0 +1,5 @@
+setting,method,uncertainty_source,error_detection_auroc,spearman_u_error
+fewer,EviDDIE,u_EDL,0.5535582651643772,0.09183262832752999
+fewer,Softmax baseline,MSP,0.5214125897478711,0.03655347855475748
+rare,EviDDIE,u_EDL,0.6265096202415392,0.2079882834560221
+rare,Softmax baseline,MSP,0.6031665857212238,0.16787626236006623

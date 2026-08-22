@@ -14,6 +14,7 @@ from pharddie_dataloader import *
 from pharddie_matcher import EmbedMatcher
 from sklearn import metrics
 from shared.checkpoint import load_state_dict_safe
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
@@ -95,6 +96,7 @@ class ExportFull(object):
     def build_connection(self, max_=100):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list); self.e1_degrees = defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph_train_only')
         with open(self.dataset + '/path_graph_train_only') as f:
             for line in tqdm(f.readlines()):
                 e1, rel, e2 = line.rstrip().split('\t')
@@ -244,16 +246,24 @@ if __name__ == '__main__':
     output_csv = os.path.join(output_dir, 'predictions_dataset1_PharDDIE.csv')
 
     ckpt_records = {}
+    ckpt_paths = {}
 
     # 预检：先确认全部 per-seed checkpoint 存在并计算 SHA256，再打开输出文件，
     # 避免 checkpoint 缺失时截断已发布的预测 CSV；输出先写临时文件，成功后原子替换。
+    # 路径 resolver 同时接受嵌套目录（canonical）与扁平文件（旧命名）两种约定。
     for few in SHOTS:
         for train_seed in TRAINING_SEEDS:
-            ckpt_path = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
+            ckpt_dir = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}'
+            ckpt_path = os.path.join(ckpt_dir, 'bestmodel')
             if not os.path.exists(ckpt_path):
-                raise FileNotFoundError(
-                    f'Per-seed checkpoint not found: {ckpt_path}. '
-                    f'Per-seed exports must use the checkpoint of the corresponding training seed.')
+                alt = ckpt_dir + 'bestmodel'
+                if os.path.exists(alt):
+                    ckpt_path = alt
+                else:
+                    raise FileNotFoundError(
+                        f'Per-seed checkpoint not found: tried {ckpt_path} and {alt}. '
+                        f'Per-seed exports must use the checkpoint of the corresponding training seed.')
+            ckpt_paths[(few, train_seed)] = ckpt_path
             ckpt_records[(few, train_seed)] = hashlib.sha256(
                 open(ckpt_path, 'rb').read()).hexdigest()
             logging.info(f'[PRE-CHECK] {ckpt_path}: exists, '
@@ -274,7 +284,7 @@ if __name__ == '__main__':
             logging.info(f'=== TRAIN_SEED {train_seed} ===')
             for few in SHOTS:
                 args.few = few; args.train_few = few; args.dataset = DATASET
-                args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
+                args.pretrained_model = ckpt_paths[(few, train_seed)]
 
                 eval_seed = EVAL_MANIFEST_SEED
                 random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)

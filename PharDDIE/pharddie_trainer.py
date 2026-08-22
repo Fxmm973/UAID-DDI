@@ -21,6 +21,9 @@ import pickle
 from torch_geometric.data import Batch, Data
 from sklearn import metrics
 from pharddie_recorder import ExperimentRecorder
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 
 def do_compute_metrics(probas_pred, target):
@@ -166,6 +169,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph_train_only')
         with open(self.dataset + '/path_graph_train_only') as f:
             lines = f.readlines()
             for line in tqdm(lines):
@@ -188,11 +192,22 @@ class Trainer(object):
 
     def save(self, path=None):
         if not path:
-            path = self.save_path
+            os.makedirs(self.save_path, exist_ok=True)
+            path = os.path.join(self.save_path, 'lastmodel')
+        else:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.matcher.state_dict(), path)
 
     def load(self):
-        self.matcher.load_state_dict(torch.load(self.save_path, map_location=self.device))
+        candidates = [os.path.join(self.save_path, 'bestmodel'),
+                      self.save_path + 'bestmodel',
+                      self.save_path]
+        for c in candidates:
+            if os.path.exists(c):
+                self.matcher.load_state_dict(torch.load(c, map_location=self.device))
+                return
+        raise FileNotFoundError(
+            f'No checkpoint found for {self.save_path}; tried {candidates}')
 
     def get_meta(self, left, right):
         left_connections = Variable(torch.LongTensor(np.stack([self.connections[_, :, :] for _ in left], axis=0))).to(
@@ -254,7 +269,8 @@ class Trainer(object):
                 is_best = valauc > bestvalauc
                 if is_best:
                     bestvalauc = valauc
-                    self.save(self.save_path + f'bestmodel')
+                    os.makedirs(self.save_path, exist_ok=True)
+                    self.save(os.path.join(self.save_path, 'bestmodel'))
                     if hasattr(self, 'recorder'):
                         self.recorder.experiment_data['best_models']['dev'] = {
                             'batch_num': self.batch_nums,

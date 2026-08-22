@@ -8,6 +8,9 @@ from pharddie_args import read_options
 from pharddie_dataloader import *
 from pharddie_matcher import EmbedMatcher
 from shared.checkpoint import load_state_dict_safe
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
@@ -97,6 +100,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph_train_only')
         with open(self.dataset + '/path_graph_train_only') as f:
             for line in tqdm(f.readlines(), desc='Building connections'):
                 e1, rel, e2 = line.rstrip().split('\t')
