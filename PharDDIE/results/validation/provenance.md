@@ -21,8 +21,8 @@ Archived records behind the paper's development-stage figures:
    (max_batches 40000, effective matcher dropout 0.5 per the P0-5 audit).
 2. **Legacy naming.** `no_meta(SHCR)` = the `--no_meta` ablation switch of the
    old codebase, which disabled the module the paper calls SHCR
-   (Selected Hidden-Channel Reweighting). The recorder files still carry the
-   legacy project name "RareDDIE".
+   (Selected Hidden-Channel Reweighting). (The raw recorder files' project-name
+   field was a legacy value; the project is PharDDIE.)
 3. **Era-mismatched reference runs.** The full-model reference used when the
    figures were drawn (same-era runs as the ablation records) is not archived
    together with the ablation records; `weight_sweep.csv` is a later snapshot
