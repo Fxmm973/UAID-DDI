@@ -24,8 +24,8 @@
 | EviDDIE head ablation, training dynamics (Fig.) | `EviDDIE/eviddie_ablation_curves_figure.py` | `EviDDIE/results/ablation_curves_eviddie_new_s{1..5}_seed*.csv` + `EviDDIE/results/full_evi_dev_internal.csv` → `EviDDIE_Ablation_Curves.png` |
 | Ablation significance tests (text) | `EviDDIE/eviddie_ablation_sigtest.py` | same zero-shot CSV → `EviDDIE/results/ablation_sigtest.csv` |
 | Framework schematic | — | `kuangjiatu.jpg` |
-| Proxy-channel weight selection | — | `fig_1shot_weight_selection.jpg` / `fig_5shot_weight_selection.jpg` |
-| PharDDIE component ablation | — | `1-shot-ablation.jpg` / `5-shot-ablation.jpg` (SHCR / ACI / SRAE removed) |
+| Proxy-channel weight selection (Fig.) | `PharDDIE/pharddie_weight_figure.py` | `PharDDIE/results/validation/weight_sweep.csv` → figure (archived records, pre-unified protocol) |
+| PharDDIE component ablation (Fig.) | `PharDDIE/pharddie_ablation_figure.py` | `PharDDIE/results/validation/ablation_results.csv` → figure (archived records, pre-unified protocol) |
 
 ---
 
@@ -57,6 +57,17 @@
 - Values transcribed from the published source data of the original papers; NOT
   re-trained or re-evaluated in this study. Methods: META-DDIE, GMatching, MRCGNN,
   MetaR-In, MetaR-Pre, DSN-DDI, KnowDDI.
+
+### Development-Stage Validation Records (weight sweep & PharDDIE ablation)
+- Archived records behind the paper's development-stage figures, parsed into
+  `PharDDIE/results/validation/weight_sweep.csv` and
+  `PharDDIE/results/validation/ablation_results.csv` from the authors' experiment
+  logs (药效团数据.xlsx and the `result_ph2p0_*_40k.txt` records).
+- **Protocol caveat**: these runs predate the unified five-seed fixed-manifest
+  protocol; their absolute numbers are not comparable with Tables 2/3. The
+  full-model reference used when the figures were drawn is not archived
+  together with the ablation records. Full details in
+  `PharDDIE/results/validation/provenance.md`.
 
 ### Evaluation Protocol
 - Event-level splits: train (58 events / 189,287 samples), dev (5 / 2,005),
