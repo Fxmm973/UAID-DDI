@@ -227,9 +227,18 @@ def main():
     if os.path.exists(sm):
         import json as _json
         m = _json.load(open(sm, encoding='utf-8'))
-        lines.append(f'sanitized graph manifest: original={m.get("original_edges")} '
-                     f'removed={m.get("removed_edges")} kept={m.get("kept_edges")} '
-                     f'sha256={m.get("path_graph_train_only_sha256", "")[:16]}...')
+        if 'graphs' in m:  # multi-dataset manifest
+            repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            ds_key = os.path.normpath(os.path.relpath(os.path.abspath(ds), repo)).replace(os.sep, '/')
+            meta = m.get('datasets', {}).get(ds_key, {})
+            ghash = m.get('graphs', {}).get(f'{ds_key}/path_graph_train_only', '')
+            lines.append(f'sanitized graph manifest: original={meta.get("original_edges")} '
+                         f'removed={meta.get("removed_edges")} kept={meta.get("kept_edges")} '
+                         f'sha256={ghash[:16]}...')
+        else:  # legacy single-dataset manifest
+            lines.append(f'sanitized graph manifest: original={m.get("original_edges")} '
+                         f'removed={m.get("removed_edges")} kept={m.get("kept_edges")} '
+                         f'sha256={m.get("path_graph_train_only_sha256", "")[:16]}...')
     write(os.path.join(out, '06_kg_edge_leakage.txt'),
           'AUDIT 6: KG-edge leakage (HARD check; ACI reads the sanitized path_graph_train_only)',
           lines)

@@ -28,6 +28,7 @@ from eviddie_args import read_options
 from eviddie_dataloader import *
 from eviddie_matcher import EmbedMatcher
 from shared.checkpoint import load_state_dict_safe
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
@@ -144,6 +145,7 @@ class ExportVariants(object):
     def build_connection(self, max_=100):
         self.connections=(np.ones((self.num_ents,max_,2))*self.pad_id).astype(int)
         self.e1_rele2=defaultdict(list); self.e1_degrees=defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph')
         with open(self.dataset+'/path_graph') as f:
             for line in tqdm(f.readlines(),desc='Connections'):
                 e1,rel,e2=line.rstrip().split('\t')

@@ -9,6 +9,9 @@ from tqdm import tqdm
 
 from matcher_structure_acc_fp_neigh_VAE_struc import EmbedMatcher
 from data_loader_structure_fp import DrugDataset, DrugDataLoader
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 TRAIN_SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
 EVAL_SEED = 19940419
@@ -90,6 +93,7 @@ class UnifiedEval(object):
         self.connections = (np.ones((num_ents, MAX_NEIGHBOR, 2)) * self.pad_id).astype(int)
         self.e1_degrees = {}
         e1_rele2 = {}
+        verify_sanitized_graph(self.dataset, 'path_graph')
         with open(f'{self.dataset}/path_graph') as f:
             for line in tqdm(f.readlines(), desc='Building connections'):
                 e1, rel, e2 = line.rstrip().split('\t')

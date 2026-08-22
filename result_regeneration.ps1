@@ -53,6 +53,7 @@ Write-Report "Python: $(python --version 2>&1)"
 Run-Step "Step 1a: Verify PharDDIE manifests" "python shared/verify_manifests.py --hash-log PharDDIE/dataset1/neg_manifests/manifest_hashes.json --manifest-dir PharDDIE/dataset1/neg_manifests --dataset PharDDIE/dataset1"
 Run-Step "Step 1b: Verify EviDDIE manifests" "python shared/verify_manifests.py --hash-log EviDDIE/neg_manifests/manifest_hashes.json --manifest-dir EviDDIE/neg_manifests --dataset EviDDIE/dataset1"
 Run-Step "Step 1c: Build sanitized path graph" "python shared/build_sanitized_path_graph.py --dataset PharDDIE/dataset1"
+Run-Step "Step 1c-2: Build sanitized path graph (EviDDIE)" "python shared/build_sanitized_path_graph.py --dataset EviDDIE/dataset1"
 Run-Step "Step 1d: Six-part leakage audit" "python shared/audit_leakage.py --dataset PharDDIE/dataset1"
 
 # Step 2: 论文表格（全部从已发布 CSV 重算）

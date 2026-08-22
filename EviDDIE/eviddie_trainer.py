@@ -29,6 +29,7 @@ from torch_geometric.data import Batch, Data
 from sklearn import metrics
 from eviddie_recorder import ExperimentRecorder
 from shared.eval_manifest import load_fixed_event_rows
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 
 def do_compute_metrics(probas_pred, target):
@@ -213,6 +214,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph')
         with open(self.dataset + '/path_graph') as f:
             lines = f.readlines()
             for line in tqdm(lines):

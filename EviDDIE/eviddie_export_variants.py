@@ -9,6 +9,9 @@ from eviddie_args import read_options
 from eviddie_dataloader import *
 from eviddie_matcher import EmbedMatcher
 from sklearn import metrics
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 METHODS = {'softmax':'Softmax baseline','wo_evi':'EviDDIE w/o EVI','full_evi':'EviDDIE'}
@@ -78,6 +81,7 @@ class ExportEviDDIE(object):
     def build_connection(self, max_=100):
         self.conn=(np.ones((self.num_ents,max_,2))*self.pad_id).astype(int)
         self.e1r2=defaultdict(list);self.e1d=defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph')
         with open(self.dataset+'/path_graph') as f:
             for l in tqdm(f.readlines(),desc='Connections'):
                 e1,rel,e2=l.rstrip().split('\t')

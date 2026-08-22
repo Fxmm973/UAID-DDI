@@ -21,6 +21,9 @@ import pickle
 from torch_geometric.data import Batch, Data
 from sklearn import metrics
 from pharddie_recorder import ExperimentRecorder
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+from shared.verify_sanitized_graph import verify_sanitized_graph
 
 
 def do_compute_metrics(probas_pred, target):
@@ -166,6 +169,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
+        verify_sanitized_graph(self.dataset, 'path_graph_train_only')
         with open(self.dataset + '/path_graph_train_only') as f:
             lines = f.readlines()
             for line in tqdm(lines):
