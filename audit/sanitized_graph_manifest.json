@@ -1,9 +1,22 @@
 {
-  "dataset": "PharDDIE\\dataset1",
-  "original_edges": 76230,
-  "kept_edges": 76230,
-  "removed_edges": 0,
-  "path_graph_sha256": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365",
-  "path_graph_train_only_sha256": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365",
-  "removed_heldout_edges": "audit/removed_heldout_edges.json"
+  "graphs": {
+    "PharDDIE/dataset1/path_graph": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365",
+    "PharDDIE/dataset1/path_graph_train_only": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365",
+    "EviDDIE/dataset1/path_graph": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365",
+    "EviDDIE/dataset1/path_graph_train_only": "b466844d8980bb0bc680fb84e1e71f68151606ca67aa5babbe731060dfc96365"
+  },
+  "datasets": {
+    "PharDDIE/dataset1": {
+      "original_edges": 76230,
+      "kept_edges": 76230,
+      "removed_edges": 0,
+      "removed_heldout_edges": "audit/removed_heldout_edges_PharDDIE_dataset1.json"
+    },
+    "EviDDIE/dataset1": {
+      "original_edges": 76230,
+      "kept_edges": 76230,
+      "removed_edges": 0,
+      "removed_heldout_edges": "audit/removed_heldout_edges_EviDDIE_dataset1.json"
+    }
+  }
 }
