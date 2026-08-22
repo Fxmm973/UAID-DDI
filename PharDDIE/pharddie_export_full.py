@@ -245,7 +245,22 @@ if __name__ == '__main__':
 
     ckpt_records = {}
 
-    with open(output_csv, 'w', newline='', encoding='utf-8') as f:
+    # 预检：先确认全部 per-seed checkpoint 存在并计算 SHA256，再打开输出文件，
+    # 避免 checkpoint 缺失时截断已发布的预测 CSV；输出先写临时文件，成功后原子替换。
+    for few in SHOTS:
+        for train_seed in TRAINING_SEEDS:
+            ckpt_path = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
+            if not os.path.exists(ckpt_path):
+                raise FileNotFoundError(
+                    f'Per-seed checkpoint not found: {ckpt_path}. '
+                    f'Per-seed exports must use the checkpoint of the corresponding training seed.')
+            ckpt_records[(few, train_seed)] = hashlib.sha256(
+                open(ckpt_path, 'rb').read()).hexdigest()
+            logging.info(f'[PRE-CHECK] {ckpt_path}: exists, '
+                         f'sha256 {ckpt_records[(few, train_seed)][:16]}...')
+
+    tmp_csv = output_csv + '.tmp'
+    with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['train_seed', 'eval_seed', 'setting', 'shot', 'method', 'event_type',
                      'drug_a', 'drug_b', 'y_true', 'y_pred', 'prob', 'uncertainty'])
@@ -260,12 +275,6 @@ if __name__ == '__main__':
             for few in SHOTS:
                 args.few = few; args.train_few = few; args.dataset = DATASET
                 args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
-                if not os.path.exists(args.pretrained_model):
-                    raise FileNotFoundError(
-                        f'Per-seed checkpoint not found: {args.pretrained_model}. '
-                        f'Per-seed exports must use the checkpoint of the corresponding training seed.')
-                ckpt_records[(few, train_seed)] = hashlib.sha256(
-                    open(args.pretrained_model, 'rb').read()).hexdigest()
 
                 eval_seed = EVAL_MANIFEST_SEED
                 random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
@@ -301,7 +310,8 @@ if __name__ == '__main__':
         logging.info(f'[SEED-CHAIN] Evaluation manifest seed fixed to {EVAL_MANIFEST_SEED} '
                      f'for all seeds (identical manifest hash across seeds).')
 
-    logging.info(f'Done! Saved to {output_csv}')
+    os.replace(tmp_csv, output_csv)
+    logging.info(f'Done! Saved to {output_csv} (atomic replace from {tmp_csv})')
     logging.info('NOTE: train_seed column identifies independent training runs.')
     logging.info('      eval_seed column identifies the fixed negative-sampling manifest used.')
     logging.info('      Mean +/- std across train_seeds = training variability.')
