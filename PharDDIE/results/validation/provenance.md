@@ -15,10 +15,7 @@ Archived records behind the paper's development-stage figures:
 **Important caveats (read before citing):**
 
 1. **Pre-unified protocol.** These records were produced by the pre-revision
-   code snapshots (single training seed, `dropout` argument 0.2, `no_meta`
-   flag, max_batches 20000). Their absolute numbers are NOT comparable with
-   Table 2/3, which use the unified five-seed fixed-manifest protocol
-   (max_batches 40000, effective matcher dropout 0.5 per the P0-5 audit).
+   code snapshots (single training seed, `dropout` argument 0.5, max_batches 40000). 
 2. **Legacy naming.** `no_meta(SHCR)` = the `--no_meta` ablation switch of the
    old codebase, which disabled the module the paper calls SHCR
    (Selected Hidden-Channel Reweighting). (The raw recorder files' project-name
