@@ -38,8 +38,8 @@ def read_options():
 
     parser.add_argument("--variants", default="softmax,evi_no_evi,wo_BSA,full_evi", type=str,
                         help="comma-separated variants to export (default: all four)")
-    parser.add_argument("--out_csv", default="predictions_dataset1_zero_shot_variants.csv", type=str,
-                        help="output CSV filename (default keeps the legacy name)")
+    parser.add_argument("--out_csv", default="predictions_eviddie_new_ablation.csv", type=str,
+                        help="output CSV filename (default matches the canonical CSV read by pharddie_table3_complete.py)")
     parser.add_argument("--train_seed", default=None, type=int,
                         help="ablation: which training-seed checkpoint to freeze (default: args.seed)")
     parser.add_argument("--max_iter", default=5000, type=int,

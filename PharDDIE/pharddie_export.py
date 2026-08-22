@@ -204,7 +204,7 @@ if __name__ == '__main__':
     args = read_options()
     import hashlib
     SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
-    SHOTS = [1, 5, 10]
+    SHOTS = [1, 5]  # 论文仅报告 1/5-shot；10-shot 模型不再要求
     MODES = ['dev', 'test', 'test2']
     DATASET = 'dataset1'
 
@@ -237,10 +237,24 @@ if __name__ == '__main__':
                 args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str/bestmodel'
                 args.fc_direct_path = f'models/dataset1/models_wo_uncertainty_{few}shot/bestmodel'
                 if not os.path.exists(args.fc_direct_path):
-                    logging.warning(f'fc_direct model not found: {args.fc_direct_path}, skipping')
-                    continue
+                    raise FileNotFoundError(
+                        f'fc_direct model not found: {args.fc_direct_path}. '
+                        f'Refusing to skip: the w/o-uncertainty export must cover all shots.')
+                if not os.path.exists(args.pretrained_model):
+                    raise FileNotFoundError(
+                        f'Base checkpoint not found: {args.pretrained_model}.')
+
+
                 ex = ExportWOUncertainty(args)
                 for mode in MODES:
                     ex.export(mode, w, seed)
 
+    # 完成后校验：CSV 必须包含数据行（5 eval seed x 2 shot x 3 分片组合都应产出），
+    # 空 CSV 视为失败，禁止以退出码 0 结束。
+    with open(output_csv, 'r', encoding='utf-8') as chk:
+        n_rows = sum(1 for _ in chk) - 1
+    if n_rows <= 0:
+        logging.error(f'Export produced an empty CSV ({output_csv}); failing the step.')
+        raise SystemExit(1)
+    logging.info(f'Validation: {n_rows} data rows written to {output_csv}.')
     logging.info(f'Done! Saved to {output_csv}')
