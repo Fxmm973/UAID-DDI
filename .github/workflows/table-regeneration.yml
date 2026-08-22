@@ -1,0 +1,36 @@
+name: table-regeneration
+
+# CI verification of the no-GPU reproduction path: regenerate every reported
+# table and all audits from the released prediction CSVs (result_regeneration.ps1).
+# The from-training path (five-seed training + exports) requires GPUs and the
+# per-seed checkpoints; it is run manually via reproduce_from_training.ps1.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      # Manifest SHA256 records were computed on CRLF bytes; check files out
+      # verbatim so the hash verification is meaningful on Linux.
+      - name: Keep repository line endings intact
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install numpy pandas scipy scikit-learn matplotlib
+      - name: Run table regeneration (CSV -> tables + audits)
+        env:
+          MPLBACKEND: Agg
+        run: pwsh -File ./result_regeneration.ps1
+      - name: Upload regeneration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regeneration-report
+          path: audit/regeneration_report_*.txt
