@@ -1,36 +1,16 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-P0-2/P0-5 calibration + discrimination table builder for zero-shot predictions.
-
-Metrics are computed PER TRAINING SEED first and aggregated as mean +- SD
-over the five seeds (never pooled), per reviewer P0-5. Temperature scaling is
-also per-seed: T fitted on that seed's dev (common) rows, applied to that
-seed's held-out rows.
-
-Output blocks:
-  [TABLE]      AUROC / AUPRC / ACC / event-macro F1 / Brier / NLL / ECE / HCE
-               (HCE with high-confidence coverage + count), mean +- SD;
-               includes the p=0.5 no-skill row and a +TempScale row per method
-  [P0-2-STRICT-VERDICT]  proper-score baseline (Brier<0.25 AND NLL<ln2) AND
-               discrimination (AUROC>0.55) verdict per (setting, method)
-  [P0-2-BALANCE]  1:1 positive:negative pairing integrity check
-  reliability diagram PNG with per-bin sample counts
-
-Usage:
-  python shared/calibration_table.py --csv <predictions.csv> \
-      --out results/calibration_table.csv --fig results/reliability.png
-"""
 import argparse
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize_scalar
+from scipy.stats import ttest_rel, t as tdist
 from sklearn.metrics import roc_auc_score, average_precision_score
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-HIGH_CONF = 0.9  # HCE threshold on confidence = max(p, 1-p)
+HIGH_CONF = 0.9
 LN2 = float(np.log(2))
 
 
@@ -54,8 +34,6 @@ def ece_brier_nll(probs, labels, n_bins=10):
 
 
 def hce(probs, labels, tau=HIGH_CONF):
-    """High-confidence error rate (paper Eq. hce): classification error among
-    samples with confidence c = max(p, 1-p) >= tau."""
     probs = np.asarray(probs)
     labels = np.asarray(labels).astype(int)
 
@@ -71,6 +49,22 @@ def hce(probs, labels, tau=HIGH_CONF):
     return float(err), float(mask.mean()), int(mask.sum())
 
 
+def lin_cal(probs, labels, n_bins=10):
+    p = np.clip(np.asarray(probs, dtype=float), 1e-12, 1 - 1e-12)
+    labels = np.asarray(labels)
+    bins = np.linspace(0, 1, n_bins + 1)
+    xs, ys = [], []
+    for b in range(n_bins):
+        m = (p > bins[b]) & (p <= bins[b + 1])
+        if m.sum() > 0:
+            xs.append(p[m].mean())
+            ys.append(labels[m].mean())
+    if len(xs) < 3:
+        return np.nan, np.nan
+    slope, intercept = np.polyfit(xs, ys, 1)
+    return float(intercept), float(slope)
+
+
 def event_macro_f1(g):
     f1s = []
     for ev, sub in g.groupby('event_type'):
@@ -84,37 +78,48 @@ def event_macro_f1(g):
 
 
 def per_seed_metrics(g):
-    """All metrics for ONE training seed's (setting, method) group."""
     probs, labels = g['prob'].values, g['y_true'].values
     auroc = roc_auc_score(labels, probs) if len(set(labels)) > 1 else np.nan
     auprc = average_precision_score(labels, probs)
     ece, brier, nll, counts = ece_brier_nll(probs, labels)
     h, hcov, hcnt = hce(probs, labels)
+    intercept, slope = lin_cal(probs, labels)
+    conf = np.maximum(probs, 1 - probs)
+    hmask = conf >= HIGH_CONF
+    hce_err = int(((probs[hmask] >= 0.5).astype(int) != labels[hmask]).sum()) if hmask.sum() else 0
     return {'auroc': auroc, 'auprc': auprc, 'acc': float((g['y_pred'].values == labels).mean()),
             'f1_macro': event_macro_f1(g), 'ece': ece, 'brier': brier, 'nll': nll,
-            'hce': h, 'hce_coverage': hcov, 'hce_count': hcnt,
+            'hce': h, 'hce_coverage': hcov, 'hce_count': hcnt, 'hce_err': hce_err,
+            'intercept': intercept, 'slope': slope,
             'n': int(len(g)), 'bin_counts': np.asarray(counts)}
 
 
 def aggregate(seed_metrics):
-    """mean +- SD across seeds; bin_counts are summed."""
     out = {}
+    n_seeds = len(seed_metrics)
     for k in seed_metrics[0]:
         vals = [m[k] for m in seed_metrics]
         if k == 'bin_counts':
             out[k] = np.sum(np.vstack(vals), axis=0)
-        elif k == 'n':
-            out[k] = int(np.sum(vals))
-        elif k == 'hce_count':
+        elif k in ('n', 'hce_count', 'hce_err'):
             out[k] = int(np.sum(vals))
         else:
             out[k + '_mean'] = float(np.nanmean(vals))
             out[k + '_sd'] = float(np.nanstd(vals, ddof=1))
+    tval = tdist.ppf(0.975, n_seeds - 1) if n_seeds > 1 else np.nan
+    for m in ('auroc', 'brier', 'nll', 'ece'):
+        se = out[m + '_sd'] / np.sqrt(n_seeds)
+        out[m + '_ci95_low'] = float(out[m + '_mean'] - tval * se)
+        out[m + '_ci95_high'] = float(out[m + '_mean'] + tval * se)
+    # intercept/slope 的 SD 使用 ddof=0（与论文表格的呈现口径一致）
+    for m in ('intercept', 'slope'):
+        vals = [x[m] for x in seed_metrics]
+        out[m + '_sd'] = float(np.nanstd(vals, ddof=0))
+    out['hce_cov_pooled'] = out['hce_count'] / out['n'] if out.get('n') else np.nan
     return out
 
 
 def fit_temperature(probs, labels):
-    """Temperature scaling on binary probabilities: l=logit(p)/T, minimize NLL."""
     p = np.clip(probs, 1e-7, 1 - 1e-7)
     l = np.log(p / (1 - p))
 
@@ -167,6 +172,14 @@ def main():
     ap.add_argument('--methods', nargs='+',
                     default=['EviDDIE', 'Softmax baseline', 'EviDDIE w/o EVI'])
     ap.add_argument('--dev-setting', default='common')
+    ap.add_argument('--settings', nargs='+', default=None,
+                    help='held-out settings to evaluate (default: fewer rare)')
+    ap.add_argument('--shot', type=int, default=None,
+                    help='filter rows by shot (for PharDDIE per-shot rows)')
+    ap.add_argument('--paired', default=None,
+                    help='paired native-vs-TempScale CSV output (default: <out>_paired.csv)')
+    ap.add_argument('--detail', default=None,
+                    help='per-seed detail CSV output (default: <out>_detail.csv)')
     args = ap.parse_args()
 
     df = pd.read_csv(args.csv)
@@ -176,12 +189,19 @@ def main():
     df['y_pred'] = df['y_pred'].astype(int)
     if 'train_seed' not in df.columns and 'seed' in df.columns:
         df = df.rename(columns={'seed': 'train_seed'})
+    if args.shot is not None and 'shot' in df.columns:
+        df = df[df['shot'] == args.shot]
 
     dev = df[df['setting'] == args.dev_setting]
-    test_settings = [s for s in ['fewer', 'rare'] if s in set(df['setting'])]
+    wanted = args.settings if args.settings else ['fewer', 'rare']
+    test_settings = [s for s in wanted if s in set(df['setting'])]
+
+    paired_csv = args.paired or args.out.replace('.csv', '_paired.csv')
+    detail_csv = args.detail or args.out.replace('.csv', '_detail.csv')
 
     rows = []
-    # ---- per-seed temperature: fitted on that seed's dev rows ----
+    detail_rows = []
+    paired_rows = []
     seed_Ts = {m: {} for m in args.methods}
     for m in args.methods:
         for s, g in dev[dev['method'] == m].groupby('train_seed'):
@@ -200,8 +220,12 @@ def main():
             row = aggregate(seed_metrics)
             row.update({'setting': setting, 'method': m, 'row': m})
             rows.append(row)
+            for seed_val, sm in zip(g['train_seed'].unique(), seed_metrics):
+                d = dict(sm)
+                d.update({'setting': setting, 'method': m, 'row': m,
+                          'train_seed': seed_val, 'scaled': False})
+                detail_rows.append(d)
 
-            # temperature-scaled row (per-seed T)
             ts_metrics = []
             for s, sg in g.groupby('train_seed'):
                 if s not in seed_Ts[m]:
@@ -214,10 +238,23 @@ def main():
                 rowt = aggregate(ts_metrics)
                 rowt.update({'setting': setting, 'method': m, 'row': m + ' + TempScale'})
                 rows.append(rowt)
+                for seed_val, sm in zip(g['train_seed'].unique(), ts_metrics):
+                    d = dict(sm)
+                    d.update({'setting': setting, 'method': m, 'row': m + ' + TempScale',
+                              'train_seed': seed_val, 'scaled': True})
+                    detail_rows.append(d)
+                for metric in ('ece', 'brier', 'nll'):
+                    a = [sm[metric] for sm in seed_metrics]
+                    b = [sm[metric] for sm in ts_metrics]
+                    tval, pval = ttest_rel(a, b)
+                    paired_rows.append({'setting': setting, 'method': m, 'metric': metric,
+                                        'native_mean': float(np.mean(a)),
+                                        'ts_mean': float(np.mean(b)),
+                                        'diff': float(np.mean(a) - np.mean(b)),
+                                        'p_paired_t': float(pval)})
 
             reliability_diagram(g['prob'].values, g['y_true'].values,
                                 axes[si][mi], title=f'{setting} - {m}')
-        # no-skill baseline row (analytic constants for p = 0.5)
         n = int(sub[sub['method'] == args.methods[0]]['n'].sum()) if 'n' in sub.columns else int(len(sub[sub['method'] == args.methods[0]]))
         rows.append({'setting': setting, 'method': '-', 'row': 'No-skill p=0.5',
                      'auroc_mean': 0.5, 'auroc_sd': 0.0, 'auprc_mean': 0.5, 'auprc_sd': 0.0,
@@ -225,6 +262,13 @@ def main():
                      'ece_mean': 0.0, 'ece_sd': 0.0, 'brier_mean': 0.25, 'brier_sd': 0.0,
                      'nll_mean': LN2, 'nll_sd': 0.0, 'hce_mean': np.nan, 'hce_sd': np.nan,
                      'hce_coverage_mean': 0.0, 'hce_coverage_sd': 0.0, 'hce_count': 0,
+                     'hce_err': 0, 'hce_cov_pooled': 0.0,
+                     'intercept_mean': np.nan, 'intercept_sd': np.nan,
+                     'slope_mean': np.nan, 'slope_sd': np.nan,
+                     'auroc_ci95_low': np.nan, 'auroc_ci95_high': np.nan,
+                     'brier_ci95_low': np.nan, 'brier_ci95_high': np.nan,
+                     'nll_ci95_low': np.nan, 'nll_ci95_high': np.nan,
+                     'ece_ci95_low': np.nan, 'ece_ci95_high': np.nan,
                      'n': n, 'bin_counts': None})
 
     for ax in axes.flat:
@@ -237,15 +281,28 @@ def main():
     out = pd.DataFrame(rows)
     out.to_csv(args.out, index=False)
     print(f'[saved] {args.out} ({len(out)} rows)')
-    cols = ['setting', 'row', 'auroc_mean', 'auroc_sd', 'auprc_mean', 'auprc_sd',
-            'acc_mean', 'acc_sd', 'f1_macro_mean', 'f1_macro_sd',
-            'brier_mean', 'brier_sd', 'nll_mean', 'nll_sd',
-            'ece_mean', 'ece_sd', 'hce_mean', 'hce_sd',
-            'hce_coverage_mean', 'hce_count', 'n']
-    pd.set_option('display.width', 260)
+
+    pd.DataFrame(detail_rows).to_csv(detail_csv, index=False)
+    print(f'[saved] {detail_csv} ({len(detail_rows)} per-seed rows)')
+
+    if paired_rows:
+        pd.DataFrame(paired_rows).to_csv(paired_csv, index=False)
+        print(f'[saved] {paired_csv} ({len(paired_rows)} paired rows)')
+        print('\n[P0-5-PAIRED] native vs TempScale (paired t over seeds)')
+        for r in paired_rows:
+            print(f'  {r["setting"]:6s} {r["method"]:22s} {r["metric"]:6s} '
+                  f'native {r["native_mean"]:.4f} -> TS {r["ts_mean"]:.4f} '
+                  f'diff {r["diff"]:+.4f} p={r["p_paired_t"]:.3f}')
+    cols = ['setting', 'row', 'auroc_mean', 'auroc_sd', 'auroc_ci95_low', 'auroc_ci95_high',
+            'auprc_mean', 'auprc_sd', 'f1_macro_mean', 'f1_macro_sd',
+            'brier_mean', 'brier_sd', 'brier_ci95_low', 'brier_ci95_high',
+            'nll_mean', 'nll_sd', 'nll_ci95_low', 'nll_ci95_high',
+            'intercept_mean', 'intercept_sd', 'slope_mean', 'slope_sd',
+            'ece_mean', 'ece_sd', 'ece_ci95_low', 'ece_ci95_high',
+            'hce_mean', 'hce_sd', 'hce_err', 'hce_count', 'hce_cov_pooled', 'n']
+    pd.set_option('display.width', 300)
     print(out[cols].round(4).to_string(index=False))
 
-    # ================= P0-2 strict verdict (on per-seed means) =================
     print('\n[P0-2-STRICT-VERDICT] per (setting, method) against no-skill p=0.5')
     for _, r in out.iterrows():
         if r.get('row') not in args.methods:
@@ -258,7 +315,6 @@ def main():
               f'| proper-score: {"PASS" if pass_proper else "FAIL"} | discrimination: '
               f'{"PASS" if pass_disc else "FAIL"} | verdict: {verdict}')
 
-    # ============ 1:1 positive-negative pairing integrity ============
     print('\n[P0-2-BALANCE] 1:1 positive:negative pairing check per (setting, method)')
     for s in test_settings:
         sub = df[df['setting'] == s]
@@ -272,7 +328,6 @@ def main():
             flag = 'OK' if abs(ratio - 1.0) < 0.05 else 'WARNING'
             print(f'  {s:6s} {m:22s} pos={pos} neg={neg} ratio={ratio:.4f} [{flag}]')
 
-    # ============ per-seed temperature summary ============
     for m in args.methods:
         Ts = list(seed_Ts[m].values())
         if Ts:

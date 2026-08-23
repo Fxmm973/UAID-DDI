@@ -1,26 +1,10 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""EviDDIE 消融训练 v4 (2026-08-16)：冻结当前五种子 KG 版骨干，只训练比较器变体头。
-
-与主训练协议完全一致（P0-1/P0-2 要求）：
-  - 骨干 = 当前 EviDDIE 五种子 checkpoint 的 KG 邻居编码器 + MVN_DDI + SRAE + G_m，
-    全部冻结；每 seed 加载自己的 checkpoint
-  - 前向与主训练器相同：KG 邻居上下文 -> SRAE -> |proto - z_q| -> head
-  - 变体只替换比较器：softmax（CE）、w/o EVI（MSE 无 KL 正则）、w/o BSA
-    （linear_proj 替代 G_m 生成原型）；full_evi = 主训练原生 EDL 头，不重训
-  - dev 评估用与主训练器相同的固定 dev manifest（零样本口径，无推理噪声）
-  - 保存 per-seed：models/<prefix>_seed<seed>/fc_<variant>.pt（导出脚本按此加载）
-
-用法（每个窗口一个 seed，与五种子窗口模式相同）：
-  python eviddie_train_ablation.py --train_seed 19940419 --prefix eviddie_new_s1 \
-      --max_iter 5000 --variants softmax,evi_no_evi,wo_BSA
-"""
 import json
 import logging
 import os
 import sys
 
-# 允许从任意目录启动：把仓库根目录加入 sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 
 import numpy as np
@@ -52,8 +36,6 @@ def compute_metrics(probas, targets):
 
 
 class AblationTrainer:
-    """复用主 Trainer 的完整初始化（KG connections、固定 dev manifest、语义噪声、
-    数据加载、G_m），在其上冻结骨干、只训练比较器变体头。"""
 
     def __init__(self, args, train_seed, prefix):
         args.seed = train_seed
@@ -64,12 +46,10 @@ class AblationTrainer:
         self.train_seed = train_seed
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # 复用主训练器的完整初始化（不加载 checkpoint，与主训练相同的数据/协议）
         self.t = Trainer(args)
         self.matcher = self.t.matcher
         self.G_m = self.t.G_m
 
-        # ---- 加载五种子 checkpoint：matcher（含 KG + fc）+ G_m ----
         matcher_path = f'{args.save_path}bestmodel'
         g_path = f'{args.save_path}bestmodel_G'
         if not os.path.exists(matcher_path) or not os.path.exists(g_path):
@@ -79,14 +59,12 @@ class AblationTrainer:
         ckpt = torch.load(matcher_path, map_location=self.device)
         self.matcher.load_state_dict(ckpt, strict=False)
         gm = torch.load(g_path, map_location=self.device)
-        # 主训练器保存的是整个 Generate_Model 对象；兼容两种格式
         if isinstance(gm, dict):
             self.G_m.load_state_dict(gm)
         else:
             self.G_m.load_state_dict(gm.state_dict())
         logging.info(f'Loaded matcher ({len(ckpt)} keys) + G_m from {args.save_path}')
 
-        # ---- 冻结全部骨干，只放开 fc ----
         for p in self.matcher.parameters():
             p.requires_grad = False
         for p in self.matcher.fc.parameters():
@@ -96,7 +74,6 @@ class AblationTrainer:
         self.matcher.eval()
         self.G_m.eval()
 
-        # w/o BSA 的线性原型投影（可训练）
         self.linear_proj = nn.Linear(self.t.task_ebmedding.shape[1], 64).to(self.device)
 
     def reset_head(self):
@@ -106,7 +83,6 @@ class AblationTrainer:
         self.linear_proj.reset_parameters()
 
     def _kg_encode(self, qb_data, left_ids, right_ids):
-        """与主训练器 train_standard 相同的 KG 前向。"""
         ql_, qr_ = self.matcher.model(qb_data)
         q_meta = self.t.get_meta(left_ids, right_ids)
         ql = self.matcher.neighbor_encoder(q_meta[0], q_meta[1], ql_, qr_ - ql_)
@@ -118,8 +94,8 @@ class AblationTrainer:
     def _proto(self, task_name, use_bsa):
         sem = self.t.task_ebmedding[self.t.task2id[task_name]].unsqueeze(0)
         if use_bsa:
-            return self.G_m(sem).detach()      # backbone generator is frozen
-        return self.linear_proj(sem)           # trainable w/o BSA projection (gradient must flow)
+            return self.G_m(sem).detach()
+        return self.linear_proj(sem)
 
     def train_variant(self, variant_name, csv_writer, max_iter):
         use_bsa = (variant_name != 'wo_BSA')
@@ -159,7 +135,6 @@ class AblationTrainer:
                 loss = F.mse_loss(al_q[:, 1] / al_q.sum(1), torch.ones_like(al_q[:, 1])) + \
                        F.mse_loss(al_f[:, 1] / al_f.sum(1), torch.zeros_like(al_f[:, 1]))
             elif variant_name == 'evi_full':
-                # 完整 EDL 头：MSE + 退火 KL（与主训练器 EvidentialLoss 一致）
                 if not hasattr(self, 'edl_loss_fn'):
                     self.edl_loss_fn = EvidentialLoss(annealing_step=500)
                 al_q = F.softplus(q_out) + 1
@@ -190,7 +165,6 @@ class AblationTrainer:
             if step >= max_iter:
                 break
 
-        # per-seed 保存（独立目录：主训练器已占用 models/<prefix>_seed<seed> 裸名文件）
         save_dir = f'models/ablation_{self.prefix}_seed{self.train_seed}'
         os.makedirs(save_dir, exist_ok=True)
         torch.save(self.matcher.fc.state_dict(), os.path.join(save_dir, f'fc_{variant_name}.pt'))
@@ -199,7 +173,6 @@ class AblationTrainer:
         logging.info(f'Saved {variant_name} -> {save_dir}')
 
     def _eval_dev(self, variant_name, use_bsa):
-        """固定 dev manifest 零样本评估（与主训练器 _predict_fixed_rows 相同口径）。"""
         rel2id = json.load(open(self.t.dataset + '/relation2ids'))
         rows_by_event = {}
         for (evt, head, rel, tail, lab) in self.t.dev_rows:
@@ -251,7 +224,6 @@ if __name__ == '__main__':
     csv_path = f'results/ablation_curves_{prefix}_seed{train_seed}.csv'
     header = ['variant', 'iter', 'train_loss', 'dev_auroc', 'dev_f1', 'dev_acc']
 
-    # 保留已有行（部分变体重跑时不覆盖历史结果）
     existing_rows = []
     if os.path.exists(csv_path):
         with open(csv_path, newline='', encoding='utf-8') as rf:

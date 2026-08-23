@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Drug Overlap Audit: quantifies how many test-set drugs appear in the training set.
-This determines whether the evaluation setting is:
-  - "unseen-event generalization" (drugs overlap but event types are new)
-  - "novel-compound generalization" (test drugs genuinely unseen during training)
-"""
 import json
 import argparse
 

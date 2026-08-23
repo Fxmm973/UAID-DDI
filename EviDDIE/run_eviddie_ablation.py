@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-run_eviddie_ablation.py - One-command EviDDIE frozen-backbone ablation.
-
-  1) verify the backbone checkpoints (pharddie_best.pt / bestmodels_G)
-  2) train the four head variants (eviddie_train_ablation.py; frozen backbone,
-     5000 iters per variant)
-  3) evaluate the three exported variants under the unified protocol
-     (eval_eviddie_ablation.py; fixed manifest seed 19940419)
-
-Usage (from the EviDDIE directory): python run_eviddie_ablation.py
-"""
 import os
 import subprocess
 import sys

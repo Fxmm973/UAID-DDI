@@ -1,18 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-P0-5 (GPT 6.2)：构建净化后的 DRKG path_graph。
-
-移除两端均为 held-out（test/test2）药物对的所有直接边（防止 ACI 邻居直接泄露
-held-out 药物对关系），保留药物到基因/蛋白/疾病等非药物对上下文边。
-
-输出：
-  - {dataset}/path_graph_train_only          净化后的图（ACI 应只读取此文件）
-  - audit/removed_heldout_edges.json        被移除的边清单
-  - audit/sanitized_graph_manifest.json     {原始边数, 保留边数, 移除边数, 两个文件的 SHA256}
-
-运行：python shared/build_sanitized_path_graph.py --dataset PharDDIE/dataset1
-"""
 import argparse
 import hashlib
 import json

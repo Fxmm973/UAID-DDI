@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Generate fixed negative-sample manifests for each split and seed.
-Output: JSON files with pre-computed negative drug IDs for every positive query triple.
-Also computes SHA256 hashes and runs event-level overlap audit.
-"""
 import json
 import hashlib
 import random
@@ -17,19 +12,12 @@ SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
 
 
 def load_indexes(dataset):
-    """Load necessary data files."""
     e1rel_e2 = json.load(open(f'{dataset}/e1rel_e2.json'))
     rel2candidates = json.load(open(f'{dataset}/rel2candidates.json'))
     return e1rel_e2, rel2candidates
 
 
 def generate_manifest(split_tasks, e1rel_e2, rel2candidates, seed, output_path):
-    """
-    Generate fixed negative samples for every positive query triple.
-    For each (d_i, e, d_j) positive:
-      - Sample d_k from C_e s.t. d_k != d_j and (d_i, d_k, e) not in known positives.
-    Store as {event: [[d_i, d_j, d_k, rel], ...]}.
-    """
     random.seed(seed)
     manifest = {}
 
@@ -48,35 +36,29 @@ def generate_manifest(split_tasks, e1rel_e2, rel2candidates, seed, output_path):
     with open(output_path, 'w') as f:
         json.dump(manifest, f, indent=2)
 
-    # SHA256 hash
     with open(output_path, 'rb') as f:
         file_hash = hashlib.sha256(f.read()).hexdigest()
     return file_hash
 
 
 def audit_overlap(manifest_path, split_tasks, split_name):
-    """
-    Audit: check that no support-query overlap and no positive-negative overlap exist.
-    """
     manifest = json.load(open(manifest_path))
     issues = []
 
     for event, neg_list in manifest.items():
         pos_pairs = set()
         for triple in split_tasks.get(event, []):
-            pos_pairs.add((triple[0], triple[2]))  # (d_i, d_j)
+            pos_pairs.add((triple[0], triple[2]))
 
         neg_pairs = set()
         for entry in neg_list:
             d_i, d_j, d_k, rel = entry
             neg_pairs.add((d_i, d_k))
 
-        # Check positive-negative overlap
         overlap = pos_pairs & neg_pairs
         if overlap:
             issues.append(f'[{split_name}] Event {event}: {len(overlap)} positive-negative overlaps')
 
-        # Check within-manifest dedup
         if len(neg_pairs) != len(neg_list):
             issues.append(f'[{split_name}] Event {event}: duplicate negatives in manifest')
 
@@ -119,16 +101,13 @@ def main():
             print(f'  {split_name}: {output_path}')
             print(f'  SHA256: {file_hash}')
 
-            # Run overlap audit
             audit_overlap(output_path, tasks, split_name)
 
-    # Save hash log
     hash_log_path = f'{manifest_dir}/manifest_hashes.json'
     with open(hash_log_path, 'w') as f:
         json.dump(hash_log, f, indent=2)
     print(f'\nHash log saved to {hash_log_path}')
 
-    # Print summary for TeX
     print(f'\n{"="*60}')
     print('SUMMARY FOR TEX:')
     print(f'Total events: dev={len(splits["dev"])}, test={len(splits["test"])}, test2={len(splits["test2"])}')

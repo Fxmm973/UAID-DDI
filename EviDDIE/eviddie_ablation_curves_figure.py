@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""EviDDIE 消融训练曲线图 (2026-08-16)：dev AUROC/F1/loss 随训练迭代的
-5-seed 均值折线 ± 标准差带。3 个变体头（softmax / w/o EVI / w/o BSA），
-frozen 骨干，仅验证集口径。"""
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -16,9 +13,9 @@ VARIANTS = ['softmax', 'evi_no_evi', 'wo_BSA', 'evi_full']
 VARIANT_LABELS = {'softmax': 'Softmax baseline', 'evi_no_evi': 'EviDDIE w/o EVI',
                   'wo_BSA': 'EviDDIE w/o BSA', 'evi_full': 'EviDDIE (EDL head retrained)'}
 COLORS = {'softmax': '#999999', 'evi_no_evi': '#2196F3', 'wo_BSA': '#FF9800',
-          'evi_full': '#7B1FA2'}   # 紫色（EDL 头重训）
-COLORS_full = '#D32F2F'      # 生产 checkpoint 参考线（红）
-LINESTYLE_FULL = (0, (4, 2))  # 长虚线
+          'evi_full': '#7B1FA2'}
+COLORS_full = '#D32F2F'
+LINESTYLE_FULL = (0, (4, 2))
 OUT_PNG = 'EviDDIE_Ablation_Curves.png'
 
 
@@ -37,14 +34,12 @@ def main():
     print(f'Loaded {len(df)} rows: {sorted(df.variant.unique())} '
           f'x seeds {sorted(df.train_seed.unique())}')
 
-    # 每 (variant, iter) 聚合 5 种子 mean±std
     agg = df.groupby(['variant', 'iter']).agg(
         au_mean=('dev_auroc', 'mean'), au_std=('dev_auroc', 'std'),
         f1_mean=('dev_f1', 'mean'), f1_std=('dev_f1', 'std'),
         loss_mean=('train_loss', 'mean'),
     ).reset_index()
 
-    # 只画 AUROC 和 F1：不同变体的损失函数不可比（CE vs MSE vs EDL）
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
     panels = [('au', 'dev_auroc', 'Dev AUROC'),
               ('f1', 'dev_f1', 'Dev F1')]
@@ -58,8 +53,6 @@ def main():
             ax.fill_between(g['iter'], y - sd, y + sd,
                             color=COLORS[v], alpha=0.15)
 
-        # 生产 checkpoint（骨干+头联合训练的完整模型）：冻结不重训 →
-        # 水平参考线 + 标准差带（同一内部 dev 口径）
         if key in ('au', 'f1'):
             full = pd.read_csv('results/full_evi_dev_internal.csv')
             col = 'dev_auroc' if key == 'au' else 'dev_f1'
@@ -83,7 +76,6 @@ def main():
     plt.savefig(OUT_PNG, dpi=200, bbox_inches='tight', facecolor='white')
     print(f'Saved -> {OUT_PNG}')
 
-    # 终值摘要（step=5000 处的 dev 指标，5种子 mean±std）
     print('\n===== Final dev (step=5000, 5-seed mean±std) =====')
     final = agg[agg.iter == 5000]
     for v in VARIANTS:

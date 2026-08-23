@@ -1,12 +1,5 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""
-快速训练 w/o uncertainty 变体：
-冻结 PharDDIE 的分子编码器 + 邻居编码器，
-只训练一个新的 fc 头（无 VAE），用邻居嵌入直接做距离分类。
-
-训练时间：每个 shot 约 2-5 分钟（1000 iterations × 快速收敛）
-"""
 import torch.nn as nn, torch.nn.functional as F
 from collections import deque
 from torch import optim
@@ -31,12 +24,10 @@ class Trainer(object):
         self.meta = not self.no_meta
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # 加载符号表
         self.load_embed()
         self.num_symbols = len(self.symbol2id.keys()) - 1
         self.pad_id = self.num_symbols
 
-        # 加载预训练 PharDDIE（完整模型）
         self.matcher = EmbedMatcher(
             self.embed_dim, self.num_symbols,
             use_pretrain=True, embed=self.symbol2vec,
@@ -44,9 +35,7 @@ class Trainer(object):
             finetune=self.fine_tune, aggregate=self.aggregate
         ).to(self.device)
 
-        # 加载预训练权重
         ckpt = torch.load(arg.pretrained_model, map_location=self.device)
-        # 移除不兼容的键
         for k in list(ckpt.keys()):
             if any(x in k for x in ['support_encoder.proj', 'support_encoder.layer_norm',
                                      'query_encoder.process', 'fc_struc_net']):
@@ -54,12 +43,9 @@ class Trainer(object):
         load_state_dict_safe(self.matcher, ckpt, model_name='matcher')
         logging.info(f'Loaded pretrained model from {arg.pretrained_model}')
 
-        # 冻结所有参数
         for p in self.matcher.parameters():
             p.requires_grad = False
 
-        # ---- 新建 w/o uncertainty 头 ----
-        # 邻居嵌入维度: embed_dim*2 = 256
         neighbor_dim = self.embed_dim * 2
         self.fc_direct = nn.Sequential(
             nn.Linear(neighbor_dim, 128),
@@ -73,7 +59,6 @@ class Trainer(object):
         self.batch_nums = 0
         self.optim = optim.Adam(self.fc_direct.parameters(), lr=0.001, weight_decay=0.0)
 
-        # 数据
         self.ent2id = json.load(open(self.dataset + '/ent2ids'))
         self.num_ents = len(self.ent2id.keys())
         self.build_connection(max_=self.max_neighbor)
@@ -112,7 +97,7 @@ class Trainer(object):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list)
         self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图
+        with open(self.dataset + '/path_graph_train_only') as f:
             for line in tqdm(f.readlines(), desc='Building connections'):
                 e1, rel, e2 = line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel], self.symbol2id[e2]))
@@ -134,12 +119,11 @@ class Trainer(object):
         return (lc, ld, rc, rd)
 
     def get_neighbor_embedding(self, pairs, meta):
-        """获取邻居嵌入（无 VAE）"""
         lc, ld, rc, rd = meta
         ql_, qr_ = self.matcher.model(pairs)
         ql = self.matcher.neighbor_encoder(lc, ld, ql_, qr_ - ql_)
         qr = self.matcher.neighbor_encoder(rc, rd, qr_, qr_ - ql_)
-        return torch.cat((ql, qr), dim=-1)  # [batch, 256]
+        return torch.cat((ql, qr), dim=-1)
 
     def train_quick(self):
         logging.info(f'Training w/o uncertainty head for {self.max_batches} iterations...')
@@ -163,7 +147,6 @@ class Trainer(object):
                 q_emb = self.get_neighbor_embedding(qb, q_meta)
                 f_emb = self.get_neighbor_embedding(fb, f_meta)
 
-            # 距离计算（无 VAE）
             s_mean = s_emb.mean(dim=0, keepdim=True)
             q_scores = self.fc_direct(torch.abs(s_mean.expand_as(q_emb) - q_emb))
             f_scores = self.fc_direct(torch.abs(s_mean.expand_as(f_emb) - f_emb))
@@ -182,25 +165,23 @@ class Trainer(object):
             if self.batch_nums >= self.max_batches:
                 break
 
-        # 保存
         os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
         torch.save(self.fc_direct.state_dict(), self.save_path)
         logging.info(f'Saved w/o uncertainty head to {self.save_path}')
 
 if __name__ == '__main__':
     args = read_options()
-    args.max_batches = 5000  # 快速训练
+    args.max_batches = 5000
     args.batch_size = 256
     args.train_few = args.few
     args.dataset = 'dataset1'
 
-    # 3 shots × 各自的预训练模型
     for few in [1, 5, 10]:
         args.few = few
         args.train_few = few
         args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str/bestmodel'
         args.save_path = f'models/dataset1/models_wo_uncertainty_{few}shot/bestmodel'
-        args.seed = 2024  # 单 seed 快速训练
+        args.seed = 2024
 
         random.seed(args.seed)
         np.random.seed(args.seed)

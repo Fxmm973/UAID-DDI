@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-"""诊断：per-seed 检查点 -> 当前 matcher 的键匹配 + 前向输出"""
 import logging, sys, os
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.abspath(__file__))))
@@ -21,18 +20,15 @@ args.g_model_path = 'models/dataset1/eviddie_0shot_seed19940419/bestmodel_G'
 
 ex = ExportVariants(args)
 print('matcher.fc.5.weight shape:', tuple(ex.matcher.fc[0].weight.shape) if hasattr(ex.matcher.fc, '__getitem__') else '?')
-# fc 是 Sequential: fc.5.weight
 w = ex.matcher.fc.state_dict().get('5.weight')
 b = ex.matcher.fc.state_dict().get('5.bias')
 print('loaded fc.5.weight mean_abs:', float(w.float().abs().mean()) if w is not None else None)
 print('loaded fc.5.bias:', b.tolist() if b is not None else None)
 
-# G_m 输出
 v = ex.task_ebmedding[ex.task2id[list(ex.task2id.keys())[0]]]
 g = ex.G_m(v)
 print('G_m output shape:', tuple(g.shape), 'norm:', float(g.norm()), 'abs_mean:', float(g.abs().mean()))
 
-# 模型+VAE 输出（取一个真实 batch）
 import json
 from eviddie_dataloader import DrugDataset, DrugDataLoader
 rel2id = json.load(open('dataset1/relation2ids'))

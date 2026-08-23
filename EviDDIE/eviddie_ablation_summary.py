@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""EviDDIE 消融汇总 (2026-08-16)：从新预测 CSV 计算 4 变体 × 3 settings 的
-5-seed AUROC/F1/ACC/AUPR 均值±标准差，打印汇总表并画 2×2 对比图。"""
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -45,7 +43,6 @@ def main():
           f'| train_seeds: {sorted(df.train_seed.unique())} '
           f'| settings: {sorted(df.setting.unique())}')
 
-    # (setting, method) -> aggregated metrics
     results = {}
     rows = []
     for setting in SETTING_ORDER:
@@ -73,7 +70,6 @@ def main():
     summary.to_csv(OUT_CSV, index=False)
     print(f'\nSaved summary -> {OUT_CSV}')
 
-    # ---- 汇总表（4 指标）----
     for k, label in [('auroc', 'AUROC'), ('f1', 'F1'), ('acc', 'ACC'), ('aupr', 'AUPR')]:
         print(f'\n===== {label} (5-seed mean±std) =====')
         print(f'{"method":<22} {"common":<16} {"fewer":<16} {"rare":<16}')
@@ -84,7 +80,6 @@ def main():
                 cells.append(f'{r[k]:.4f}±{r[k+"_std"]:.4f}')
             print(f'{method:<22} {cells[0]:<16} {cells[1]:<16} {cells[2]:<16}')
 
-    # ---- 图：2×2 面板 (AUROC / F1 / ACC / AUPR) ----
     fig, axes = plt.subplots(2, 2, figsize=(13, 10))
     x = range(len(SETTING_ORDER))
 

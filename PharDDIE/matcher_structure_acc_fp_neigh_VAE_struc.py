@@ -48,9 +48,6 @@ class CustomDropout(nn.Module):
         return self.dropout(input)
 
 class GlobalAttentionPool(nn.Module):
-    '''
-    This is the topology-aware global pooling mentioned in the paper.
-    '''
     def __init__(self, hidden_dim):
         super().__init__()
         self.conv = GraphConv(hidden_dim, 1)
@@ -71,12 +68,6 @@ class RelationRepresentation(nn.Module):
                                                   with_pos=True)
 
     def forward(self, support,query=None):
-        """
-        forward
-        :param left: [batch, dim]
-        :param right: [batch, dim]
-        :return: [batch, dim]
-        """
 
         relation = self.RelationEncoder(support,query)
         return relation
@@ -95,18 +86,9 @@ class TransformerEncoder(nn.Module):
         self.rel_embed = nn.Parameter(torch.rand(1, model_dim), requires_grad=True)
 
     def repeat_dim(self, emb):
-        """
-        :param emb: [batch, t, dim]
-        :return:
-        """
         return emb.repeat(1, 1, self.num_heads)
 
     def forward(self, support,query=None):
-        """
-        :param left: [batch, dim]
-        :param right: [batch, dim]
-        :return:
-        """
         batch_size = 1
         if query==None:
             seq = torch.cat((self.rel_embed, support), dim=0)
@@ -149,26 +131,15 @@ class PositionalEncoding(nn.Module):
         self.position_encoding.weight = nn.Parameter(position_encoding, requires_grad=False)
 
     def forward(self, batch_len, seq_len):
-        """
-        :param batch_len: scalar
-        :param seq_len: scalar
-        :return: [batch, time, dim]
-        """
         input_pos = torch.tensor([[1]+[2]*(seq_len-1) for _ in range(batch_len)]).cuda()
         return self.position_encoding(input_pos)
 
 class GELU(nn.Module):
-    """
-    This is a smoother version of the RELU.
-    Original paper: https://arxiv.org/abs/1606.08415
-    """
 
     def forward(self, x):
         return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
 
 class ScaledDotProductAttention2(nn.Module):
-    """ Scaled Dot-Product Attention
-    """
 
     def __init__(self, attn_dropout=0.0):
         super(ScaledDotProductAttention2, self).__init__()
@@ -176,14 +147,6 @@ class ScaledDotProductAttention2(nn.Module):
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, q, k, v, scale=None, attn_mask=None):
-        """
-        :param attn_mask: [batch, time]
-        :param scale:
-        :param q: [batch, time, dim]
-        :param k: [batch, time, dim]
-        :param v: [batch, time, dim]
-        :return:
-        """
         attn = torch.bmm(q, k.transpose(1, 2))
         if scale:
             attn = attn * scale
@@ -195,7 +158,6 @@ class ScaledDotProductAttention2(nn.Module):
         return output, attn
 
 class MultiHeadAttention2(nn.Module):
-    """ Implement without batch dim"""
 
     def __init__(self, model_dim, num_heads=8, dropout=0.0):
         super(MultiHeadAttention2, self).__init__()
@@ -213,14 +175,6 @@ class MultiHeadAttention2(nn.Module):
         self.layer_norm = nn.LayerNorm(model_dim)
 
     def forward(self, query, key, value, attn_mask=None):
-        """
-        To be efficient, multi- attention is cal-ed in a matrix totally
-        :param attn_mask:
-        :param query: [batch, time, per_dim * num_heads]
-        :param key:
-        :param value:
-        :return: [b, t, d*h]
-        """
         residual = query
         batch_size = key.size(0)
 
@@ -254,11 +208,6 @@ class PositionalWiseFeedForward(nn.Module):
         self.gelu = GELU()
 
     def forward(self, x):
-        """
-
-        :param x: [b, t, d*h]
-        :return:
-        """
         output = x.transpose(1, 2)
         output = self.w2(self.gelu(self.w1(output)))
         output = self.dropout(output.transpose(1, 2))
@@ -267,7 +216,6 @@ class PositionalWiseFeedForward(nn.Module):
 
 class EncoderLayer2(nn.Module):
     def __init__(self, model_dim=512, num_heads=8, ffn_dim=2048, dropout=0.0):
-        # ffn_dim
         super(EncoderLayer2, self).__init__()
         self.attention = MultiHeadAttention2(model_dim, num_heads, dropout)
         self.feed_forward = PositionalWiseFeedForward(model_dim, ffn_dim, dropout)
@@ -381,14 +329,6 @@ class AttentionSelectContext(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def intra_attention(self, head, rel, tail, mask):
-        """
-
-        :param head: [b, dim]
-        :param rel: [b, max, dim]
-        :param tail:
-        :param mask:
-        :return:
-        """
         head = head.unsqueeze(1).repeat(1, rel.size(1), 1)
         score = self.Bilinear(head, rel).squeeze(2)
 
@@ -399,13 +339,6 @@ class AttentionSelectContext(nn.Module):
         return head
 
     def forward(self, left, right, mask_left=None, mask_right=None):
-        """
-        :param left: (head, rel, tail)
-        :param right:
-        :param mask_right:
-        :param mask_left:
-        :return:
-        """
         head_left, rel_left, tail_left = left
         head_right, rel_right, tail_right = right
 
@@ -426,10 +359,6 @@ class AttentionSelectContext(nn.Module):
 
 
 class VAE(nn.Module):
-    '''
-    Input data:
-        Shape = (batch, 120, 35)
-    '''
 
     def __init__(self,emb_dim):
         super(VAE, self).__init__()
@@ -447,33 +376,6 @@ class VAE(nn.Module):
         self.softmax = nn.Softmax()
 
     def encode(self, x):
-        '''
-        :param x:
-        :return:
-        Example
-        import numpy
-        import torch.nn as nn
-        import torch.nn.functional as F
-        import torch
-
-        batch_size = 64
-        x = torch.rand(batch_size, 120, 35)
-
-        # Convolutional layer
-        x = F.relu(nn.Conv1d(120, 9, kernel_size=9)(x))      # x.shape=torch.Size([64, 9, 27])
-        x = F.relu(nn.Conv1d(9, 9, kernel_size=9)(x))        # x.shape=torch.Size([64, 9, 19])
-        x = F.relu(nn.Conv1d(9, 10, kernel_size=11)(x))      # x.shape=torch.Size([64, 10, 9])
-
-        # fatten 2 last dimensions but keep the batch_size
-        x = x.view(x.size(0), -1)                            # x.shape=torch.Size([64, 90])
-
-        # Fully connected layer
-        x = F.selu(nn.Linear(90, 435)(x))                    # x.shape=torch.Size([64, 435])
-
-        # Get z_mean and z_logvar (log-variance)
-        z_mean = nn.Linear(435, 292)(x)                      # x.shape=torch.Size([64, 292])
-        z_logvar = nn.Linear(435, 292)(x)                    # x.shape=torch.Size([64, 292])
-        '''
         x = self.relu(self.conv_1(x))
         x = self.relu(self.conv_2(x))
         x = self.relu(self.conv_3(x))
@@ -482,24 +384,7 @@ class VAE(nn.Module):
         return self.fc_1(x), self.fc_2(x)
 
     def sampling(self, z_mean, z_logvar,is_support,is_eval):
-        '''
-        It is a parameterization trick to sample to get latent variable Z
-        :param z_mean: an output tensor of a standard fully connected layer from encoder (rf. encode() function)
-        :param z_logvar: an output tensor of a standard fully connected layer from encoder (rf. encode() function)
-        :return: z (latent variable)
-            z = z_mean + std * epsilon
-
-        Note. torch.randn_like(input): Returns a tensor with the same size as input that
-              is filled with random numbers from a normal distribution with mean 0 and
-              variance 1. Therefore, input here is just to get shape.
-
-        Example: continue with example in encode() method. Note: 64 is batch_size
-        std = torch.exp(0.5 * z_logvar)               # std.shape=torch.Size([64, 292])
-        epsilon = 1e-2 * torch.randn_like(input=std)  # epsilon.shape=torch.Size([64, 292])
-        z = z_mean + std * epsilon                    # z.shape=torch.Size([64, 292])
-        '''
         std = torch.exp(0.5 * z_logvar)
-        # is_eval = False
         if is_eval:
             epsilon = 1e-3 * torch.ones_like(input=std)
         else:
@@ -510,26 +395,6 @@ class VAE(nn.Module):
         return z_mean + std * epsilon
 
     def decode(self, z):
-        '''
-        :param z:
-        :return:
-
-        Example: continue with example in sampling() method
-        z = F.selu(nn.Linear(292, 292)(z))                      # z.shape=torch.Size([64, 292])
-        z = z.view(z.size(0), 1, z.size(-1)).repeat(1, 120, 1)  # z.shape=torch.Size([64, 120, 292])
-        output, h_n = nn.GRU(292, 501,
-                             num_layers=3,
-                             batch_first=True)(z)               # output.shape=torch.Size([64, 120, 501])
-                                                                # h_n.shape=torch.Size([3, 64, 501])
-        out_reshape = output.contiguous()
-                            .view(-1, output.size(-1))          # out_reshape=torch.Size([7680, 501]) # 7680=64*120
-
-        y_out = nn.Linear(501, 35)(out_reshape)                 # y_out.shape=torch.Size([7680, 35])
-        y_out = F.softmax(y_out, dim=1)                         # y_out.shape=torch.Size([7680, 35])
-                                                                # dim=1 -> sum to 1 to every row
-        y = y_out.contiguous()
-                 .view(output.size(0), -1, y_out.size(-1))      # y.shape=torch.Size([64, 120, 35])
-        '''
         z = F.selu(self.fc_3(z))
         y_out = self.fc_4(z)
         y = y_out
@@ -543,9 +408,6 @@ class VAE(nn.Module):
 
 
 class EmbedMatcher(nn.Module):
-    """
-    Matching metric based on KB Embeddings
-    """
     def __init__(self, embed_dim, num_symbols, use_pretrain=True, embed=None, dropout=0.2, batch_size=64, finetune=False, aggregate='max'):
         super(EmbedMatcher, self).__init__()
         self.embed_dim = embed_dim
@@ -615,13 +477,13 @@ class EmbedMatcher(nn.Module):
                                  [2, 2], 64, 0.0)
 
         self.fc = nn.Sequential(
-            nn.Linear(64, 128),  #
+            nn.Linear(64, 128),
             nn.ReLU(),
             CustomDropout(dropout),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, 1)
-        )#
+        )
 
 
         self.NeighborAggregator = AttentionSelectContext(dim=kge_dim, dropout=0.0)
@@ -633,7 +495,7 @@ class EmbedMatcher(nn.Module):
             CustomDropout(dropout),
             nn.LayerNorm(128),
             nn.Linear(128, 128)
-        )#
+        )
 
         self.Bilinear = nn.Bilinear(embed_dim, embed_dim, 1, bias=False)
         self.Linear_self = nn.Linear(embed_dim, embed_dim, bias=False)
@@ -655,19 +517,14 @@ class EmbedMatcher(nn.Module):
         self.vaemodel = VAE(emb_dim=embed_dim*2)
 
 
-
     def neighbor_encoder(self, connections, num_neighbors, self_feature,weak_rel):
-        '''
-        connections: (batch, 200, 2)
-        num_neighbors: (batch,)
-        '''
         num_neighbors = num_neighbors.unsqueeze(1)
         relations = connections[:,:,0].squeeze(-1)
         entities = connections[:,:,1].squeeze(-1)
-        rel_embeds = self.dropout(self.symbol_emb(relations)) # (batch, 200, embed_dim)
-        ent_embeds = self.dropout(self.symbol_emb(entities)) # (batch, 200, embed_dim)
+        rel_embeds = self.dropout(self.symbol_emb(relations))
+        ent_embeds = self.dropout(self.symbol_emb(entities))
 
-        concat_embeds = torch.cat((rel_embeds, ent_embeds), dim=-1) # (batch, 200, 2*embed_dim)
+        concat_embeds = torch.cat((rel_embeds, ent_embeds), dim=-1)
 
         out = self.gcn_w(concat_embeds)
 
@@ -688,11 +545,6 @@ class EmbedMatcher(nn.Module):
         return mse_loss + kl_loss
 
     def forward(self, query, support, query_meta=None, support_meta=None, query_batch=None, support_batch=None,optim_VAE=None,is_eval=False):
-        '''
-        query: (batch_size, 2)
-        support: (few, 2)
-        return: (batch_size, )
-        '''
 
         query_left_connections, query_left_degrees, query_right_connections, query_right_degrees = query_meta
         support_left_connections, support_left_degrees, support_right_connections, support_right_degrees = support_meta
@@ -703,8 +555,8 @@ class EmbedMatcher(nn.Module):
         support_left = self.neighbor_encoder(support_left_connections, support_left_degrees,support_left_,support_right_-support_left_)
         support_right = self.neighbor_encoder(support_right_connections, support_right_degrees,support_right_,support_right_-support_left_)
 
-        query_neighbor = torch.cat((query_left, query_right), dim=-1) # tanh
-        support_neighbor = torch.cat((support_left, support_right), dim=-1) #
+        query_neighbor = torch.cat((query_left, query_right), dim=-1)
+        support_neighbor = torch.cat((support_left, support_right), dim=-1)
         support = support_neighbor
         query = query_neighbor
 
@@ -723,14 +575,12 @@ class EmbedMatcher(nn.Module):
         support_left = self.neighbor_encoder(support_left_connections, support_left_degrees)
         support_right = self.neighbor_encoder(support_right_connections, support_right_degrees)
 
-        query = torch.cat((query_left, query_right), dim=-1) # tanh
-        support = torch.cat((support_left, support_right), dim=-1) # tanh
+        query = torch.cat((query_left, query_right), dim=-1)
+        support = torch.cat((support_left, support_right), dim=-1)
 
         support_expand = support.expand_as(query)
 
         distances = F.sigmoid(self.siamese(torch.abs(support_expand - query))).squeeze()
         return distances
-
-
 
 

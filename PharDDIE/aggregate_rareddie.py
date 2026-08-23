@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-aggregate_rareddie.py — 五个种子窗口跑完后，汇总 mean±std（总体标准差 ÷5，
-与论文 Table 2 转录基线的口径一致）
-用法：python aggregate_rareddie.py
-"""
 import os
 import re
 import statistics
@@ -60,12 +55,10 @@ if not missing:
         f.write(text + '\n')
     print('\n已写入 results/rareddie_unified_results.txt')
 
-    # ---- 论文 Table 2 行格式（可直接粘贴）----
     tex = []
     tex.append('')
     tex.append('===== 论文 Table 2 行格式（可直接粘贴）=====')
     for label, mode in (('fewer (test)', 'test'), ('rare (test2)', 'test2')):
-        # 1-shot 与 5-shot 六格来自同一 mode 的两次 shot 汇总
         a = rows[(1, mode)]; b = rows[(5, mode)]
         if len(a) != 5 or len(b) != 5:
             tex.append(f'{label}: 数据不全，暂不输出')

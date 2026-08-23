@@ -1,4 +1,3 @@
-# smoke test: 用 max_batches=2 覆盖 Trainer.__init__ -> build_connection -> get_meta -> matcher forward -> loss.backward
 import sys, os
 os.environ['TQDM_DISABLE'] = '1'
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -22,7 +21,6 @@ np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 
 trainer = Trainer(args)
-# train_standard 通过模块全局引用 loss_fn（用户跑脚本时 __main__ 已定义）；smoke 需手动注入
 eviddie_trainer.loss_fn = EvidentialLoss(annealing_step=10000)
 trainer.train()
 print('SMOKE OK: __init__ + build_connection + 2 training batches completed without crash')

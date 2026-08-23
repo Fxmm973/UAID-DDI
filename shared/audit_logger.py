@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Audit logger: records invocation metadata and hashes for reproducibility.
-Import this in every table-generation script to ensure consistent audit trails.
-"""
 import hashlib
 import json
 import logging
@@ -14,7 +10,6 @@ from datetime import datetime, timezone
 
 
 def get_git_commit(repo_root=None):
-    """Return current git commit hash, or 'unknown' if not in a git repo."""
     if repo_root is None:
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     try:
@@ -30,7 +25,6 @@ def get_git_commit(repo_root=None):
 
 
 def sha256_file(filepath):
-    """Return SHA256 hex digest of a file, or 'NOT_FOUND' if missing."""
     if not os.path.exists(filepath):
         return 'NOT_FOUND'
     h = hashlib.sha256()
@@ -41,7 +35,6 @@ def sha256_file(filepath):
 
 
 class AuditLogger:
-    """Context manager / helper for table-generation scripts."""
 
     def __init__(self, script_name, input_files=None, repo_root=None):
         self.script_name = script_name
@@ -104,7 +97,6 @@ class AuditLogger:
 
 
 def audit_require_csv(path, label):
-    """Load a required CSV or exit with a clear message."""
     if not os.path.exists(path):
         print(f"FATAL: {label} not found at '{path}'.")
         print("Generate it first with the corresponding export script (see README).")

@@ -1,7 +1,7 @@
 # reproduce.ps1 — UAID-DDI Full Reproduction Pipeline
 # 任何一步失败（非零退出码）立即终止整个流水线，绝不继续生成表格。
+# 各步骤在工作目录内执行（Python 脚本使用相对路径，必须在对应模型目录下运行）。
 param(
-    [switch]$SkipTraining = $false,
     [string]$GpuId = "0"
 )
 
@@ -25,11 +25,18 @@ function Write-Report {
 }
 
 function Run-Step {
-    param([string]$StepName, [string]$Command)
+    param([string]$StepName, [string]$Command, [string]$WorkingDir)
     Write-Host "=== $StepName ===" -ForegroundColor Green
+    if ($WorkingDir) {
+        Push-Location (Join-Path $RepoRoot $WorkingDir)
+    }
     Invoke-Expression $Command
-    if ($LASTEXITCODE -ne 0) {
-        Write-Report "FAIL: $StepName (exit code $LASTEXITCODE)"
+    $StepExit = $LASTEXITCODE
+    if ($WorkingDir) {
+        Pop-Location
+    }
+    if ($StepExit -ne 0) {
+        Write-Report "FAIL: $StepName (exit code $StepExit)"
         Write-Host "ABORTING: $StepName failed. Pipeline stopped." -ForegroundColor Red
         exit 1
     }
@@ -48,15 +55,14 @@ Run-Step "Step 1b: Verify EviDDIE manifests (SHA256 + entry counts)" "python sha
 Run-Step "Step 1c: Build sanitized path graph (P0-5)" "python shared/build_sanitized_path_graph.py --dataset PharDDIE/dataset1"
 Run-Step "Step 1d: Six-part leakage audit (KG hard check)" "python shared/audit_leakage.py --dataset PharDDIE/dataset1"
 
-# Step 2: 导出逐样本预测（全部直接读取固定 manifest）
-Run-Step "Step 2a: PharDDIE full export (manifest-based)" "python PharDDIE/pharddie_export_full.py"
-Run-Step "Step 2b: PharDDIE w/o uncertainty export (manifest-based)" "python PharDDIE/pharddie_export.py"
-Run-Step "Step 2c: EviDDIE zero-shot export (manifest-based)" "python EviDDIE/eviddie_export_zs_v2.py"
+# Step 2: 导出逐样本预测（全部直接读取固定 manifest；在模型目录内运行）
+Run-Step "Step 2a: PharDDIE full export (manifest-based)" "python pharddie_export_full.py" -WorkingDir "PharDDIE"
+Run-Step "Step 2b: PharDDIE w/o uncertainty export (manifest-based)" "python pharddie_export.py" -WorkingDir "PharDDIE"
+Run-Step "Step 2c: EviDDIE zero-shot export (manifest-based)" "python eviddie_export_zs_v2.py" -WorkingDir "EviDDIE"
 
-# Step 3: 论文表格
-Run-Step "Step 3a: Table 2" "python PharDDIE/pharddie_table2.py"
-Run-Step "Step 3b: Table 3" "python PharDDIE/pharddie_table3_complete.py"
-Run-Step "Step 3c: Table 4" "python PharDDIE/pharddie_table4_paper.py"
+# Step 3: 论文表格（Table 4 已随选择性预测内容从论文移除）
+Run-Step "Step 3a: Table 2" "python pharddie_table2.py" -WorkingDir "PharDDIE"
+Run-Step "Step 3b: Table 3" "python pharddie_table3_complete.py" -WorkingDir "PharDDIE"
 Run-Step "Step 3e: Audit real evaluation episodes (P0-5)" "python shared/audit_leakage.py --dataset PharDDIE/dataset1 --episode-manifests PharDDIE/results/predictions/episode_manifests"
 
 Write-Host "=== REPRODUCTION COMPLETE ===" -ForegroundColor Green

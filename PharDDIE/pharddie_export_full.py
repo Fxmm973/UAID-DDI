@@ -1,17 +1,11 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""
-导出完整 PharDDIE 模型（含 VAE/SRAE）的预测数据。
-输出逐样本的概率和 VAE 潜在空间不确定性。
-输出文件: results/predictions/predictions_dataset1_PharDDIE.csv
-"""
 import torch.nn as nn
 import csv
 import hashlib
 import sys
 import os
 
-# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 
 from torch.autograd import Variable
@@ -33,7 +27,6 @@ def do_compute_metrics(probas_pred, target):
 
 
 class ExportFull(object):
-    """导出完整 PharDDIE 模型（含 VAE）的逐样本预测和不确定性"""
 
     def __init__(self, arg):
         for k, v in vars(arg).items():
@@ -45,14 +38,12 @@ class ExportFull(object):
         self.num_symbols = len(self.symbol2id.keys()) - 1
         self.pad_id = self.num_symbols
 
-        # 完整 EmbedMatcher（含 model + neighbor_encoder + vaemodel + fc）
         self.matcher = EmbedMatcher(
             self.embed_dim, self.num_symbols, use_pretrain=True, embed=self.symbol2vec,
             dropout=self.dropout, batch_size=self.batch_size,
             finetune=self.fine_tune, aggregate=self.aggregate
         ).to(self.device)
 
-        # 加载预训练权重
         ckpt = torch.load(arg.pretrained_model, map_location=self.device)
         for k in list(ckpt.keys()):
             if any(x in k for x in ['support_encoder.proj', 'support_encoder.layer_norm',
@@ -69,7 +60,6 @@ class ExportFull(object):
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
-        # ---- 固定负样本 manifest（正式评估路径：禁止现场抽样）----
         self.neg_manifests = {}
         for split in ['dev', 'test', 'test2']:
             mp = f'{self.dataset}/neg_manifests/{split}_seed{self.eval_seed}_negatives.json'
@@ -79,7 +69,6 @@ class ExportFull(object):
             self.neg_manifests[split] = json.load(open(mp))
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
-        # P0-5 (6.1.3)：收集真实评估 episode（support/query_pos/query_neg），导出结束后存档
         self.episode_manifest = {}
 
     def load_embed(self):
@@ -106,7 +95,7 @@ class ExportFull(object):
     def build_connection(self, max_=100):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list); self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图（移除 held-out 药物对直连边）
+        with open(self.dataset + '/path_graph_train_only') as f:
             for line in tqdm(f.readlines()):
                 e1, rel, e2 = line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel], self.symbol2id[e2]))
@@ -126,32 +115,21 @@ class ExportFull(object):
         return (lc, ld, rc, rd)
 
     def encode_pairs_full(self, pairs_batch, left, right):
-        """
-        完整 PharDDIE 编码管线：
-        MVN_DDI → neighbor_encoder → concat → VAE → (latent, uncertainty)
-        返回: z_latent [B, 64], uncertainty [B]
-        """
         meta = self.get_meta(left, right)
         lc, ld, rc, rd = meta
 
-        # Step 1: 分子图编码 (MVN_DDI)
         ql_, qr_ = self.matcher.model(pairs_batch)
 
-        # Step 2: 邻居编码 (ACI — bilinear attention over DRKG)
         ql = self.matcher.neighbor_encoder(lc, ld, ql_, qr_ - ql_)
         qr = self.matcher.neighbor_encoder(rc, rd, qr_, qr_ - ql_)
 
-        # Step 3: 药物对表示
-        pair_emb = torch.cat((ql, qr), dim=-1)  # [B, 256]
+        pair_emb = torch.cat((ql, qr), dim=-1)
 
-        # Step 4: VAE 编码 (SRAE) — 获取潜在码和不确定性
         y, z_mean, z_logvar, z = self.matcher.vaemodel(pair_emb, is_support=False, is_eval=True)
 
-        # 不确定性: VAE 潜在空间逐样本平均方差
-        # var = exp(logvar), 对所有潜在维度取均值
-        uncertainty = torch.exp(z_logvar).mean(dim=-1)  # [B]
+        uncertainty = torch.exp(z_logvar).mean(dim=-1)
 
-        return z, uncertainty  # [B, 64], [B]
+        return z, uncertainty
 
     def export(self, mode, csv_writer, train_seed, eval_seed):
         symbol2id = self.symbol2id; few = self.few
@@ -172,7 +150,6 @@ class ExportFull(object):
             for query_ in test_tasks.keys():
                 if len(test_tasks[query_]) < few + 1:
                     continue
-                # ---- 支持集编码 ----
                 support_triples = test_tasks[query_][:few]
                 support_triples_rel2id = [[t[0], t[2], rel2id[t[1]]] for t in support_triples]
                 support_left = [self.ent2id[t[0]] for t in support_triples]
@@ -182,7 +159,6 @@ class ExportFull(object):
                 sbl = DrugDataLoader(sb, batch_size=len(support_triples_rel2id), shuffle=False)
                 sb_data = [t.to(self.device) for t in next(iter(sbl))]
 
-                # 支持集也用完整管线编码，获取 latent code 计算原型
                 s_meta = self.get_meta(support_left, support_right)
                 slc, sld, src, srd = s_meta
                 sl_, sr_ = self.matcher.model(sb_data)
@@ -190,9 +166,8 @@ class ExportFull(object):
                 sr = self.matcher.neighbor_encoder(src, srd, sr_, sr_ - sl_)
                 s_pair = torch.cat((sl, sr), dim=-1)
                 _, _, _, s_z = self.matcher.vaemodel(s_pair, is_support=True, is_eval=True)
-                s_proto = s_z.mean(dim=0, keepdim=True)  # [1, 64]
+                s_proto = s_z.mean(dim=0, keepdim=True)
 
-                # ---- 查询集编码：负样本直接读取固定 manifest（按 event/正样本/索引精确匹配）----
                 query_triples = test_tasks[query_][few:]
                 manifest_entries = self.neg_manifests[mode].get(query_, [])
                 expected = manifest_entries[few:]
@@ -209,7 +184,6 @@ class ExportFull(object):
                             f'positive query triple {t} at the same index.')
                     false_triples.append([t[0], t[1], d_k])
 
-                # P0-5 (6.1.3)：记录真实评估 episode
                 self.episode_manifest[f'{mode}:{query_}'] = {
                     'support': [list(x) for x in support_triples],
                     'query_positives': [list(x) for x in query_triples],
@@ -226,16 +200,13 @@ class ExportFull(object):
                 qbl = DrugDataLoader(qb, batch_size=len(all_rel2id), shuffle=False)
                 qb_data = [t.to(self.device) for t in next(iter(qbl))]
 
-                # 查询集完整管线编码
                 zq, uncertainty = self.encode_pairs_full(qb_data, q_left, q_right)
 
-                # ---- 评分 ----
                 scores = self.matcher.fc(torch.abs(s_proto.expand_as(zq) - zq))
                 probs = torch.sigmoid(scores).cpu().numpy().flatten()
                 uncs = uncertainty.cpu().numpy().flatten()
                 gt = np.concatenate([np.ones(n_pos), np.zeros(len(all_triples) - n_pos)])
 
-                # ---- 写入 CSV ----
                 for idx, (t, p, u) in enumerate(zip(all_triples, probs, uncs)):
                     csv_writer.writerow([
                         train_seed, eval_seed, setting, few, 'PharDDIE', query_,
@@ -251,18 +222,14 @@ class ExportFull(object):
 
 
 if __name__ == '__main__':
-    import hashlib  # 种子/清单 SHA256 验证
+    import hashlib
     args = read_options()
-    # ---- 训练种子（独立训练运行）vs 负样本种子（固定评估） ----
-    # 训练种子：每次从头训练产生不同模型 -> 捕捉训练不稳定性
-    # 负样本种子：固定为 19940419，使跨训练种子的比较不受负样本波动干扰
     TRAINING_SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
-    EVAL_MANIFEST_SEED = 19940419  # 固定负样本种子用于评估
-    SHOTS = [1, 5]  # 论文只报道 1/5-shot；10-shot 没有完整的 5 种子 checkpoint，不导出
+    EVAL_MANIFEST_SEED = 19940419
+    SHOTS = [1, 5]
     MODES = ['dev', 'test', 'test2']
     DATASET = 'dataset1'
 
-    # ---- 运行前核验评估 manifest 的 SHA256（与 manifest_hashes.json 比对，不一致立即终止）----
     hash_log = json.load(open(f'{DATASET}/neg_manifests/manifest_hashes.json'))
     for split in MODES:
         mf = f'{DATASET}/neg_manifests/{split}_seed{EVAL_MANIFEST_SEED}_negatives.json'
@@ -276,9 +243,24 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
     output_csv = os.path.join(output_dir, 'predictions_dataset1_PharDDIE.csv')
 
-    ckpt_records = {}  # (shot, train_seed) -> checkpoint sha256
+    ckpt_records = {}
 
-    with open(output_csv, 'w', newline='', encoding='utf-8') as f:
+    # 预检：先确认全部 per-seed checkpoint 存在并计算 SHA256，再打开输出文件，
+    # 避免 checkpoint 缺失时截断已发布的预测 CSV；输出先写临时文件，成功后原子替换。
+    for few in SHOTS:
+        for train_seed in TRAINING_SEEDS:
+            ckpt_path = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
+            if not os.path.exists(ckpt_path):
+                raise FileNotFoundError(
+                    f'Per-seed checkpoint not found: {ckpt_path}. '
+                    f'Per-seed exports must use the checkpoint of the corresponding training seed.')
+            ckpt_records[(few, train_seed)] = hashlib.sha256(
+                open(ckpt_path, 'rb').read()).hexdigest()
+            logging.info(f'[PRE-CHECK] {ckpt_path}: exists, '
+                         f'sha256 {ckpt_records[(few, train_seed)][:16]}...')
+
+    tmp_csv = output_csv + '.tmp'
+    with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['train_seed', 'eval_seed', 'setting', 'shot', 'method', 'event_type',
                      'drug_a', 'drug_b', 'y_true', 'y_pred', 'prob', 'uncertainty'])
@@ -292,18 +274,8 @@ if __name__ == '__main__':
             logging.info(f'=== TRAIN_SEED {train_seed} ===')
             for few in SHOTS:
                 args.few = few; args.train_few = few; args.dataset = DATASET
-                # 每个训练种子对应独立 checkpoint
-                # 每个训练种子必须使用对应种子训练出的独立 checkpoint；
-                # 缺失时直接报错，绝不回退到其他检查点（避免把同一模型的重复推理误记为不同种子）
                 args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str_seed{train_seed}/bestmodel'
-                if not os.path.exists(args.pretrained_model):
-                    raise FileNotFoundError(
-                        f'Per-seed checkpoint not found: {args.pretrained_model}. '
-                        f'Per-seed exports must use the checkpoint of the corresponding training seed.')
-                ckpt_records[(few, train_seed)] = hashlib.sha256(
-                    open(args.pretrained_model, 'rb').read()).hexdigest()
 
-                # 使用固定负样本种子进行确定性评估
                 eval_seed = EVAL_MANIFEST_SEED
                 random.seed(eval_seed); np.random.seed(eval_seed); torch.manual_seed(eval_seed)
                 if torch.cuda.is_available():
@@ -313,7 +285,6 @@ if __name__ == '__main__':
                 ex = ExportFull(args)
                 for mode in MODES:
                     ex.export(mode, w, train_seed, eval_seed)
-                # P0-5 (6.1.3)：保存真实评估 episode manifest
                 em_dir = 'results/predictions/episode_manifests'
                 os.makedirs(em_dir, exist_ok=True)
                 em_path = os.path.join(em_dir, f'episode_manifest_{few}shot_seed{train_seed}.json')
@@ -328,7 +299,6 @@ if __name__ == '__main__':
                 logging.info(f'[P0-5] Episode manifest saved: {em_path} '
                              f'({len(ex.episode_manifest)} episodes)')
 
-        # ---- 种子独立性验证：5 train_seed -> 5 不同 checkpoint 路径 -> 5 不同哈希 ----
         for few in SHOTS:
             hashes = [ckpt_records[(few, s)] for s in TRAINING_SEEDS]
             if len(set(hashes)) != len(hashes):
@@ -340,7 +310,8 @@ if __name__ == '__main__':
         logging.info(f'[SEED-CHAIN] Evaluation manifest seed fixed to {EVAL_MANIFEST_SEED} '
                      f'for all seeds (identical manifest hash across seeds).')
 
-    logging.info(f'Done! Saved to {output_csv}')
+    os.replace(tmp_csv, output_csv)
+    logging.info(f'Done! Saved to {output_csv} (atomic replace from {tmp_csv})')
     logging.info('NOTE: train_seed column identifies independent training runs.')
     logging.info('      eval_seed column identifies the fixed negative-sampling manifest used.')
     logging.info('      Mean +/- std across train_seeds = training variability.')

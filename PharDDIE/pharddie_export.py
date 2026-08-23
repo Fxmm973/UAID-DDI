@@ -1,15 +1,10 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""
-导出 w/o uncertainty 变体的预测数据。
-使用冻结的编码器 + 新训练的 fc_direct 头（无 VAE）。
-"""
 import torch.nn as nn
 import csv
 import sys
 import os
 
-# 允许从任意目录启动：把仓库根目录加入 sys.path（shared/ 位于仓库根）
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 
 from torch.autograd import Variable
@@ -45,7 +40,6 @@ class ExportWOUncertainty(object):
             finetune=self.fine_tune, aggregate=self.aggregate
         ).to(self.device)
 
-        # 加载预训练权重（修复维度不匹配）
         ckpt = torch.load(arg.pretrained_model, map_location=self.device)
         for k in list(ckpt.keys()):
             if any(x in k for x in ['support_encoder.proj', 'support_encoder.layer_norm',
@@ -56,7 +50,6 @@ class ExportWOUncertainty(object):
         for p in self.matcher.parameters():
             p.requires_grad = False
 
-        # 加载 fc_direct 头
         neighbor_dim = self.embed_dim * 2
         self.fc_direct = nn.Sequential(
             nn.Linear(neighbor_dim, 128), nn.ReLU(), nn.Dropout(0.2),
@@ -72,7 +65,6 @@ class ExportWOUncertainty(object):
         self.rel2candidates = json.load(open(self.dataset + '/rel2candidates.json'))
         self.e1rel_e2 = defaultdict(list)
         self.e1rel_e2 = json.load(open(self.dataset + '/e1rel_e2.json'))
-        # ---- 固定负样本 manifest（正式评估路径：禁止现场抽样）----
         self.neg_manifests = {}
         for split in ['dev', 'test', 'test2']:
             mp = f'{self.dataset}/neg_manifests/{split}_seed{self.eval_seed}_negatives.json'
@@ -105,7 +97,7 @@ class ExportWOUncertainty(object):
     def build_connection(self, max_=100):
         self.connections = (np.ones((self.num_ents, max_, 2)) * self.pad_id).astype(int)
         self.e1_rele2 = defaultdict(list); self.e1_degrees = defaultdict(int)
-        with open(self.dataset + '/path_graph_train_only') as f:  # P0-5：ACI 只读取净化图（移除 held-out 药物对直连边）
+        with open(self.dataset + '/path_graph_train_only') as f:
             for line in tqdm(f.readlines()):
                 e1, rel, e2 = line.rstrip().split('\t')
                 self.e1_rele2[e1[-7:]].append((self.symbol2id[rel], self.symbol2id[e2]))
@@ -164,7 +156,6 @@ class ExportWOUncertainty(object):
                 s_mean = s_emb.mean(dim=0, keepdim=True)
 
                 query_triples = test_tasks[query_][few:]
-                # ---- 负样本直接读取固定 manifest（按 event/正样本/索引精确匹配）----
                 manifest_entries = self.neg_manifests[mode].get(query_, [])
                 expected = manifest_entries[few:]
                 if len(expected) != len(query_triples):
@@ -196,7 +187,6 @@ class ExportWOUncertainty(object):
                 probs = torch.sigmoid(scores).cpu().numpy().flatten()
                 gt = np.concatenate([np.ones(n_pos), np.zeros(len(all_triples)-n_pos)])
 
-                # CSV
                 for idx, (t, p) in enumerate(zip(all_triples, probs)):
                     csv_writer.writerow([
                         seed, setting, few, 'w/o uncertainty', query_,
@@ -213,13 +203,11 @@ class ExportWOUncertainty(object):
 if __name__ == '__main__':
     args = read_options()
     import hashlib
-    # 评估负样本 manifest 种子：固定检查点 x 5 次负样本复现（种子与仓库 manifest 一致）
     SEEDS = [19940419, 20230801, 20240115, 20240520, 20240910]
-    SHOTS = [1, 5, 10]
+    SHOTS = [1, 5]  # 论文仅报告 1/5-shot；10-shot 模型不再要求
     MODES = ['dev', 'test', 'test2']
     DATASET = 'dataset1'
 
-    # ---- 运行前核验所有评估 manifest 的 SHA256（不一致立即终止）----
     hash_log = json.load(open(f'{DATASET}/neg_manifests/manifest_hashes.json'))
     for split in MODES:
         for seed in SEEDS:
@@ -249,10 +237,24 @@ if __name__ == '__main__':
                 args.pretrained_model = f'models/dataset1/models_drugbank_{few}shot_str/bestmodel'
                 args.fc_direct_path = f'models/dataset1/models_wo_uncertainty_{few}shot/bestmodel'
                 if not os.path.exists(args.fc_direct_path):
-                    logging.warning(f'fc_direct model not found: {args.fc_direct_path}, skipping')
-                    continue
+                    raise FileNotFoundError(
+                        f'fc_direct model not found: {args.fc_direct_path}. '
+                        f'Refusing to skip: the w/o-uncertainty export must cover all shots.')
+                if not os.path.exists(args.pretrained_model):
+                    raise FileNotFoundError(
+                        f'Base checkpoint not found: {args.pretrained_model}.')
+
+
                 ex = ExportWOUncertainty(args)
                 for mode in MODES:
                     ex.export(mode, w, seed)
 
+    # 完成后校验：CSV 必须包含数据行（5 eval seed x 2 shot x 3 分片组合都应产出），
+    # 空 CSV 视为失败，禁止以退出码 0 结束。
+    with open(output_csv, 'r', encoding='utf-8') as chk:
+        n_rows = sum(1 for _ in chk) - 1
+    if n_rows <= 0:
+        logging.error(f'Export produced an empty CSV ({output_csv}); failing the step.')
+        raise SystemExit(1)
+    logging.info(f'Validation: {n_rows} data rows written to {output_csv}.')
     logging.info(f'Done! Saved to {output_csv}')

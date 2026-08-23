@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""Safe checkpoint loading utility."""
 import logging
 import torch
 
@@ -25,9 +24,6 @@ def load_state_dict_safe(model, state_dict, strict=False,
     return missing, unexpected
 
 def convert_fc_1to2(state_dict, fc_weight_key='fc.5.weight', fc_bias_key='fc.5.bias'):
-    """DEPRECATED (P0-7): legacy 1->2 output conversion. Not equivalent to
-    real EDL training; all call sites now refuse legacy 1-output checkpoints
-    instead. Retained only for inspecting legacy checkpoints."""
     if fc_weight_key in state_dict and state_dict[fc_weight_key].shape[0] == 1:
         logging.warning('WARNING: 1->2 output conversion (NOT equivalent to real EDL training)')
         ow, ob = state_dict[fc_weight_key], state_dict[fc_bias_key]

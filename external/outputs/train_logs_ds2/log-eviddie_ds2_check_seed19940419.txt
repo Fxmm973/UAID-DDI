@@ -1,0 +1,22 @@
+2026-08-22 11:09:14 INFO: - [DS2-TRAIN] repo root: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10
+2026-08-22 11:09:14 INFO: - [DS2-TRAIN] dataset: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\EviDDIE\dataset2 | seed: 19940419 | max_batches: 2 | prefix: eviddie_ds2_check | device_id: None
+2026-08-22 11:09:14 INFO: - [DS2-TRAIN] logs: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\external\outputs\train_logs_ds2 | dev-manifest dir: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\external\outputs\train_ds2_dev_manifest
+2026-08-22 11:09:21 INFO: - [DS2-GRAPHS] dataset2 drug registry: 1258 drugs in CSV, 1258 molecule graphs built (parse-fail 0, dup 0)
+2026-08-22 11:09:21 INFO: - [DS2-GRAPHS] 244 dataset2-only drugs (not in dataset1) all present in graph dict, e.g. DB00118 (graph edge_index shape (2, 58))
+2026-08-22 11:09:21 INFO: - [DS2-MANIFEST] dev manifest present: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\external\outputs\train_ds2_dev_manifest\dev_seed19940419_negatives.json
+2026-08-22 11:09:21 INFO: - [DS2-TRAIN] save_path (relative to EviDDIE/): models/eviddie_ds2_check_seed19940419
+2026-08-22 11:09:21 INFO: - [DS2-TRAIN] device: cuda
+2026-08-22 11:09:21 INFO: - LOADING SYMBOL ID AND SYMBOL EMBEDDING
+2026-08-22 11:09:21 INFO: - LOADING PRE-TRAINED EMBEDDING
+2026-08-22 11:09:22 INFO: - [DS2-MANIFEST] dev rows (3500 positives) served from external fallback manifest (sha256=7ff2e86357b7...)
+2026-08-22 11:09:22 INFO: - [P0-4] Fixed dev manifest loaded: 7000 rows, sha256=7ff2e86357b762e6f72cf8d86bc3b035f4cf5a349a2bab7b77205749b1040fcb
+2026-08-22 11:09:22 INFO: - BUILDING CONNECTION MATRIX
+2026-08-22 11:09:22 INFO: - LOADING CANDIDATES ENTITIES
+2026-08-22 11:09:22 INFO: - [DS2-TRAIN] dev rows loaded for checkpoint selection: 3500
+2026-08-22 11:09:22 INFO: - START STANDARD TRAINING...
+2026-08-22 11:09:22 INFO: - LOADING TRAINING DATA
+2026-08-22 11:09:22 INFO: - LOADING CANDIDATES
+2026-08-22 11:09:22 INFO: - CURRENT EPOCH: 0 MAX EPOCH 2
+2026-08-22 11:09:24 INFO: - loss: 1.2436, acc: 0.5059, roc: 0.4967, f1: 0.6684, p: 0.5030, r: 0.9961, int-ap: 0.4883, ap: 0.4916
+2026-08-22 11:09:24 INFO: - [DS2-DONE] training finished; checkpoint files under EviDDIE/models/: ['models\\eviddie_ds2_check_seed19940419']
+2026-08-22 11:09:24 INFO: - [DS2-DONE] log file: D:\PharDDIE and EviDDIE\PharDDIE_github_8_10\external\outputs\train_logs_ds2\log-eviddie_ds2_check_seed19940419.txt

@@ -75,7 +75,6 @@ class MVN_DDI(nn.Module):
         return h_data_fin,t_data_fin
 
 
-
 class MVN_DDI_Block(nn.Module):
     def __init__(self, in_features, n_heads, head_out_feats, edge_feature, dp):
         super().__init__()

@@ -2,7 +2,7 @@
 
 ## Version Info
 - Last updated: 2026-08-18
-- Paper: `fyx_8_18 (1).tex` (reviewer revision addressing all P0/P1/P2 comments)
+- Paper: `fyx_8_18_ERA_polished(1).tex` (reviewer revision addressing all P0/P1/P2 comments)
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI) — all values below
   are reproduced by the scripts listed here, from the per-sample prediction CSVs shipped
   in this repository.
@@ -16,16 +16,13 @@
 | Datasets summary (Table 1) | — | Text-only table |
 | Main results 1/5-shot (Table 2) | `PharDDIE/pharddie_table2.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (+ RareDDIE re-evaluated under the unified protocol; 7 baselines transcribed from published source data) |
 | Zero-shot discrimination + calibration (Table 3) | `shared/calibration_table.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE/results/calibration_table_variants.csv`; PharDDIE rare rows from the PharDDIE CSV above |
-| Uncertainty-aware prioritization (Table 4) | `shared/rq3_triage_table.py` (Random row computed internally with the error-rate definition) | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) |
-| Selective referral, matched coverage (Table 5) | `shared/rq3_selective_referral.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot) → `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` |
-| Selective referral, fixed budgets (Table 6) | `shared/rq3_selective_referral.py` | same CSV / same output file |
 | Reliability diagram (Fig., RQ2) | `shared/calibration_table.py --fig` (equivalently `EviDDIE/eviddie_reliability_figure.py`) | same zero-shot CSV → `EviDDIE/reliability_diagram_new.png` |
 | EviDDIE head ablation, final metrics (Fig.) | `EviDDIE/eviddie_ablation_figure.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE_Ablation_Study.png` (+ `EviDDIE_Ablation_Study_4metrics.png`) |
 | EviDDIE head ablation, training dynamics (Fig.) | `EviDDIE/eviddie_ablation_curves_figure.py` | `EviDDIE/results/ablation_curves_eviddie_new_s{1..5}_seed*.csv` + `EviDDIE/results/full_evi_dev_internal.csv` → `EviDDIE_Ablation_Curves.png` |
 | Ablation significance tests (text) | `EviDDIE/eviddie_ablation_sigtest.py` | same zero-shot CSV → `EviDDIE/results/ablation_sigtest.csv` |
 | Framework schematic | — | `kuangjiatu.jpg` |
-| Proxy-channel weight selection | — | `fig_1shot_weight_selection.jpg` / `fig_5shot_weight_selection.jpg` |
-| PharDDIE component ablation | — | `1-shot-ablation.jpg` / `5-shot-ablation.jpg` (SHCR / ACI / SRAE removed) |
+| Proxy-channel weight selection (Fig.) | `PharDDIE/pharddie_weight_figure.py` | `PharDDIE/results/validation/weight_sweep.csv` → figure (archived records, pre-unified protocol) |
+| PharDDIE component ablation (Fig.) | `PharDDIE/pharddie_ablation_figure.py` | `PharDDIE/results/validation/ablation_results.csv` → figure (archived records, pre-unified protocol) |
 
 ---
 
@@ -36,8 +33,8 @@
   predictions of the five independently trained checkpoints
   (`models/dataset1/models_drugbank_{1,5}shot_str_seed{seed}/bestmodel`), evaluated
   with the fixed negative-sampling manifest (eval seed 19940419).
-- **Compute script**: `PharDDIE/pharddie_table2.py` (mean ± SD across the five training
-  seeds; refuses to run unless the CSV covers 5 seeds).
+- **Compute script**: `PharDDIE/pharddie_table2.py` (mean ± population SD, ddof = 0,
+  across the five training seeds; refuses to run unless the CSV covers 5 seeds).
 
 ### RareDDIE (re-evaluated under the unified protocol)
 - **Source**: the official RareDDIE implementation (vendored under `PharDDIE/`) was
@@ -57,6 +54,17 @@
 - Values transcribed from the published source data of the original papers; NOT
   re-trained or re-evaluated in this study. Methods: META-DDIE, GMatching, MRCGNN,
   MetaR-In, MetaR-Pre, DSN-DDI, KnowDDI.
+
+### Development-Stage Validation Records (weight sweep & PharDDIE ablation)
+- Archived records behind the paper's development-stage figures, parsed into
+  `PharDDIE/results/validation/weight_sweep.csv` and
+  `PharDDIE/results/validation/ablation_results.csv` from the authors' experiment
+  logs (药效团数据.xlsx and the `result_ph2p0_*_40k.txt` records).
+- **Protocol caveat**: these runs predate the unified five-seed fixed-manifest
+  protocol; their absolute numbers are not comparable with Tables 2/3. The
+  full-model reference used when the figures were drawn is not archived
+  together with the ablation records. Full details in
+  `PharDDIE/results/validation/provenance.md`.
 
 ### Evaluation Protocol
 - Event-level splits: train (58 events / 189,287 samples), dev (5 / 2,005),
@@ -81,6 +89,21 @@ earlier concatenation-based comparator used by pre-revision drafts.
   native, `EviDDIE w/o EVI`, `EviDDIE w/o BSA`, `Softmax baseline`); every row carries
   `checkpoint_sha256`, `eval_manifest_sha256`, `event_embedding_sha256`, and `git_commit`.
   Export entry point: `EviDDIE/eviddie_export_zs_v2.py`.
+- **Table 3 extended columns (P0-5 traceability)**. `shared/calibration_table.py` now
+  outputs, for every (setting, method) row, the per-seed detail CSVs
+  (`calibration_table_variants_detail.csv`, `calibration_table_evi_full_detail.csv`),
+  95% CIs for AUROC/Brier/NLL/ECE (`*_ci95_low/high`, t with 4 df), the linear
+  calibration intercept/slope (per-seed regression of the observed positive fraction
+  on the predicted probability within 10 equal-width bins; SD uses ddof=0 as in the
+  paper), the pooled HCE error numerator/coverage (`hce_err`, `hce_count`,
+  `hce_cov_pooled`), and native-vs-TempScale paired t p-values
+  (`calibration_table_variants_paired.csv`; the paper's rare-event EviDDIE
+  p=0.154/0.060/0.064 are rows of this file).
+- **PharDDIE rare-event rows of Table 3**: `PharDDIE/results/validation/
+  table3_pharddie_rows.csv`, generated by
+  `shared/calibration_table.py --csv PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv
+  --methods PharDDIE --settings rare --shot {1,5}`; the HCE coverage denominator is
+  the per-shot query sample count (1-shot 37.7%, 5-shot 60.3%).
 - **Compute script**: `shared/calibration_table.py` — metrics are computed **per training
   seed first**, aggregated as mean ± SD over the five seeds (P0-5); temperature scaling is
   fitted per seed on that seed's dev (common) rows and applied to its held-out rows;
@@ -135,57 +158,6 @@ earlier concatenation-based comparator used by pre-revision drafts.
   (paired $t$-tests per setting × metric: w/o BSA significant on common and fewer F1,
   w/o EVI significant on rare F1, $p<0.05$; AUROC/AUPRC differences $p>0.3$).
 - **Summary**: `EviDDIE/eviddie_ablation_summary.py` → `EviDDIE/results/ablation_summary_eviddie_new.csv`.
-
----
-
-## Uncertainty-Aware Prioritization (Triage) — Table 4
-
-- **Scripts**: `shared/rq3_triage_table.py` (main rows and the independent Random row:
-  per seed × coverage, 200 random referral repetitions, mean ± 95% CI, risk computed
-  with the classification-error-rate definition).
-- **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot).
-- Unified action semantics (automatic = {high-priority, low-priority}, referred =
-  {expert referral, deferred review}); coverage = P(u ≤ τ_u); referral rate = P(u > τ_u).
-- **Signals**: 1-shot uses $u_{\text{entropy}} = H(p)$ (a confidence-derived baseline,
-  not epistemic uncertainty); 5-shot uses $u_{\text{latent}}$ (SRAE latent dispersion).
-  Test scores are mapped through the validation empirical CDF.
-- **Summary file**: `PharDDIE/results/table4_paper.txt` (legacy generator
-  `PharDDIE/pharddie_table4_paper.py` kept for provenance).
-
----
-
-## Selective Referral, Rebuilt Per-Signal — Tables 5 & 6
-
-- **Script**: `shared/rq3_selective_referral.py` (P0-3 protocol, 2026-08-16).
-  - Signals are separate strategies, each keeping/referring candidates by its own
-    ranking: raw positive score $p$ (candidate-priority semantics), MSP = max(p, 1−p),
-    margin |p−0.5|, entropy H(p), the model's native $u$ (latent dispersion for
-    PharDDIE), and **true random referral**.
-  - MSP / margin / entropy rank-equivalence for binary classification is verified
-    numerically (Spearman $\rho = \pm 1$) and printed.
-  - Risk–coverage curves and AURC are computed **per seed first**, then aggregated as
-    mean ± SD (never pooled) — per P0-3.
-  - Error-detection AUROC/AUPRC is reported for the native $u$ signal and for MSP.
-  - Random baseline: independent referral sets per (seed, coverage/budget), 200
-    repetitions, mean ± 95% CI.
-- **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (1-shot).
-- **Output**: `PharDDIE/results/rq3_rebuilt_PharDDIE.csv` — the sole data source of the
-  paper's Tables 5 and 6 (e.g., fewer p-AURC 0.1686 ± 0.0162, MSP-AURC 0.0918 ± 0.0066;
-  30%-coverage risks p 0.0574 / MSP 0.0278 / latent u 0.2692 / random 0.2373 ± 0.0033;
-  AURC is the trapezoidal integral over the coverage grid c ∈ [0.05, 1.0], step 0.05).
-  Budgets of 10%/30%/50% correspond to automatic coverages of 90%/70%/50%.
-
----
-
-## Zero-Shot RQ3 Exploration (not in the paper)
-
-`EviDDIE/results/rq3_eviddie_new.csv` and `EviDDIE/results/rq3_rebuilt_eviddie_zs.csv`
-contain the same per-signal selective-referral analysis applied to the **zero-shot
-EviDDIE** predictions (shot = 0). The paper's Tables 5/6 use the 1-shot PharDDIE
-analysis above; these zero-shot files are exploratory and are kept for reference only.
-
----
-
 ## Architecture ↔ Code Mapping
 
 ### PharDDIE
@@ -254,14 +226,6 @@ analysis above; these zero-shot files are exploratory and are kept for reference
   implementation returned the negative-class proportion (`1 - mean(y)`) instead of the
   error rate; the corrected values are in
   `EviDDIE/results/calibration_table_variants.csv` (no-skill row: HCE undefined, `---`).
-- **Selective risk**: classification error rate on the retained set,
-  $\frac{1}{|\mathcal{A}|}\sum_{i\in\mathcal{A}}\mathbb{I}(\hat y_i \neq y_i)$
-  (paper Eq. selrisk). Fixed on 2026-08-18 in `shared/rq3_selective_referral.py`
-  (previous implementation returned `1 - mean(y)`); the corrected per-signal values are
-  in `PharDDIE/results/rq3_rebuilt_PharDDIE.csv`. Under the corrected definition the
-  entropy-based (confidence) reject option attains the lowest selective risk at matched
-  coverage, and the random-referral risk equals the model's overall error rate.
-
 ---
 
 ## Known Limitations

@@ -1,24 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-run_eviddie_p0_2.py - One-command P0-2 pipeline: retrain the formal EviDDIE
-(native dual-output EDL head, |p-z| comparator, no inference noise) and
-regenerate the four zero-shot variant groups under the fixed-manifest protocol.
-
-Steps (resume-safe; completed steps are skipped):
-  1) verify data/backbone files
-  2) train the four variant heads on the frozen backbone (eviddie_train_ablation.py)
-  3) train five full EviDDIE seeds (eviddie_trainer.py, 20k batches each)
-  4) back up the legacy zero-shot CSV, then export the four variants x five
-     seeds x dev/test/test2 with the fixed manifests
-     (eviddie_export_zs_v2.py -> results/predictions/predictions_dataset1_zero_shot_variants.csv)
-  5) aggregate calibration (ECE/Brier/NLL/HCE) and discrimination
-     (pooled AUROC/ACC/event-macro F1) per variant, mean +/- SD over the five
-     training seeds -> results/eviddie_p0_2_results.csv
-
-Usage (from the EviDDIE directory): python run_eviddie_p0_2.py
-Estimated runtime: ~15-20 h on one RTX 4090 (training dominates).
-"""
 import csv
 import os
 import subprocess
@@ -89,13 +70,12 @@ def disc_metrics(y, p, ev):
 
 
 def aggregate():
-    csv_path = 'results/predictions/predictions_dataset1_zero_shot_variants.csv'
+    csv_path = 'results/predictions/predictions_eviddie_new_ablation.csv'
     df = pd.read_csv(csv_path)
     print('\n===== Aggregated results (mean +/- SD over 5 training seeds) =====')
     rows = []
     for method in VARIANTS:
         sub = df[df.method == method]
-        # calibration: pooled over common/fewer/rare (same convention as the paper)
         cal_rows, disc_rows = {}, {}
         for seed, g in sub.groupby('train_seed'):
             e, br, n, h = cal_metrics(g['y_true'].values, g['prob'].values)
@@ -130,7 +110,6 @@ def main():
     if missing:
         raise SystemExit(f'Missing data/backbone files: {missing}')
 
-    # Step 1: variant heads on the frozen backbone (needed by softmax / w/o EVI / w/o BSA)
     need_heads = [p for p in ['models/dataset1/fc_softmax.pt',
                               'models/dataset1/fc_evi_no_evi.pt',
                               'models/dataset1/fc_w_o BSA.pt',
@@ -142,7 +121,6 @@ def main():
     else:
         print('[SKIP] variant heads already present')
 
-    # Step 2: five full EviDDIE seeds (formal architecture, fixed-manifest dev selection)
     for seed in SEEDS:
         if ckpt_exists(seed):
             print(f'[SKIP] seed {seed} checkpoint exists')
@@ -155,7 +133,6 @@ def main():
         if not ckpt_exists(seed):
             raise SystemExit(f'seed {seed} checkpoint still missing after training')
 
-    # Step 3: back up the legacy CSV, then export the four variants
     legacy = 'results/predictions/predictions_dataset1_zero_shot_variants.csv'
     if os.path.exists(legacy) and not os.path.exists(legacy.replace('.csv', '_legacy.csv')):
         os.rename(legacy, legacy.replace('.csv', '_legacy.csv'))
@@ -163,7 +140,6 @@ def main():
     step([sys.executable, 'eviddie_export_zs_v2.py'],
          'Step 3/4: export four variants x five seeds with fixed manifests')
 
-    # Step 4: aggregate
     print('Step 4/4: aggregate calibration + discrimination')
     aggregate()
     print('\nDone.')

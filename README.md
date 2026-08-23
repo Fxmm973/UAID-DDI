@@ -1,18 +1,10 @@
-# UAID-DDI: A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Prediction with Selective Referral
+# UAID-DDI: Few-Shot and Zero-Shot Drug–Drug Interaction Event Prediction
 
-Official implementation of the paper *"A Reliability-Oriented Framework for Few-Shot and Zero-Shot Drug–Drug Interaction Prediction with Selective Referral"*.
+Official implementation of the paper *"Few-Shot and Zero-Shot Drug–Drug Interaction Event Prediction: Representation Learning and Probability Reliability"*.
 
 ## Overview
 
-UAID-DDI is a two-model framework for predicting rare drug-drug interaction (DDI) events under extreme data scarcity. Each model outputs a prediction probability $p$ together with an uncertainty signal, which drives a downstream **rule-based triage policy**. Three uncertainty signals are distinguished throughout the paper and code:
-
-| Signal | Setting | Meaning |
-|--------|---------|---------|
-| $u_{\text{entropy}} = H(p)$ | PharDDIE 1-shot | prediction entropy; a confidence-derived baseline (NOT epistemic uncertainty) |
-| $u_{\text{latent}}$ | PharDDIE $K\ge 5$ | normalized SRAE **latent dispersion score**; a reconstruction-derived proxy with no KL-based posterior interpretation |
-| $u_{\text{EDL}} = 2/S$ | EviDDIE zero-shot | Dirichlet evidential uncertainty (total evidence $S$) |
-
-The triage policy maps each candidate to one of four actions---High-Priority Review, Expert Referral, Deferred Review, Low Priority---under the **unified semantics**: automatic set = {high-priority review, low-priority assignment} ($u \le \tau_u$); referred set = {expert referral, deferred review} ($u > \tau_u$). The paper reports triage results for the 1-shot setting; the rebuilt per-signal selective-referral comparison (raw score $p$ / MSP / margin / entropy / latent $u$ / true random referral) is reported at matched coverage and at fixed referral budgets.
+UAID-DDI is a two-model framework for predicting rare drug-drug interaction (DDI) events under extreme data scarcity. PharDDIE targets few-shot prediction (one or five labeled support examples), and EviDDIE extends prediction to unseen interaction-event categories by transferring event-text semantics. Both models are evaluated from two complementary perspectives: predictive discrimination (AUROC/AUPRC/ACC/F1) and probability reliability (ECE/Brier/NLL/HCE), with post-hoc temperature scaling. EviDDIE additionally outputs a model-assigned evidential uncertainty score $u_{\text{EDL}} = 2/S$ from the Dirichlet evidence of its two-class evidential head.
 
 | Model | Setting | Key Modules |
 |-------|---------|-------------|
@@ -62,8 +54,6 @@ UAID-DDI/
 │   ├── audit_drug_overlap.py       # Drug-overlap audit across splits
 │   ├── audit_logger.py             # Audit trail utilities
 │   ├── calibration_table.py        # P0-2/P0-5 Table: AUROC/AUPRC/ACC/F1/Brier/NLL/ECE/HCE (+TempScale, no-skill row, reliability diagram with per-bin counts); HCE = classification error among confidence>=0.9
-│   ├── rq3_selective_referral.py   # P0-3 rebuilt per-signal selective referral (p / MSP / margin / entropy / latent u / random; selective risk = classification error rate; per-seed AURC mean±SD; error-detection AUROC/AUPRC)
-│   ├── rq3_triage_table.py         # Triage prioritization table (unified semantics; includes the independent Random row with correct error-rate risk)
 │   └── paired_diff_rareddie.py     # P1-6: seed-paired PharDDIE-RareDDIE differences with 95% CI
 │
 ├── PharDDIE/                       # Few-shot model
@@ -78,10 +68,9 @@ UAID-DDI/
 │   ├── pharddie_export_full.py     # Main export: fixed manifests, SHA256-verified, SEED-CHAIN-checked
 │   ├── pharddie_table2.py          # Paper Table 2 (main results; 7 transcribed baselines + re-evaluated RareDDIE)
 │   ├── pharddie_table3.py / pharddie_table3_complete.py  # PharDDIE calibration rows (per-seed aggregation)
-│   ├── pharddie_table4_paper.py    # Legacy triage table generator (unified semantics; superseded by shared/rq3_*.py for the rebuilt per-signal tables)
 │   ├── eval_rareddie_unified.py / aggregate_rareddie.py  # RareDDIE re-evaluation under the unified protocol
 │   ├── dataset1/                   # Benchmark dataset (few-shot split) + neg_manifests/ (SHA256-recorded)
-│   └── results/                    # Table outputs + per-seed RareDDIE results + rq3_rebuilt_PharDDIE.csv (source of Tables 5/6)
+│   └── results/                    # Table outputs + per-seed RareDDIE results
 │
 ├── EviDDIE/                        # Zero-shot model
 │   ├── eviddie_args.py             # Hyperparameters & CLI
@@ -101,11 +90,10 @@ UAID-DDI/
 │   ├── eviddie_export_variants.py / eviddie_export_zs.py  # Legacy exports (kept for provenance)
 │   ├── neg_manifests/              # Pre-generated negative manifests + SHA256 hashes (all 5 seeds × dev/test/test2)
 │   ├── dataset1/                   # Benchmark dataset (incl. event_embedding2.json BioSentVec prototypes)
-│   └── results/                    # Ablation curves/summary/sigtest, calibration table, RQ3 zero-shot CSVs, figures
+│   └── results/                    # Ablation curves/summary/sigtest, calibration tables, figures
 │       └── predictions/            # Per-sample zero-shot predictions (5 seeds, fixed manifest) + episode manifests
 │
 ├── results/                        # Paper-facing table summaries
-│   └── table4_paper.txt            # Uncertainty-aware prioritization (unified semantics, 1-shot)
 │
 ├── tests/
 │   └── test_evidential_class_order.py  # Class-order convention test (negative=0, positive=1)
@@ -240,14 +228,6 @@ python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predi
 python ../shared/calibration_table.py --csv ../EviDDIE/results/predictions/predictions_evi_full_frozen.csv \
     --methods "EviDDIE (frozen EDL head)" \
     --out ../EviDDIE/results/calibration_table_evi_full.csv
-
-# Table 4 — Uncertainty-aware prioritization (unified triage semantics, 1-shot;
-#           the Random row is computed inside rq3_triage_table.py)
-python ../shared/rq3_triage_table.py
-
-# Tables 5/6 — Rebuilt per-signal selective referral (matched coverage / fixed budget)
-python ../shared/rq3_selective_referral.py
-# -> PharDDIE/results/rq3_rebuilt_PharDDIE.csv (1-shot, per-seed AURC mean±SD, random 95% CI)
 
 # Seed-paired PharDDIE-RareDDIE differences (mean + 95% CI, P1-6)
 python ../shared/paired_diff_rareddie.py

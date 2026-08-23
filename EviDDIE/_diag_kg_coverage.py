@@ -1,4 +1,3 @@
-# 诊断: 训练/开发/测试任务中 drug 的 KG 邻居覆盖率
 import json
 from collections import Counter
 
@@ -12,7 +11,6 @@ with open(DS + '/path_graph') as f:
 
 def coverage(path):
     data = json.load(open(DS + '/' + path))
-    # data: {event: [[h,t,r,label], ...]} 或 list; 提取所有 triples 的 h/t
     triples = []
     if isinstance(data, dict):
         for v in data.values():

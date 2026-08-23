@@ -1,0 +1,42 @@
+{
+  "test2_seed19940419": {
+    "path": "neg_manifests/test2_seed19940419_negatives.json",
+    "sha256": "643a91e0b9a1cc10067428184fff675682e61b9808c035aaa4af42bb81f063cc"
+  },
+  "test2_seed19940419_native": {
+    "path": "neg_manifests/test2_seed19940419_nativenegatives.json",
+    "sha256": "f84e1f69f79a203c81f66f12cdc99bd90eaae6b17aabd62ef156f1b00f0270ca"
+  },
+  "test2_seed20230801": {
+    "path": "neg_manifests/test2_seed20230801_negatives.json",
+    "sha256": "9810ada258131fd9884daf2db823318261d90fe75e7eb04bf1a743a719bf6162"
+  },
+  "test2_seed20230801_native": {
+    "path": "neg_manifests/test2_seed20230801_nativenegatives.json",
+    "sha256": "e51360ca5103dcb74cc679016892a4ab6bff7072f4ba462356f810a811347396"
+  },
+  "test2_seed20240115": {
+    "path": "neg_manifests/test2_seed20240115_negatives.json",
+    "sha256": "361e0b7353c6da90de073d1718b88870261d351c437039de75a6bbb365c999cb"
+  },
+  "test2_seed20240115_native": {
+    "path": "neg_manifests/test2_seed20240115_nativenegatives.json",
+    "sha256": "0c543564a5eaedf51381ac0890e994fabc2718a4dfdf34d1e9b1625e48355d35"
+  },
+  "test2_seed20240520": {
+    "path": "neg_manifests/test2_seed20240520_negatives.json",
+    "sha256": "b75ea01e866b523191b89d442939d2b6f01d3a8567152530d39573a6492448b3"
+  },
+  "test2_seed20240520_native": {
+    "path": "neg_manifests/test2_seed20240520_nativenegatives.json",
+    "sha256": "49fcddeea6727260a99d5539f609ea325395aacda93d1815a091b46afb2c1ed2"
+  },
+  "test2_seed20240910": {
+    "path": "neg_manifests/test2_seed20240910_negatives.json",
+    "sha256": "e5f17ca7edfa2cea25e6e3a58ed2c26742b13aaae481cc0e2966787f212b3ab9"
+  },
+  "test2_seed20240910_native": {
+    "path": "neg_manifests/test2_seed20240910_nativenegatives.json",
+    "sha256": "9e452623abb1c2ad851b64c25662a0ca95445750cb9035a760a564c4d503445f"
+  }
+}

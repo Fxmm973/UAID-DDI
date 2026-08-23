@@ -1,14 +1,5 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""
-LEGACY / PROVENANCE ONLY. This script trains the earlier head variants whose
-fixed checkpoint produced the shipped CSV
-(results/predictions/predictions_dataset1_zero_shot_variants.csv) that backs
-the zero-shot rows of the paper's calibration table (Table 3), exported by
-eviddie_export_variants.py. Superseded by eviddie_trainer.py (formal zero-shot
-entry with a native dual-output EDL head) and eviddie_train_ablation.py
-(frozen-backbone head ablation). Do not use to produce paper results.
-"""
 import torch.nn as nn, torch.nn.functional as F
 import csv
 from collections import deque
@@ -85,7 +76,6 @@ class QuickTrainer(object):
         self.G_m = torch.load(arg.g_model_path, map_location=self.device)
         self.G_m.eval()
 
-        # w/o BSA: linear projection 替代 GAN generator
         self.linear_proj = nn.Linear(self.task_ebmedding.shape[1], 64).to(self.device)
 
         self.ent2id = json.load(open(self.dataset + '/ent2ids'))
@@ -97,7 +87,6 @@ class QuickTrainer(object):
         self.all_drug_data = {}
         self.drug_num_node_indices = {}
 
-        # Dev tasks for eval
         self.dev_tasks = json.load(open(self.dataset + '/dev_tasks.json'))
         self.rel2id = json.load(open(self.dataset + '/relation2ids'))
 
@@ -144,11 +133,10 @@ class QuickTrainer(object):
         return (lc, ld, rc, rd)
 
     def encode_pair(self, pairs_batch):
-        """CSE + VAE latent for a drug pair batch"""
         ql_, qr_ = self.matcher.model(pairs_batch)
         qn = torch.cat((ql_, qr_), dim=-1)
         _, _, _, zq = self.matcher.vaemodel(qn, is_support=False, is_eval=True)
-        return zq  # [batch, 64]
+        return zq
 
     def get_task_proto(self, task_name, use_gan=True):
         with torch.no_grad():
@@ -191,7 +179,6 @@ class QuickTrainer(object):
         return comp_metrics(np.concatenate(all_p), np.concatenate(all_l))
 
     def train_variant(self, variant_name, csv_writer, max_iter=MAX_ITER):
-        """训练一个 fc 变体"""
         logging.info(f'=== Training {variant_name} ({max_iter} iters) ===')
         params = list(self.matcher.fc.parameters())
         if variant_name == 'w/o BSA':
@@ -231,7 +218,7 @@ class QuickTrainer(object):
                 loss = F.mse_loss(prob_q, torch.ones_like(prob_q)) + \
                        F.mse_loss(prob_f, torch.zeros_like(prob_f))
 
-            else:  # 'full_evi'
+            else:
                 evidence_q = F.softplus(q_out); alpha_q = evidence_q + 1; S_q = alpha_q.sum(dim=1)
                 evidence_f = F.softplus(f_out); alpha_f = evidence_f + 1; S_f = alpha_f.sum(dim=1)
                 mse_q = F.mse_loss(alpha_q[:,1]/S_q, torch.ones_like(alpha_q[:,1]))

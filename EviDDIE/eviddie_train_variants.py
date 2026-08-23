@@ -1,9 +1,5 @@
 #!/usr/bin/env Python
 # coding=utf-8
-"""
-EviDDIE 三变体训练 (简化版)：CSE+VAE+fc 联合训练，无 GAN。
-softmax / w/o EVI / full EVI 各 10000 iter (~15 min each)
-"""
 import json, logging, numpy as np, torch, torch.nn as nn, torch.nn.functional as F
 import random, os, sys
 from collections import defaultdict, deque
@@ -33,7 +29,6 @@ class Trainer(object):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logging.info(f"Device: {self.device}")
 
-        # Task embeddings
         self.semantic = json.load(open(f'{arg.dataset}/{arg.semantic}'))
         for t in list(self.semantic.keys()):
             self.semantic[t] = np.array(self.semantic[t]) + 0.3*np.random.normal(0,1,size=(len(self.semantic[t]),1))
@@ -42,28 +37,23 @@ class Trainer(object):
             self.task2id[i]=n; self.task_emb_list.append(self.semantic[i])
         self.task_emb = torch.tensor(np.vstack(self.task_emb_list)).float().to(self.device)
 
-        # Simple task projector (replaces G_m)
         self.task_proj = nn.Sequential(
             nn.Linear(self.task_emb.shape[1], 128), nn.ReLU(), nn.Linear(128, 64)
         ).to(self.device)
 
-        # Embeddings
         self.load_embed()
         self.num_sym = len(self.symbol2id.keys())-1; self.pad_id=self.num_sym
 
-        # Encoder (we'll use model + VAE directly, create our own classifier)
         self.matcher = EmbedMatcher(self.embed_dim, self.num_sym, use_pretrain=not self.random_embed,
                                      embed=self.symbol2vec, dropout=self.dropout, batch_size=self.batch_size,
                                      finetune=self.fine_tune, aggregate=self.aggregate,
                                      task_emb=self.task_emb).to(self.device)
 
-        # Classifier: CSE(256) + task_proj(64) = 320-dim input
         self.classifier = nn.Sequential(
             nn.Linear(320, 256), nn.ReLU(), nn.Dropout(0.2),
             nn.Linear(256, 64), nn.ReLU(), nn.Linear(64, 2)
         ).to(self.device)
 
-        # Data
         self.ent2id = json.load(open(self.dataset+'/ent2ids'))
         self.num_ents = len(self.ent2id.keys())
         self.build_connection(max_=self.max_neighbor)
@@ -117,12 +107,10 @@ class Trainer(object):
             sb=[t.to(self.device) for t in sb]; qb=[t.to(self.device) for t in qb]
             fb=[t.to(self.device) for t in fb]
 
-            # Minimal: just CSE features → classifier (no VAE, no task_proj)
-            ql_,qr_=self.matcher.model(qb); pos_feat = torch.cat((ql_,qr_), dim=-1)  # [B,256]
+            ql_,qr_=self.matcher.model(qb); pos_feat = torch.cat((ql_,qr_), dim=-1)
             fl_,fr_=self.matcher.model(fb); neg_feat = torch.cat((fl_,fr_), dim=-1)
-            # Also add task embedding difference for discrimination
             tp = self.task_proj(self.task_emb[self.task2id[tn]])
-            pos_feat = torch.cat([pos_feat, tp.expand(pos_feat.shape[0], -1)], dim=-1)  # [B,320]
+            pos_feat = torch.cat([pos_feat, tp.expand(pos_feat.shape[0], -1)], dim=-1)
             neg_feat = torch.cat([neg_feat, tp.expand(neg_feat.shape[0], -1)], dim=-1)
 
             q_out = self.classifier(pos_feat)
