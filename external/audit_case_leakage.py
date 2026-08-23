@@ -30,6 +30,7 @@ def main():
     ap.add_argument("--candidates", default=os.path.join(
         OUT, "case_candidates_dataset2_per_event_v2.csv"))
     ap.add_argument("--dataset", default=os.path.join(REPO, "EviDDIE", "dataset2"))
+    ap.add_argument("--dataset1", default=os.path.join(REPO, "EviDDIE", "dataset1"))
     args = ap.parse_args()
 
     cand = pd.read_csv(args.candidates)
@@ -47,36 +48,59 @@ def main():
         for h, e, t in triples:
             dev_pairs.add(tuple(sorted([h, t])))
 
+    # ---- Dataset 1 四任务文件（基准库全部已知药对）----
+    ds1_pairs, ds1_triples = set(), set()
+    for split in ["train_tasks.json", "dev_tasks.json", "test_tasks.json", "test2_tasks.json"]:
+        p = os.path.join(args.dataset1, split)
+        if not os.path.exists(p):
+            continue
+        for ev, triples in load_tasks(p).items():
+            for h, e, t in triples:
+                ds1_pairs.add(tuple(sorted([h, t])))
+                ds1_triples.add((h, e, t))
+                ds1_triples.add((t, e, h))
+
     details = []
-    n_pair_hits, n_triple_hits = 0, 0
+    n_pair_hits = n_triple_hits = n_ds1_pair_hits = n_ds1_triple_hits = 0
     for _, r in cand.iterrows():
         pair = tuple(sorted([r["drug_a"], r["drug_b"]]))
         in_train_pair = pair in train_pairs
         in_dev_pair = pair in dev_pairs
         in_train_triple = ((r["drug_a"], r["event"], r["drug_b"]) in train_triples
                            or (r["drug_b"], r["event"], r["drug_a"]) in train_triples)
+        in_ds1_pair = pair in ds1_pairs
+        in_ds1_triple = ((r["drug_a"], r["event"], r["drug_b"]) in ds1_triples
+                         or (r["drug_b"], r["event"], r["drug_a"]) in ds1_triples)
         n_pair_hits += int(in_train_pair or in_dev_pair)
         n_triple_hits += int(in_train_triple)
+        n_ds1_pair_hits += int(in_ds1_pair)
+        n_ds1_triple_hits += int(in_ds1_triple)
         details.append({
             "drug_a": r["drug_a"], "drug_b": r["drug_b"], "event": r["event"],
             "in_train_pair": bool(in_train_pair), "in_dev_pair": bool(in_dev_pair),
             "in_train_triple": bool(in_train_triple),
+            "in_dataset1_pair": bool(in_ds1_pair), "in_dataset1_triple": bool(in_ds1_triple),
         })
 
-    verdict = "PASS" if (n_pair_hits == 0 and n_triple_hits == 0) else "FAIL"
+    verdict = "PASS" if (n_pair_hits == 0 and n_triple_hits == 0
+                         and n_ds1_pair_hits == 0 and n_ds1_triple_hits == 0) else "FAIL"
     report = {
         "verdict": verdict,
         "n_candidates": len(cand),
         "n_train_pairs": len(train_pairs),
+        "n_dataset1_pairs": len(ds1_pairs),
         "n_pair_hits": n_pair_hits,
         "n_triple_hits": n_triple_hits,
+        "n_dataset1_pair_hits": n_ds1_pair_hits,
+        "n_dataset1_triple_hits": n_ds1_triple_hits,
         "details": details,
     }
     out_path = os.path.join(OUT, "case_leakage_audit.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
     sha = hashlib.sha256(open(out_path, "rb").read()).hexdigest()
-    print(f"VERDICT: {verdict} | pair_hits={n_pair_hits} triple_hits={n_triple_hits} "
+    print(f"VERDICT: {verdict} | ds2_pair_hits={n_pair_hits} ds2_triple_hits={n_triple_hits} "
+          f"ds1_pair_hits={n_ds1_pair_hits} ds1_triple_hits={n_ds1_triple_hits} "
           f"of {len(cand)} candidates | sha256={sha[:16]}...")
 
 

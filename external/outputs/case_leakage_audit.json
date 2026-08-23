@@ -2,8 +2,11 @@
   "verdict": "PASS",
   "n_candidates": 25,
   "n_train_pairs": 314736,
+  "n_dataset1_pairs": 191402,
   "n_pair_hits": 0,
   "n_triple_hits": 0,
+  "n_dataset1_pair_hits": 0,
+  "n_dataset1_triple_hits": 0,
   "details": [
     {
       "drug_a": "DB09239",
@@ -11,7 +14,9 @@
       "event": "The risk or severity of hypertension decrease",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB01235",
@@ -19,7 +24,9 @@
       "event": "The absorption decrease",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB01151",
@@ -27,7 +34,9 @@
       "event": "The serum concentration of the active metabolites increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00871",
@@ -35,7 +44,9 @@
       "event": "the neuromuscular blocking activities decrease",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB11827",
@@ -43,7 +54,9 @@
       "event": "The risk or severity of renal failure hypotension and hyperkalemia increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB14006",
@@ -51,7 +64,9 @@
       "event": "The risk or severity of renal failure increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00199",
@@ -59,7 +74,9 @@
       "event": "The risk or severity of QTc prolongation and hypotension increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB06077",
@@ -67,7 +84,9 @@
       "event": "the stimulatory activities decrease",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB01261",
@@ -75,7 +94,9 @@
       "event": "The risk or severity of angioedema increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB11156",
@@ -83,7 +104,9 @@
       "event": "The risk or severity of myopathy and weakness increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00358",
@@ -91,7 +114,9 @@
       "event": "The risk or severity of QTc prolongation decrease",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB04552",
@@ -99,7 +124,9 @@
       "event": "the thrombogenic activities increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00436",
@@ -107,7 +134,9 @@
       "event": "The risk or severity of neutropenia and thrombocytopenia increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB01142",
@@ -115,7 +144,9 @@
       "event": "The risk or severity of sedation and somnolence increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB09089",
@@ -123,7 +154,9 @@
       "event": "The risk or severity of Tachycardia and drowsiness increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB01253",
@@ -131,7 +164,9 @@
       "event": "the vasopressor activities increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00321",
@@ -139,7 +174,9 @@
       "event": "The risk or severity of neutropenia increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00940",
@@ -147,7 +184,9 @@
       "event": "an increase in the absorption resulting in an increased serum concentration and potentially a worsening of adverse effects cause",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB04630",
@@ -155,7 +194,9 @@
       "event": "The risk or severity of fluid retention increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB04630",
@@ -163,7 +204,9 @@
       "event": "the hypokalemic activities increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB09214",
@@ -171,7 +214,9 @@
       "event": "The risk or severity of renal failure and hypertension increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB04832",
@@ -179,7 +224,9 @@
       "event": "The risk or severity of hyponatremia increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB00679",
@@ -187,7 +234,9 @@
       "event": "The risk or severity of hypotension and CNS depression increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB14512",
@@ -195,7 +244,9 @@
       "event": "The risk or severity of electrolyte imbalance increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     },
     {
       "drug_a": "DB11855",
@@ -203,7 +254,9 @@
       "event": "The risk or severity of hyperthermia and oligohydrosis increase",
       "in_train_pair": false,
       "in_dev_pair": false,
-      "in_train_triple": false
+      "in_train_triple": false,
+      "in_dataset1_pair": false,
+      "in_dataset1_triple": false
     }
   ]
 }
