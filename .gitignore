@@ -10,3 +10,15 @@ EviDDIE/dataset2/DRKG_TransE_entity.npy
 results/reliability_diagram.png
 EviDDIE/results/predictions/predictions_dataset1_zero_shot_variants.csv
 EviDDIE/EviDDIE_Ablation_Study_new.png
+
+# external-validation large artifacts (regenerable; checkpoints/DRKG per existing policy)
+external/biosentvec/
+external/faers/
+external/mecddi/
+external/meddra/
+PharDDIE/dataset_ext_1shot/
+PharDDIE/dataset_ext_5shot/
+EviDDIE/dataset2/DRKG_TransE_entity.npy
+EviDDIE/dataset2/DRKG_TransE_relation.npy
+EviDDIE/dataset2/path_graph
+EviDDIE/dataset2/path_graph_train_only
