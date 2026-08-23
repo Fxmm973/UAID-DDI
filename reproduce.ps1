@@ -60,10 +60,16 @@ Run-Step "Step 2a: PharDDIE full export (manifest-based)" "python pharddie_expor
 Run-Step "Step 2b: PharDDIE w/o uncertainty export (manifest-based)" "python pharddie_export.py" -WorkingDir "PharDDIE"
 Run-Step "Step 2c: EviDDIE zero-shot export (manifest-based)" "python eviddie_export_zs_v2.py" -WorkingDir "EviDDIE"
 
-# Step 3: 论文表格（Table 4 已随选择性预测内容从论文移除）
+# Step 3: 论文表格（Table 4 = Dataset 2 案例研究，见 Step 4）
 Run-Step "Step 3a: Table 2" "python pharddie_table2.py" -WorkingDir "PharDDIE"
 Run-Step "Step 3b: Table 3" "python pharddie_table3_complete.py" -WorkingDir "PharDDIE"
 Run-Step "Step 3e: Audit real evaluation episodes (P0-5)" "python shared/audit_leakage.py --dataset PharDDIE/dataset1 --episode-manifests PharDDIE/results/predictions/episode_manifests"
+
+# Step 4: 案例研究闭环（Table 4；使用已提交的 Dataset-2 重训产物，不重训）
+Run-Step "Step 4a: Case-candidate leakage audit (must PASS)" "python external/audit_case_leakage.py"
+Run-Step "Step 4b: Per-event case selection (25 candidates)" "python external/case_study_per_event.py"
+Run-Step "Step 4c: Evidence pass (PMIDs verified; needs PubMed network)" "python external/case_evidence_upgrade.py"
+Run-Step "Step 4d: Verify Table-4 top-10 against shipped CSV" "python -c \"import pandas as pd; d=pd.read_csv('external/outputs/case_candidates_dataset2_per_event_v2.csv'); t=d.head(10); assert len(t)==10 and t['r'].is_monotonic_decreasing; print('Table 4 top-10 OK: rows', len(t))\""
 
 Write-Host "=== REPRODUCTION COMPLETE ===" -ForegroundColor Green
 Write-Report "Full report: $ReportPath"

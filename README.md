@@ -236,23 +236,74 @@ python ../shared/paired_diff_rareddie.py
 
 All table scripts abort if the underlying prediction CSVs do not cover the five training seeds, and the export scripts verify checkpoint-hash uniqueness and manifest SHA256 before writing any output.
 
+### 7. Case Study on Dataset 2 (Table 4) — External Validation, Closed Loop
+
+The case study (paper Table 4) evaluates EviDDIE retrained on **Dataset 2** (Lin et al.),
+an independently curated benchmark shipped as `EviDDIE/dataset2/` (1,258 drugs, 80 event
+types = 50 train / 5 dev / 25 held-out, 320,108 records; DRKG `.npy` files and the
+sanitized path graph are copied from Dataset 1 as described in
+`external/REPRODUCE_CASE_STUDY.md`). The Table-4 top-10 are the highest-ranked
+per-event candidates on the 25 held-out events, selected under the pre-registered rule
+$r=p(1-u)$ (five-seed means); a leakage audit confirms that **none** of the candidates
+appears in any Dataset-2 train/dev or Dataset-1 task file.
+
+```bash
+# 1) Retrain EviDDIE on Dataset 2 (5 seeds, ~3.5 h/seed on one RTX 4090).
+#    Seeds 20240115/20240910 collapse deterministically on Dataset 2
+#    (loss freezes at 1.3333, all-positive predictions) and were replaced
+#    under the identical protocol by 20260201/20260301 (disclosed in the paper).
+python external/train_eviddie_dataset2.py --seed 19940419 --max-batches 20000
+python external/train_eviddie_dataset2.py --seed 20230801 --max-batches 20000
+python external/train_eviddie_dataset2.py --seed 20240520 --max-batches 20000
+python external/train_eviddie_dataset2.py --seed 20260201 --max-batches 20000
+python external/train_eviddie_dataset2.py --seed 20260301 --max-batches 20000
+
+# 2) Export held-out (test2) predictions: 18,720 rows with per-row
+#    checkpoint / manifest / embedding SHA256 + git commit.
+python external/eviddie_export_ds2.py \
+    --seeds 19940419,20230801,20240520,20260201,20260301
+
+# 3) Case candidates: per-event top-1 under r = p(1-u) -> 25 candidates.
+python external/case_study_per_event.py
+
+# 4) Evidence pass (three-tier: Direct / Class-level / Not identified;
+#    every PMID verified against its real title).
+python external/case_evidence_upgrade.py
+
+# 5) Leakage audit (must print VERDICT: PASS, 0/25 hits).
+python external/audit_case_leakage.py
+
+# 6) Paper Table 4 = the ten highest-ranked rows (by r) of
+#    external/outputs/case_candidates_dataset2_per_event_v2.csv.
+#    Optional: temperature scaling (T=1.364, fitted on dev) via
+#    external/temp_scale_case_table.py — ranking is preserved exactly.
+```
+
+Key numbers: held-out test2 AUROC **0.5718 ± 0.0125** (5 seeds); among the Table-4
+top-10, seven candidates have class-level mechanistic literature support (PMIDs in the
+table) and three are "Not identified" (routed to expert review in the paper).
+
 ---
 
 ## Evidence Chain
 
-- **Per-sample prediction CSVs** (the sole data sources of the paper's Table 2/3/4/5/6 rows):
+- **Per-sample prediction CSVs** (the sole data sources of the paper's Tables 2–4):
   `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (PharDDIE, 5 training seeds)
   and `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` (EviDDIE current
   architecture, 5 training seeds, fixed evaluation manifest, 4 provenance-hash columns).
+  Table 4 (case study) traces to `external/outputs/predictions_ds2_retrained_0shot.csv`
+  (Dataset-2-retrained EviDDIE, 5 seeds) via the chain in Section 7.
 - **Manifests**: SHA256-verified negative manifests in `PharDDIE/dataset1/neg_manifests/`
   and `EviDDIE/neg_manifests/` (all five seeds × dev/test/test2).
 - **Checkpoint hashes**: `audit/checkpoints_sha256.md` records the SHA256 values of the
   per-seed checkpoints behind the shipped CSVs (binaries not distributed).
-- **Training logs**: `audit/training_logs/`.
+- **Training logs**: `audit/training_logs/` (Dataset 1) and
+  `external/outputs/train_logs_ds2/` (Dataset 2, incl. the collapsed-seed records).
 - **Leakage audits**: six reports in `audit/leakage_reports/` (all hard checks PASS on
-  Dataset 1, KG-edge overlap 0).
+  Dataset 1, KG-edge overlap 0); case-candidate audit `external/audit_case_leakage.py`
+  (PASS, 0/25 against Dataset-2 train/dev and all Dataset-1 task files).
 - **Pipeline**: `reproduce.ps1` runs manifest verification → leakage audit →
-  manifest-based exports → table generation, and aborts on any failure (it does not
-  train models).
+  manifest-based exports → table generation → case-study closed loop, and aborts on any
+  failure (it does not train models).
 
 Paper results provenance (table ↔ script ↔ CSV) is documented in [`RESULTS_MAP.md`](RESULTS_MAP.md).

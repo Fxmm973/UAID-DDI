@@ -1,8 +1,8 @@
 # RESULTS_MAP.md — Paper Results Source Audit Trail
 
 ## Version Info
-- Last updated: 2026-08-18
-- Paper: `fyx_8_18_ERA_polished(1).tex` (reviewer revision addressing all P0/P1/P2 comments)
+- Last updated: 2026-08-23
+- Paper: `fyx8_23.tex` (reviewer revision; Table 4 = Case Study on Dataset 2)
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI) — all values below
   are reproduced by the scripts listed here, from the per-sample prediction CSVs shipped
   in this repository.
@@ -16,6 +16,7 @@
 | Datasets summary (Table 1) | — | Text-only table |
 | Main results 1/5-shot (Table 2) | `PharDDIE/pharddie_table2.py` | `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (+ RareDDIE re-evaluated under the unified protocol; 7 baselines transcribed from published source data) |
 | Zero-shot discrimination + calibration (Table 3) | `shared/calibration_table.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE/results/calibration_table_variants.csv`; PharDDIE rare rows from the PharDDIE CSV above |
+| Case study on Dataset 2 (Table 4) | `external/case_study_per_event.py` + `external/case_evidence_upgrade.py` | `external/outputs/predictions_ds2_retrained_0shot.csv` → `external/outputs/case_candidates_dataset2_per_event_v2.csv` (Table 4 = its ten highest-ranked rows by $r$); evidence PMIDs verified in `external/outputs/case_evidence_dataset2_v2.md`; leakage audit `external/audit_case_leakage.py` (PASS 0/25) |
 | Reliability diagram (Fig., RQ2) | `shared/calibration_table.py --fig` (equivalently `EviDDIE/eviddie_reliability_figure.py`) | same zero-shot CSV → `EviDDIE/reliability_diagram_new.png` |
 | EviDDIE head ablation, final metrics (Fig.) | `EviDDIE/eviddie_ablation_figure.py` | `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` → `EviDDIE_Ablation_Study.png` (+ `EviDDIE_Ablation_Study_4metrics.png`) |
 | EviDDIE head ablation, training dynamics (Fig.) | `EviDDIE/eviddie_ablation_curves_figure.py` | `EviDDIE/results/ablation_curves_eviddie_new_s{1..5}_seed*.csv` + `EviDDIE/results/full_evi_dev_internal.csv` → `EviDDIE_Ablation_Curves.png` |
@@ -158,6 +159,49 @@ earlier concatenation-based comparator used by pre-revision drafts.
   (paired $t$-tests per setting × metric: w/o BSA significant on common and fewer F1,
   w/o EVI significant on rare F1, $p<0.05$; AUROC/AUPRC differences $p>0.3$).
 - **Summary**: `EviDDIE/eviddie_ablation_summary.py` → `EviDDIE/results/ablation_summary_eviddie_new.csv`.
+
+---
+
+## Case Study on Dataset 2 — Table 4 (External Validation)
+
+- **Setup**: Dataset 2 (Lin et al.) shipped as `EviDDIE/dataset2/` — 1,258 drugs,
+  80 event types (50 train / 5 dev / 25 held-out), 320,108 records; DRKG `.npy` files
+  and the sanitized path graph are copied from Dataset 1 (see
+  `external/REPRODUCE_CASE_STUDY.md`). Semantic event overlap with Dataset 1:
+  0 exact-text matches; 58/80 events have a BioSentVec-cosine counterpart ≥ 0.7
+  (`external/outputs/disjoint_events.json` = the 10 events below that threshold).
+- **Training**: `external/train_eviddie_dataset2.py` — same protocol as the Dataset-1
+  formal entry (batch 256, lr 1e-3, 20k iterations, dev-AUROC selection), 5 seeds
+  **19940419, 20230801, 20240520, 20260201, 20260301**. Protocol seeds
+  20240115/20240910 collapse deterministically on Dataset 2 (loss freezes at 1.3333,
+  all-positive predictions; reproducible signature) and were replaced under the
+  identical protocol — disclosed in the paper; logs in
+  `external/outputs/train_logs_ds2/`.
+- **Predictions**: `external/eviddie_export_ds2.py --seeds 19940419,20230801,20240520,20260201,20260301`
+  → `external/outputs/predictions_ds2_retrained_0shot.csv` (18,720 rows = 1,872 test2
+  triples × 2 × 5 seeds; per-row checkpoint/manifest/embedding SHA256 + git commit).
+  Held-out test2 AUROC **0.5718 ± 0.0125** (mean ± SD over seeds); the cos<0.7
+  disjoint-event subset is at chance (0.4984 ± 0.0213) — both reported in the paper.
+- **Case selection**: `external/case_study_per_event.py` — per-event top-1 under the
+  pre-registered rule $r = p(1-u)$ (five-seed means), excluding the 1,068 Dataset-1
+  pair-overlapping test2 pairs → 25 candidates (one per held-out event, all reported)
+  in `external/outputs/case_candidates_dataset2_per_event_v2.csv`. **Table 4 = the ten
+  highest-ranked rows (by $r$) of this file** (raw five-seed mean probabilities,
+  ranking signal).
+- **Evidence (three tiers)**: `external/case_evidence_upgrade.py` →
+  `external/outputs/case_evidence_dataset2_v2.md`. Direct (pair co-discussed in
+  literature): 0; Class-level (single-drug mechanism literature supporting the event
+  direction, every PMID verified against its real NCBI title): 15; Not identified: 10.
+  Among the Table-4 top-10: 7 class-level / 3 not identified (the paper's "seven …
+  supported by class-level mechanistic evidence").
+- **Leakage audit**: `external/audit_case_leakage.py` → `external/outputs/case_leakage_audit.json`
+  (SHA256-recorded). VERDICT PASS: 0/25 candidates appear in Dataset-2 train/dev tasks
+  or in any Dataset-1 task file (pair-level and triple-level).
+- **Temperature scaling (supplementary)**: `external/temp_scale_case_table.py`
+  (T = 1.364 fitted on the dev split via `external/eviddie_export_ds2_dev.py`) — ranking
+  and AUC unchanged; scaled table in
+  `external/outputs/case_candidates_dataset2_per_event_v2_ts.csv`.
+
 ## Architecture ↔ Code Mapping
 
 ### PharDDIE
