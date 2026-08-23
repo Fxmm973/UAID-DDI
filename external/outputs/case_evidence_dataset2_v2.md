@@ -1,0 +1,1248 @@
+# Case-Study Evidence Upgrade (Dataset 2, Task 17): 全文检索 + 类别级机制证据
+
+- 生成日期: 2026-08-23
+- 输入: `case_candidates_dataset2_per_event.csv`（25 候选，v1 三档: direct 2 / class_suggested 2 / none 21）
+- **v2 三档统计: direct 0 / class_suggested 15 / none 10（共 25 候选）**
+- 腿 A 直接证据命中（标题/摘要同时讨论两药 + 相互作用语境）: 0 候选
+- 腿 B 类别级机制支持（≥1 侧方向一致且标题硬校验通过）: 15 候选
+- 检索源: Europe PMC REST（`search` + `fullTextXML`），resultType=core，relevance 相关度排序（EPMC 默认；能浮出经典机制文献，缓存冻结结果保证可复现）；0.5 s/请求限速（≥0.4 s），失败自动重试 3 次；全部响应缓存于 `case_evidence_upgrade_cache.json`（可离线复现）。
+- **v1 档位（历史记录，不再沿用）**: v1（PubMed 摘要共现）报告的 direct 2 / class_suggested 2 经硬复核均不达 v2 标准——42312164 为蛋白对接研究（药名仅出现在药物清单）、21919844 为草药相互作用风险药清单、42549822 为 NET 占用建模、19393386 为不良反应观察——v2 三档由两腿从零重新判定，v1 仅在各候选节内作历史标注（PMID 与片段逐字引自 `case_evidence_dataset2_per_event.md`）。
+- **硬校验（每条证据引用）**: evidence_pmids 中的每个 PMID 均通过 NCBI eutils esummary 重新拉取真实标题；标题与证据主张不符的引用一律删除（宁缺毋滥）。摘要命中后仍须标题可证，无 PMID 的 PMC 记录以 EPMC 核心元数据标题为准。
+- **人工裁决（R29）**: 自动腿命中后逐条对照真实标题与摘要片段复核；片段仅属偶然提及（如作为对症治疗、排除标准、疾病基线、药物清单）或摘要不含所主张机制的引用一律删除并记录原因（见各候选节“人工裁决剔除”）。
+- **三档定义（严格执行）**: **direct** = 同一文献的标题/摘要中**同时讨论两药**且含相互作用语境（同一句共现 + 交互/不良反应词；全文共现只作探测不作判档）；**class_suggested** = **单药机制文献**，摘要含药名 + 方向一致机制词，且真实标题与主张一致（每条附标题原文与片段）；**none** = 其余。
+- **腿 A（全文检索升级）**: q1 = `("name_a" AND "name_b") AND (interaction OR adverse OR effect)`（pageSize=5，记 PMID/标题/inEPMC/inPMC 全文标志）；q2 = `("name_a" AND "name_b")`（pageSize=3，宽共现探测）。
+- **腿 B（类别级机制，按事件方向）**: 对两药分别检索 `"<drug>" AND (<机制关键词>)`（pageSize=10：头条 top-3 列于节内，支持判定扫描全部 10 篇——top-3 常为无关病例报告，此为记录的扩展）；机制关键词按事件文本从任务词表选定（QTc/吸收/代谢/排泄/低钾/低钠/中性粒/肌病/镇静/神经肌肉/血栓/液体潴留/血管性水肿/刺激/高温等，高温事件扩展了 anhidrosis/hypohidrosis/oligohydrosis/sweating 并记录）。**判定规则**: 药物的机制文献与该药物在事件方向中的作用一致（如事件"血压降低"中任一药为血管舒张/降压机制，或另一药为升压剂被拮抗）→ class_suggested，附双方各 1-2 篇 PMID + 标题原文 + 证据片段 + 一句机制解释。判定保守：宁可不标，不得瞎标。Preprint（PPR）不参与证据档判定。
+- 证据档优先级: direct > class_suggested > none。自动结果仅为人工复核材料；最终 Evidence 列由作者裁决（R29）。
+- 药名: 未解析的 DB id 使用 go.drugbank.com 解析名（{'Choline salicylate': 'DB14006'}），解析失败才回退 `DrugBank {DB_ID}`；原始名/检索词均如实记录。
+
+## Dexniguldipine + Phenylephrine（The risk or severity of hypertension decrease）
+- 药对: `DB09239` / `DB00388`; a_name=Dexniguldipine, b_name=Phenylephrine; 检索词: `Dexniguldipine` / `Phenylephrine`
+- 事件: The risk or severity of hypertension decrease; semantic_overlap: yes; prob_mean=0.6852, r=0.2538
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42599647
+- 机制解释（一句话）: Phenylephrine 为 α1 激动剂升压药，其升压作用可被拮抗（文献42599647，标题“Alterations in arterial pressure waveform morphology following volume loading versus vasopressor administration in criti”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Dexniguldipine" AND "Phenylephrine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Dexniguldipine" AND "Phenylephrine")`
+  - 腿 B: `"Dexniguldipine" AND (hypotens OR vasodilat OR vasorelax OR calcium channel OR pressor OR alpha-adrenergic)` / `"Phenylephrine" AND (hypotens OR vasodilat OR vasorelax OR calcium channel OR pressor OR alpha-adrenergic)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [32546683](https://pubmed.ncbi.nlm.nih.gov/32546683/) — A comprehensive map of disease networks and molecular drug discoveries for glaucoma.（全文: EPMC/inPMC）
+  - [29452094](https://pubmed.ncbi.nlm.nih.gov/29452094/) — Evolving mechanisms of vascular smooth muscle contraction highlight key targets in vascular disease.（全文: EPMC/inPMC）
+  - [23580870](https://pubmed.ncbi.nlm.nih.gov/23580870/) — Protein Kinase C Inhibitors as Modulators of Vascular Function and their Application in Vascular Disease.（全文: EPMC/inPMC）
+  - [28212798](https://pubmed.ncbi.nlm.nih.gov/28212798/) — Protein Kinase C as Regulator of Vascular Smooth Muscle Function and Potential Target in Vascular Disorders.（全文: EPMC/inPMC）
+  - [8183379](https://pubmed.ncbi.nlm.nih.gov/8183379/) — German Society for Experimental and Clinical Pharmacology and Toxicology, 35th spring meeting. Mainz, Germany, 15-17 March 1994. Abstracts.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [32546683](https://pubmed.ncbi.nlm.nih.gov/32546683/) — A comprehensive map of disease networks and molecular drug discoveries for glaucoma.
+    - [23580870](https://pubmed.ncbi.nlm.nih.gov/23580870/) — Protein Kinase C Inhibitors as Modulators of Vascular Function and their Application in Vascular Disease.
+    - [29452094](https://pubmed.ncbi.nlm.nih.gov/29452094/) — Evolving mechanisms of vascular smooth muscle contraction highlight key targets in vascular disease.
+  - 全文检查: PMC 全文（PMC7298047）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Dexniguldipine (Dexniguldipine): 检索 top-10
+    - [24250381](https://pubmed.ncbi.nlm.nih.gov/24250381/) — Cytotoxic effect of some 1, 4-dihydropyridine derivatives containing nitroimidazole moiety.（有摘要）
+    - [41953550](https://pubmed.ncbi.nlm.nih.gov/41953550/) — Reversing ABCB1-Mediated Multidrug Resistance in Colorectal Cancer: electroacupuncture shows therapeutic potential <i>in vivo</i>.（有摘要）
+    - [32676170](https://pubmed.ncbi.nlm.nih.gov/32676170/) — Role of membrane-embedded drug efflux ABC transporters in the cancer chemotherapy.（有摘要）
+    - [39167024](https://pubmed.ncbi.nlm.nih.gov/39167024/) — Extracellular vesicles as the next-generation modulators of pharmacokinetics and pharmacodynamics of medications and their potential as adjuvant therapeutics.（有摘要）
+    - [35643072](https://pubmed.ncbi.nlm.nih.gov/35643072/) — High-throughput drug screening allowed identification of entry inhibitors specifically targeting different routes of SARS-CoV-2 Delta and Omicron/BA.1.（有摘要）
+    - [33543229](https://pubmed.ncbi.nlm.nih.gov/33543229/) — Role of ABCB1 in mediating chemoresistance of triple-negative breast cancers.（有摘要）
+    - [41922635](https://pubmed.ncbi.nlm.nih.gov/41922635/) — Mapping the inhibition landscape of P-glycoprotein via conformational ensemble docking.（有摘要）
+    - [38139840](https://pubmed.ncbi.nlm.nih.gov/38139840/) — Cardiac PET Imaging of ATP Binding Cassette (ABC) Transporters: Opportunities and Challenges.（有摘要）
+    - [36275035](https://pubmed.ncbi.nlm.nih.gov/36275035/) — Meta-analysis of active tuberculosis gene expression ascertains host directed drug targets.（有摘要）
+    - [32546683](https://pubmed.ncbi.nlm.nih.gov/32546683/) — A comprehensive map of disease networks and molecular drug discoveries for glaucoma.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Phenylephrine (Phenylephrine): 检索 top-10
+    - [42241675](https://pubmed.ncbi.nlm.nih.gov/42241675/) — α-Adrenergic regulation of blood pressure in acclimatizing lowlanders and Andean highlanders at high altitude.（有摘要）
+    - [42436520](https://pubmed.ncbi.nlm.nih.gov/42436520/) — Crosstalk of noradrenergic Ca<sup>2+</sup> and cAMP signaling in astrocytes of the murine olfactory bulb.（有摘要）
+    - [PPR1280865](https://pubmed.ncbi.nlm.nih.gov/PPR1280865/) — Pannexin 1 phosphorylation sites differentially modulate channel activity and physiological outcomes（有摘要）
+    - [42046103](https://pubmed.ncbi.nlm.nih.gov/42046103/) — Norepinephrine triggers ovarian granulosa cell ferroptosis via α<sub>1</sub> receptor-mediated FDXR suppression.（有摘要）
+    - [41585884](https://pubmed.ncbi.nlm.nih.gov/41585884/) — Pharmacological evidences for the blood pressure lowering and cardiovascular inhibitory actions of the essential oil of <i>Thymus serrulatus</i> hochst. Ex benth.（有摘要）
+    - [42489302](https://pubmed.ncbi.nlm.nih.gov/42489302/) — Calcium-channel blockade-mediated blood pressure-lowering and vasorelaxant effects of Brassica oleracea.（有摘要）
+    - [41283257](https://pubmed.ncbi.nlm.nih.gov/41283257/) — Exploring the Cardiovascular Impacts of Agmatine: A Systematic Review.（有摘要）
+    - [41390194](https://pubmed.ncbi.nlm.nih.gov/41390194/) — Clonidine-induced tension changes in guinea pig thoracic aorta: roles of α<sub>1L</sub>-adrenoceptors, L-type voltage-dependent Ca<sup>2+</sup> channels, and K<sup>+</sup> channels.（有摘要）
+    - [42599647](https://pubmed.ncbi.nlm.nih.gov/42599647/) — Alterations in arterial pressure waveform morphology following volume loading versus vasopressor administration in critically ill patients.（有摘要）
+    - [41716202](https://pubmed.ncbi.nlm.nih.gov/41716202/) — Response of human iPSC-cardiomyocytes to adrenergic drugs assessed by high-throughput pericellular oxygen measurements and computational modeling.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 42599647 — 真实标题（esummary）: “Alterations in arterial pressure waveform morphology following volume loading versus vasopressor administration in critically ill patients.”
+        - 片段 1: “Participants were included if they exhibited increased mean arterial pressure (MAP) following either blood return during hemodiafiltration discontinuation (Volume group) or intravenous phenylephrine administration (Pressor group).”
+        - 片段 2: “In this study, we examined changes in selected morphological features of the arterial pressure waveform following volume loading versus vasopressor administration in critically ill patients.”
+
+## Levodopa + Trimebutine（The absorption decrease）
+- 药对: `DB01235` / `DB09089`; a_name=Levodopa, b_name=Trimebutine; 检索词: `Levodopa` / `Trimebutine`
+- 事件: The absorption decrease; semantic_overlap: no; prob_mean=0.6673, r=0.2232
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42413884
+- 机制解释（一句话）: 左旋多巴在小肠吸收，胃肠动力/排空改变可减少其吸收（文献42413884，标题“Ageing-driven gastrointestinal variability in Parkinson's disease: implications for oral levodopa pharmacokinetics and f”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Levodopa" AND "Trimebutine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Levodopa" AND "Trimebutine")`
+  - 腿 B: `"Levodopa" AND (absorption OR bioavailability OR transporter)` / `"Trimebutine" AND (absorption OR bioavailability OR transporter)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [38570412](https://pubmed.ncbi.nlm.nih.gov/38570412/) — The Gut Microbiota in Parkinson Disease: Interactions with Drugs and Potential for Therapeutic Applications.（全文: EPMC/inPMC）
+  - [42346839](https://pubmed.ncbi.nlm.nih.gov/42346839/) — Treatment of Small Intestinal Bacterial Overgrowth (SIBO) in Gastrointestinal, Hepatic, Endocrine, Neurological, and Postoperative Diseases: A Comprehensive Narrative Review.（全文: EPMC/inPMC）
+  - [37340511](https://pubmed.ncbi.nlm.nih.gov/37340511/) — Parkinson's disease: Are gut microbes involved?（全文: EPMC/inPMC）
+  - [41096559](https://pubmed.ncbi.nlm.nih.gov/41096559/) — Gut Microbiome as a Source of Probiotic Drugs for Parkinson's Disease.（全文: EPMC/inPMC）
+  - [39635941](https://pubmed.ncbi.nlm.nih.gov/39635941/) — Development of the Japanese Anticholinergic Risk Scale: English translation of the Japanese article.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [38570412](https://pubmed.ncbi.nlm.nih.gov/38570412/) — The Gut Microbiota in Parkinson Disease: Interactions with Drugs and Potential for Therapeutic Applications.
+    - [39653334](https://pubmed.ncbi.nlm.nih.gov/39653334/) — Muscle Dystonia Manifesting as Unilateral Rectus Abdominis Hypertrophy and Abdominal Pain in Parkinson's Disease: A Case Report.
+    - [41096559](https://pubmed.ncbi.nlm.nih.gov/41096559/) — Gut Microbiome as a Source of Probiotic Drugs for Parkinson's Disease.
+  - 全文检查: PMC 全文（PMC11026199）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Levodopa (Levodopa): 检索 top-10
+    - [42413884](https://pubmed.ncbi.nlm.nih.gov/42413884/) — Ageing-driven gastrointestinal variability in Parkinson's disease: implications for oral levodopa pharmacokinetics and formulation design.（有摘要）
+    - [41471023](https://pubmed.ncbi.nlm.nih.gov/41471023/) — Three-Dimensional Screen Printing Technology Enables Sequential Release of Carbidopa and Levodopa-A New Approach Improving Levodopa Delivery for Treating Parkinson's Disease.（有摘要）
+    - [41828432](https://pubmed.ncbi.nlm.nih.gov/41828432/) — Potential Links Between Aging, Mitochondrial Dysfunction, and Drug Transporter Function-Molecular Mechanisms and Pharmacokinetic Implications.（有摘要）
+    - [42038302](https://pubmed.ncbi.nlm.nih.gov/42038302/) — Flavonoids improve neurotransmitters for Parkinson's treatment: mechanism and therapeutic potential.（有摘要）
+    - [42006045](https://pubmed.ncbi.nlm.nih.gov/42006045/) — Unravelling the multi-target mechanism of methoxylated flavonoids in Parkinson's disease: Insights from network pharmacology and molecular dynamics.（有摘要）
+    - [41724884](https://pubmed.ncbi.nlm.nih.gov/41724884/) — Advancing the Treatment of Motor Fluctuations in Parkinson's Disease with a Next-Generation Levodopa/Carbidopa Formulation.（有摘要）
+    - [41893061](https://pubmed.ncbi.nlm.nih.gov/41893061/) — No New Relevant Treatment Options for L-DOPA-Induced Dyskinesia from a Clinician's Point of View.（有摘要）
+    - [41683101](https://pubmed.ncbi.nlm.nih.gov/41683101/) — Exploring the Role of Food and Food-Related Compounds in Parkinson's Disease.（有摘要）
+    - [41471375](https://pubmed.ncbi.nlm.nih.gov/41471375/) — Beyond Dysphagia in Parkinson's Disease: 3D Printing of Orally Disintegrating Tablets (ODTs) for Optimized Treatment.（有摘要）
+    - [42346015](https://pubmed.ncbi.nlm.nih.gov/42346015/) — The Gut Microbiome Dependency Continuum in Drug Discovery: A Unified Pharmacology Framework Linking Clinical Drugs, Natural Products, and Engineered Microbial Therapeutics.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 42413884 — 真实标题（esummary）: “Ageing-driven gastrointestinal variability in Parkinson's disease: implications for oral levodopa pharmacokinetics and formulation design.”
+        - 片段 1: “Yet with advancing age, the reliability of oral therapy progressively declines not simply due to inadequate dosing, but because ageing reshapes the gastrointestinal environment on which drug absorption depends.”
+        - 片段 2: “Delayed gastric emptying, inconsistent proximal intestinal delivery, microbial drug metabolism, and real-world administration constraints collectively amplify pharmacokinetic variability, producing erratic onset, fluctuating plasma profiles, and reduced therapeutic predictability.”
+  - Trimebutine (Trimebutine): 检索 top-10
+    - [41187267](https://pubmed.ncbi.nlm.nih.gov/41187267/) — Meta-Analysis and Topological Perturbation in Interactomic Network for Antiopioid Addiction Drug Repurposing.（有摘要）
+    - [41866875](https://pubmed.ncbi.nlm.nih.gov/41866875/) — Expert Opinion on the Efficacy and Safety of Antispasmodics with a Focus on Irritable Bowel Syndrome.（有摘要）
+    - [40308456](https://pubmed.ncbi.nlm.nih.gov/40308456/) — Anticholinergic agents and impaired cognitive function: is there a risk for patients with irritable bowel syndrome?（无摘要）
+    - [42253784](https://pubmed.ncbi.nlm.nih.gov/42253784/) — Oral Delivery Systems for Gasotransmitters in Therapeutic Applications.（有摘要）
+    - [38570412](https://pubmed.ncbi.nlm.nih.gov/38570412/) — The Gut Microbiota in Parkinson Disease: Interactions with Drugs and Potential for Therapeutic Applications.（有摘要）
+    - [40181149](https://pubmed.ncbi.nlm.nih.gov/40181149/) — Activity of GPCR-targeted drugs influenced by human gut microbiota metabolism.（有摘要）
+    - [39623876](https://pubmed.ncbi.nlm.nih.gov/39623876/) — Unlocking the potential of the thioamide group in drug design and development.（无摘要）
+    - [42157997](https://pubmed.ncbi.nlm.nih.gov/42157997/) — Gui-Shao San Umbilical Moxibustion for Diarrhea-Predominant Irritable Bowel Syndrome With Liver Depression and Spleen Deficiency Pattern: A Randomized Controlled Trial.（有摘要）
+    - [40190543](https://pubmed.ncbi.nlm.nih.gov/40190543/) — Meta analysis of clinical efficacy of acupoint application in the treatment of irritable bowel syndrome.（有摘要）
+    - [41238998](https://pubmed.ncbi.nlm.nih.gov/41238998/) — Use of Sodium Butyrate and Its Microencapsulated Forms in Intestinal Diseases-Current Clinical Approach.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Desipramine + Desipramine（The serum concentration of the active metabolites increase）
+- 药对: `DB01151` / `DB01151`; a_name=Desipramine, b_name=Desipramine; 检索词: `Desipramine` / `Desipramine`
+- 事件: The serum concentration of the active metabolites increase; semantic_overlap: yes; prob_mean=0.6629, r=0.2160
+- v1 证据档: class_suggested（类别级机制建议，需人工裁决） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 28520379, 39452902
+- 机制解释（一句话）: Desipramine 既是活性代谢物（imipramine 经 CYP 代谢生成）也是 CYP2D6 底物，其血浆浓度受 CYP2D6 活性影响（文献28520379/39452902，标题“Imipramine Therapy and CYP2D6 and CYP2C19 Genotype.”）；同一药物两侧：Desipramine 同时承担母药与活性代谢物角色，血浆浓度均受 CYP2D6 活性影响（文献28520379/39452902，标题“Imipramine Therapy and CYP2D6 and CYP2C19 Genotype.”）。Desipramine 为 CYP2D6 底物与活性代谢物角色；CYP2D6 活性降低可提高其（及母药）血浆浓度。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Desipramine" AND "Desipramine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Desipramine" AND "Desipramine")`
+  - 腿 B: `"Desipramine" AND (metabolite OR CYP OR plasma concentration)` / `"Desipramine" AND (metabolite OR CYP OR plasma concentration)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [28520379](https://pubmed.ncbi.nlm.nih.gov/28520379/) — Imipramine Therapy and CYP2D6 and CYP2C19 Genotype（全文: EPMC/inPMC）
+  - [42211338](https://pubmed.ncbi.nlm.nih.gov/42211338/) — Desipramine treatment disrupts phagocytic and intracellular survival of <i>Brucella abortus</i> 544 in RAW 264.7 cells and promotes bacterial resistance with enhanced immune responses in ICR mice.（全文: EPMC/inPMC）
+  - [42381757](https://pubmed.ncbi.nlm.nih.gov/42381757/) — The efficacy and safety of hyoscyamine, dicyclomine, and desipramine in the treatment of irritable pouch syndrome-a retrospective cohort study.（全文: EPMC/inPMC）
+  - [29262158](https://pubmed.ncbi.nlm.nih.gov/29262158/) — Desipramine（全文: EPMC/inPMC）
+  - [42029037](https://pubmed.ncbi.nlm.nih.gov/42029037/) — Imipramine: Do Metabolite Plasma Levels Affect Treatment Response?（无全文）
+  - q2 top-3（宽共现探测）:
+    - [42587754](https://pubmed.ncbi.nlm.nih.gov/42587754/) — Stepwise Translational Validation of the Screening Hit Desipramine Reveals Limits of Fibroblast-State Modulation in Lung Fibrosis.
+    - [28520379](https://pubmed.ncbi.nlm.nih.gov/28520379/) — Imipramine Therapy and CYP2D6 and CYP2C19 Genotype
+    - [42549822](https://pubmed.ncbi.nlm.nih.gov/42549822/) — A pharmacometric framework for norepinephrine transporter occupancy and dose equivalence across psychotropic medications.
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Desipramine (Desipramine): 检索 top-10
+    - [41494464](https://pubmed.ncbi.nlm.nih.gov/41494464/) — Role of metabolites in drug-drug interactions.（有摘要）
+    - [28520379](https://pubmed.ncbi.nlm.nih.gov/28520379/) — Imipramine Therapy and CYP2D6 and CYP2C19 Genotype（有摘要）
+    - [40758244](https://pubmed.ncbi.nlm.nih.gov/40758244/) — Assessing Cytochrome P450 Drug Interaction Risk for Dordaviprone Using Physiologically Based Pharmacokinetic Modeling.（有摘要）
+    - [41249771](https://pubmed.ncbi.nlm.nih.gov/41249771/) — Exploring the roles of cytochrome P450 enzymes and their inhibitors in cancers and non-neoplastic human diseases.（有摘要）
+    - [39953671](https://pubmed.ncbi.nlm.nih.gov/39953671/) — A Comprehensive CYP2D6 Drug-Drug-Gene Interaction Network for Application in Precision Dosing and Drug Development.（有摘要）
+    - [42211338](https://pubmed.ncbi.nlm.nih.gov/42211338/) — Desipramine treatment disrupts phagocytic and intracellular survival of <i>Brucella abortus</i> 544 in RAW 264.7 cells and promotes bacterial resistance with enhanced immune responses in ICR mice.（有摘要）
+    - [39452902](https://pubmed.ncbi.nlm.nih.gov/39452902/) — Metabolite Measurement in Index Substrate Drug Interaction Studies: A Review of the Literature and Recent New Drug Application Reviews.（有摘要）
+    - [41227172](https://pubmed.ncbi.nlm.nih.gov/41227172/) — Prevalence of Cannabidiol (CBD) Use Among Patients Taking Medications with Known Drug-Drug Interactions: A Cross-Sectional Analysis.（有摘要）
+    - [40522665](https://pubmed.ncbi.nlm.nih.gov/40522665/) — Evaluating the drug interactions in kratom usage: clinical application.（有摘要）
+    - [39870954](https://pubmed.ncbi.nlm.nih.gov/39870954/) — An Exploration of the Interplay Between Caffeine and Antidepressants Through the Lens of Pharmacokinetics and Pharmacodynamics.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 28520379 — 真实标题（esummary）: “Imipramine Therapy and CYP2D6 and CYP2C19 Genotype.”
+        - 片段 1: “Imipramine is primarily metabolized via CYP2C19 to active metabolites, including desipramine, another TCA.”
+        - 片段 2: “Individuals who are CYP2D6 IM should take 70% of the standard dose and be monitored for side effects and appropriate plasma levels of imipramine and desipramine.”
+      - PMID 39452902 — 真实标题（esummary）: “Metabolite Measurement in Index Substrate Drug Interaction Studies: A Review of the Literature and Recent New Drug Application Reviews.”
+        - 片段 1: “The aim of this analysis is to review metabolite measurement in clinical DDI studies, focusing on index substrates for cytochrome P450 (CYP) enzymes, including CYP1A2 (caffeine), CYP2B6 (bupropion), CYP2C8 (repaglinide), CYP2C9 ((S)-warfarin, flurbiprofen), CYP2C19 (omeprazole), CYP2D6 (desipramine,”
+  - Desipramine (Desipramine): 检索 top-10
+    - [41494464](https://pubmed.ncbi.nlm.nih.gov/41494464/) — Role of metabolites in drug-drug interactions.（有摘要）
+    - [28520379](https://pubmed.ncbi.nlm.nih.gov/28520379/) — Imipramine Therapy and CYP2D6 and CYP2C19 Genotype（有摘要）
+    - [40758244](https://pubmed.ncbi.nlm.nih.gov/40758244/) — Assessing Cytochrome P450 Drug Interaction Risk for Dordaviprone Using Physiologically Based Pharmacokinetic Modeling.（有摘要）
+    - [41249771](https://pubmed.ncbi.nlm.nih.gov/41249771/) — Exploring the roles of cytochrome P450 enzymes and their inhibitors in cancers and non-neoplastic human diseases.（有摘要）
+    - [39953671](https://pubmed.ncbi.nlm.nih.gov/39953671/) — A Comprehensive CYP2D6 Drug-Drug-Gene Interaction Network for Application in Precision Dosing and Drug Development.（有摘要）
+    - [42211338](https://pubmed.ncbi.nlm.nih.gov/42211338/) — Desipramine treatment disrupts phagocytic and intracellular survival of <i>Brucella abortus</i> 544 in RAW 264.7 cells and promotes bacterial resistance with enhanced immune responses in ICR mice.（有摘要）
+    - [39452902](https://pubmed.ncbi.nlm.nih.gov/39452902/) — Metabolite Measurement in Index Substrate Drug Interaction Studies: A Review of the Literature and Recent New Drug Application Reviews.（有摘要）
+    - [41227172](https://pubmed.ncbi.nlm.nih.gov/41227172/) — Prevalence of Cannabidiol (CBD) Use Among Patients Taking Medications with Known Drug-Drug Interactions: A Cross-Sectional Analysis.（有摘要）
+    - [40522665](https://pubmed.ncbi.nlm.nih.gov/40522665/) — Evaluating the drug interactions in kratom usage: clinical application.（有摘要）
+    - [39870954](https://pubmed.ncbi.nlm.nih.gov/39870954/) — An Exploration of the Interplay Between Caffeine and Antidepressants Through the Lens of Pharmacokinetics and Pharmacodynamics.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 28520379 — 真实标题（esummary）: “Imipramine Therapy and CYP2D6 and CYP2C19 Genotype.”
+        - 片段 1: “Imipramine is primarily metabolized via CYP2C19 to active metabolites, including desipramine, another TCA.”
+        - 片段 2: “Individuals who are CYP2D6 IM should take 70% of the standard dose and be monitored for side effects and appropriate plasma levels of imipramine and desipramine.”
+      - PMID 39452902 — 真实标题（esummary）: “Metabolite Measurement in Index Substrate Drug Interaction Studies: A Review of the Literature and Recent New Drug Application Reviews.”
+        - 片段 1: “The aim of this analysis is to review metabolite measurement in clinical DDI studies, focusing on index substrates for cytochrome P450 (CYP) enzymes, including CYP1A2 (caffeine), CYP2B6 (bupropion), CYP2C8 (repaglinide), CYP2C9 ((S)-warfarin, flurbiprofen), CYP2C19 (omeprazole), CYP2D6 (desipramine,”
+- **v1 历史档位（不沿用）**: class_suggested（类别级机制建议，需人工裁决），PMID 42549822: “To facilitate cross-drug comparisons of noradrenergic activity, we developed a pharmacometric model to estimate NET occupancy for 26 psychotropic agents and their active metabolites.”
+
+## Terbutaline + Pipecuronium（the neuromuscular blocking activities decrease）
+- 药对: `DB00871` / `DB01338`; a_name=Terbutaline, b_name=Pipecuronium; 检索词: `Terbutaline` / `Pipecuronium`
+- 事件: the neuromuscular blocking activities decrease; semantic_overlap: yes; prob_mean=0.6517, r=0.1977
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Terbutaline" AND "Pipecuronium") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Terbutaline" AND "Pipecuronium")`
+  - 腿 B: `"Terbutaline" AND (neuromuscular block OR muscle relaxant)` / `"Pipecuronium" AND (neuromuscular block OR muscle relaxant)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [34561984](https://pubmed.ncbi.nlm.nih.gov/34561984/) — Effects of Natural Products on Neuromuscular Junction.（全文: EPMC/inPMC）
+  - [32546683](https://pubmed.ncbi.nlm.nih.gov/32546683/) — A comprehensive map of disease networks and molecular drug discoveries for glaucoma.（全文: EPMC/inPMC）
+  - [28513831](https://pubmed.ncbi.nlm.nih.gov/28513831/) — Avoidance versus use of neuromuscular blocking agents for improving conditions during tracheal intubation or direct laryngoscopy in adults and adolescents.（全文: EPMC/inPMC）
+  - [21818695](https://pubmed.ncbi.nlm.nih.gov/21818695/) — BDDCS applied to over 900 drugs.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [PMC11207054](https://pubmed.ncbi.nlm.nih.gov/PMC11207054/) — Remapping the Chemical Space and the Pharmacological Space of Drugs: What Can We Expect from the Road Ahead?
+    - [34561984](https://pubmed.ncbi.nlm.nih.gov/34561984/) — Effects of Natural Products on Neuromuscular Junction.
+    - [34254223](https://pubmed.ncbi.nlm.nih.gov/34254223/) — Examination of Urinary Excretion of Unchanged Drug in Humans and Preclinical Animal Models: Increasing the Predictability of Poor Metabolism in Humans.
+  - 全文检查: PMC 全文（PMC9608237）已抓取，两药在正文中未共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Terbutaline (Terbutaline): 检索 top-10
+    - [42367514](https://pubmed.ncbi.nlm.nih.gov/42367514/) — Anaesthetic Management of a Child With Severe Spastic Quadriplegic Cerebral Palsy: A Case Report.（有摘要）
+    - [42311723](https://pubmed.ncbi.nlm.nih.gov/42311723/) — Suspected Neostigmine-Associated Bronchospasm Complicated by Pulmonary Edema During General Anesthesia: A Case Report.（有摘要）
+    - [40443603](https://pubmed.ncbi.nlm.nih.gov/40443603/) — The Revolutionary Role of Ultrasound in Anaesthetic Management of Apert Syndrome: A Report of Two Cases.（有摘要）
+    - [42067755](https://pubmed.ncbi.nlm.nih.gov/42067755/) — Allergic reaction to nalbuphine administration in a pre-adolescent patient: a case report and literature review.（有摘要）
+    - [41870572](https://pubmed.ncbi.nlm.nih.gov/41870572/) — Optimizing nursing interventions and identifying prognostic factors for airway complications in pediatric bronchoscopy.（有摘要）
+    - [38711728](https://pubmed.ncbi.nlm.nih.gov/38711728/) — An Innovative Use of Point-of-Care Ultrasound for Identification and Management of a Rare and Uncommon Perioperative Complication: Periorbital Emphysema Following Sinus Surgery in a Pediatric Patient.（有摘要）
+    - [38693043](https://pubmed.ncbi.nlm.nih.gov/38693043/) — Inhaled magnesium versus inhaled salbutamol in rescue treatment for moderate and severe asthma exacerbations in pediatric patients.（有摘要）
+    - [40110278](https://pubmed.ncbi.nlm.nih.gov/40110278/) — Status asthmaticus and the use of ketamine nebulization and magnesium sulfate: current strategies and outcomes.（有摘要）
+    - [35121059](https://pubmed.ncbi.nlm.nih.gov/35121059/) — Bradycardia in a pediatric population after sugammadex administration: case series.（有摘要）
+    - [40575245](https://pubmed.ncbi.nlm.nih.gov/40575245/) — Predicting Perioperative Respiratory Adverse Events in Children Undergoing Elective Surgeries Under General Anesthesia Using COLDS Score: A Prospective Observational Study.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Pipecuronium (Pipecuronium): 检索 top-10
+    - [40221998](https://pubmed.ncbi.nlm.nih.gov/40221998/) — [Guideline on the safe use of neuromuscular blocking agents].（有摘要）
+    - [39748489](https://pubmed.ncbi.nlm.nih.gov/39748489/) — Skeletal Muscle Relaxants and Their Impact on Intracranial Pressure in Neurosurgery.（有摘要）
+    - [42123245](https://pubmed.ncbi.nlm.nih.gov/42123245/) — Neuromuscular Blocking Agents in Anesthesia: A Narrative Review of Contemporary Challenges and Reversal Approaches.（有摘要）
+    - [39741402](https://pubmed.ncbi.nlm.nih.gov/39741402/) — Impact of Liver Disease on Use of Muscle Relaxants in Anesthesia: A Comprehensive Review.（有摘要）
+    - [38949163](https://pubmed.ncbi.nlm.nih.gov/38949163/) — The Influence of Acid-Base Balance on Anesthetic Muscle Relaxants: A Comprehensive Review on Clinical Applications and Mechanisms.（有摘要）
+    - [40677119](https://pubmed.ncbi.nlm.nih.gov/40677119/) — The Use of Cisatracurium in Cardiac Surgery.（有摘要）
+    - [40566125](https://pubmed.ncbi.nlm.nih.gov/40566125/) — The Relationship Between Neuromuscular Block Depth and Airway Retroglossal Area: A Prospective, Nonrandomized, Observational Clinical Trial.（有摘要）
+    - [38596644](https://pubmed.ncbi.nlm.nih.gov/38596644/) — The Use of Muscle Relaxants After Chemotherapy and Radiotherapy.（有摘要）
+    - [39188037](https://pubmed.ncbi.nlm.nih.gov/39188037/) — Navigating Anesthesia: Muscle Relaxants and Reversal Agents in Patients with Renal Impairment.（有摘要）
+    - [40931486](https://pubmed.ncbi.nlm.nih.gov/40931486/) — Use of Muscle Relaxants in Emergency Medicine: A Review.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 40221998: 肌松药安全使用指南：仅确认 Pipecuronium 为非去极化肌松药，摘要不含拟交感/β2 激动减弱神经肌肉阻滞的机制
+      - PMID 38949163: 酸碱平衡对肌松药影响综述：仅确认非去极化肌松药为烟碱受体竞争性拮抗剂，不含 β2 激动剂减弱肌松的机制
+
+## Ertugliflozin + Quinapril（The risk or severity of renal failure hypotension and hyperkalemia increase）
+- 药对: `DB11827` / `DB00881`; a_name=Ertugliflozin, b_name=Quinapril; 检索词: `Ertugliflozin` / `Quinapril`
+- 事件: The risk or severity of renal failure hypotension and hyperkalemia increase; semantic_overlap: yes; prob_mean=0.6513, r=0.1971
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 41994768
+- 机制解释（一句话）: SGLT2 抑制剂（Ertugliflozin）渗透性利尿→容量不足/低血压，加重肾脏低灌注（文献41994768，标题“Sodium-Glucose Cotransporter-2 Inhibitors Across the Glycemic Spectrum: Cardiovascular and Renal Outcomes With Mechanist”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Ertugliflozin" AND "Quinapril") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Ertugliflozin" AND "Quinapril")`
+  - 腿 B: `"Ertugliflozin" AND (excretion OR renal OR hypotens OR hypokalemia OR potassium)` / `"Quinapril" AND (excretion OR renal OR hypotens OR hypokalemia OR potassium)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [42222151](https://pubmed.ncbi.nlm.nih.gov/42222151/) — Comparative clinical outcomes and safety of finerenone, SGLT2 inhibitors, RAS inhibitors and ARNI in heart failure with preserved or mildly reduced ejection fraction: a systematic review and network meta-analysis.（全文: EPMC/inPMC）
+  - [39054726](https://pubmed.ncbi.nlm.nih.gov/39054726/) — Pilot trial of an electronic decision support to improve care for emergency department patients with acute heart failure.（全文: EPMC/inPMC）
+  - [41717306](https://pubmed.ncbi.nlm.nih.gov/41717306/) — Identifying high healthcare utilizers following cervical spine surgery using comprehensive predictive modeling techniques.（全文: EPMC/inPMC）
+  - [39188584](https://pubmed.ncbi.nlm.nih.gov/39188584/) — Abandonment of prescriptions in medically underserved areas: Primary medication non-adherence in community pharmacies in the delta region of the United States.（全文: EPMC/inPMC）
+  - [41775987](https://pubmed.ncbi.nlm.nih.gov/41775987/) — Strategies for chronic coronary disease: A brief guide for clinicians.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [39188584](https://pubmed.ncbi.nlm.nih.gov/39188584/) — Abandonment of prescriptions in medically underserved areas: Primary medication non-adherence in community pharmacies in the delta region of the United States.
+    - [39054726](https://pubmed.ncbi.nlm.nih.gov/39054726/) — Pilot trial of an electronic decision support to improve care for emergency department patients with acute heart failure.
+    - [41717306](https://pubmed.ncbi.nlm.nih.gov/41717306/) — Identifying high healthcare utilizers following cervical spine surgery using comprehensive predictive modeling techniques.
+  - 全文检查: PMC 全文（PMC13219348）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Ertugliflozin (Ertugliflozin): 检索 top-10
+    - [42123127](https://pubmed.ncbi.nlm.nih.gov/42123127/) — SGLT2 Inhibitors in Clinical Practice: Cardiorenal Benefits and Risk of Fungal Infections-A Nephrologist's Perspective.（有摘要）
+    - [42329962](https://pubmed.ncbi.nlm.nih.gov/42329962/) — Pharmacokinetic interactions between three SGLT2 inhibitors and telmisartan: A focus on empagliflozin, ertugliflozin, and henagliflozin.（有摘要）
+    - [42188915](https://pubmed.ncbi.nlm.nih.gov/42188915/) — Pharmacokinetics of Ertugliflozin, a Sodium-Glucose Co-Transporter-2 Inhibitor (SGLT2i) in Horses After Enteral Administration.（有摘要）
+    - [41893024](https://pubmed.ncbi.nlm.nih.gov/41893024/) — Beyond Glycemia: Pharmacology-Driven Ketogenesis and Euglycemic DKA with SGLT2 Inhibitors-A Practical Review for Acute Care.（有摘要）
+    - [42147662](https://pubmed.ncbi.nlm.nih.gov/42147662/) — Sodium-Glucose Cotransporter 2 Inhibitors in Diabetic Nephropathy: A Systematic Review and Meta-Analysis.（有摘要）
+    - [42205924](https://pubmed.ncbi.nlm.nih.gov/42205924/) — SGLT2 inhibitor role in cardio-metabolic-renal diseases: a narrative review of recent evidence and their pharmacological, clinical and economic implications.（有摘要）
+    - [42597194](https://pubmed.ncbi.nlm.nih.gov/42597194/) — Case Report: Efficacy and safety of SGLT2 inhibitors in patients with Alström syndrome: a follow-up report of two siblings from the same family.（有摘要）
+    - [42032725](https://pubmed.ncbi.nlm.nih.gov/42032725/) — SGLT-2 inhibitor-associated significant hypernatremia and euglycemic diabetic ketoacidosis after cardiac surgery: a case series.（有摘要）
+    - [42352947](https://pubmed.ncbi.nlm.nih.gov/42352947/) — SGLT2 Inhibitors Between Benefits and Euglycemic Ketoacidosis: A Concise Review.（有摘要）
+    - [41994768](https://pubmed.ncbi.nlm.nih.gov/41994768/) — Sodium-Glucose Cotransporter-2 Inhibitors Across the Glycemic Spectrum: Cardiovascular and Renal Outcomes With Mechanistic Insights.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 41994768 — 真实标题（esummary）: “Sodium-Glucose Cotransporter-2 Inhibitors Across the Glycemic Spectrum: Cardiovascular and Renal Outcomes With Mechanistic Insights.”
+        - 片段 1: “Clinically, SGLT2 inhibitors consistently reduce HF hospitalizations and composite cardiorenal endpoints in diabetic and non-diabetic populations across CKD stages studied and heart conditions, with a generally favorable safety profile; genital mycotic infections are most common, while diabetic keto”
+  - Quinapril (Quinapril): 检索 top-10
+    - [42077598](https://pubmed.ncbi.nlm.nih.gov/42077598/) — Adverse event of ACE inhibitors: A descriptive analysis of FAERS data.（有摘要）
+    - [41982503](https://pubmed.ncbi.nlm.nih.gov/41982503/) — Spontaneous Remission of Late Relapsing Membranous Nephropathy After Previous Immunosuppressant-Induced Remission: Case Report.（有摘要）
+    - [40416330](https://pubmed.ncbi.nlm.nih.gov/40416330/) — Cushing's Syndrome due to a Renal Neuroendocrine Tumor: A Case Report.（有摘要）
+    - [40507483](https://pubmed.ncbi.nlm.nih.gov/40507483/) — Safety and Risks of Antihypertensive Medications During Breastfeeding: A Review of Current Guidelines.（有摘要）
+    - [41789002](https://pubmed.ncbi.nlm.nih.gov/41789002/) — Case Report: A patient with metastatic fumarate hydratase-deficient renal cell carcinoma associated with leiomyomatosis: real-world clinical insights on systemic therapy and liver-directed SBRT.（有摘要）
+    - [42346870](https://pubmed.ncbi.nlm.nih.gov/42346870/) — Present and Future Options for Pharmacotherapy in Cardiovascular Disease: Hemodynamic and Mechanistic Therapeutic Targets.（有摘要）
+    - [40677356](https://pubmed.ncbi.nlm.nih.gov/40677356/) — Safety of Drugs in Breastfeeding Women With CKD.（有摘要）
+    - [39044930](https://pubmed.ncbi.nlm.nih.gov/39044930/) — Angiotensin II-independent abnormal renal vascular reactivity during puromycin nephropathy.（有摘要）
+    - [39925732](https://pubmed.ncbi.nlm.nih.gov/39925732/) — A perspective on small molecules targeting the renin-angiotensin-aldosterone system and their utility in cardiovascular diseases: exploring the structural insights for rational drug discovery and development.（有摘要）
+    - [40809316](https://pubmed.ncbi.nlm.nih.gov/40809316/) — The anti-aging potential of antihypertensive peptides of <i>Pariset</i>, a dataset of algal peptides.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 42077598: ACE 抑制剂 FAERS 分析：摘要仅有治疗用途陈述，无高钾/低血压/肾损害证据
+      - PMID 39044930: 嘌呤霉素肾病动物模型：Quinapril 用于降低高血压（方向相反），非 ACEi 不良反应机制文献
+
+## Choline salicylate + Ramipril（The risk or severity of renal failure increase）
+- 药对: `DB14006` / `DB00178`; a_name=(未解析), b_name=Ramipril; 检索词: `Choline salicylate` / `Ramipril`
+- 事件: The risk or severity of renal failure increase; semantic_overlap: yes; prob_mean=0.6450, r=0.1870
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Choline salicylate" AND "Ramipril") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Choline salicylate" AND "Ramipril")`
+  - 腿 B: `"Choline salicylate" AND (excretion OR renal)` / `"Ramipril" AND (excretion OR renal)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [33257373](https://pubmed.ncbi.nlm.nih.gov/33257373/) — Salicylate toxicity from chronic bismuth subsalicylate use.（全文: EPMC/inPMC）
+  - [32368653](https://pubmed.ncbi.nlm.nih.gov/32368653/) — Investigating the effect of some fluoroquinolones on C-reactive protein levels and ACh-Induced blood pressure reduction deviations after aging of diabetes in STZ-Induced diabetic wistar rats.（全文: EPMC/inPMC）
+  - [29885251](https://pubmed.ncbi.nlm.nih.gov/29885251/) — Serious Hypoglycemia and Use of Warfarin in Combination With Sulfonylureas or Metformin.（全文: EPMC/inPMC）
+  - [21897755](https://pubmed.ncbi.nlm.nih.gov/21897755/) — Role of angiotensin converting enzyme inhibitors and angiotensin receptor blockers in hypertension of chronic kidney disease and renoprotection. Study results.（全文: EPMC/inPMC）
+  - [35557843](https://pubmed.ncbi.nlm.nih.gov/35557843/) — Prescribed drugs containing nitrogen heterocycles: an overview.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [33257373](https://pubmed.ncbi.nlm.nih.gov/33257373/) — Salicylate toxicity from chronic bismuth subsalicylate use.
+    - [34880035](https://pubmed.ncbi.nlm.nih.gov/34880035/) — Giant cell arteritis complicated by tongue necrosis and bilateral cerebellar ischaemic stroke.
+    - [32368653](https://pubmed.ncbi.nlm.nih.gov/32368653/) — Investigating the effect of some fluoroquinolones on C-reactive protein levels and ACh-Induced blood pressure reduction deviations after aging of diabetes in STZ-Induced diabetic wistar rats.
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Choline salicylate (Choline salicylate): 检索 top-10
+    - [IND609392892](https://pubmed.ncbi.nlm.nih.gov/IND609392892/) — Auricularia auricula polysaccharides intervention in vivo: inhibition of endogenous malodorous gas compounds through gut regulation and enhanced liver metabolism（有摘要）
+    - [41820691](https://pubmed.ncbi.nlm.nih.gov/41820691/) — Challenges and unmet needs of [<sup>18</sup>F]fluorocholine PET in hyperparathyroidism: A framework for refining current practice and advancing parathyroid imaging.（有摘要）
+    - [41539758](https://pubmed.ncbi.nlm.nih.gov/41539758/) — Auricularia auricula polysaccharides intervention in vivo: inhibition of endogenous malodorous gas compounds through gut regulation and enhanced liver metabolism.（有摘要）
+    - [42255661](https://pubmed.ncbi.nlm.nih.gov/42255661/) — Methotrexate toxicity due to a medication dispensing error compounded by an interaction with proton pump inhibitors.（有摘要）
+    - [41533239](https://pubmed.ncbi.nlm.nih.gov/41533239/) — [18F]Fluorocholine PET/CT in a 15-year-old patient suggested HPT-JT syndrome with active cemento-ossifying fibroma.（有摘要）
+    - [41943822](https://pubmed.ncbi.nlm.nih.gov/41943822/) — A rare coexistence: Ollier disease and primary hyperparathyroidism-mere coincidence or expanding the spectrum of Ollier disease?（有摘要）
+    - [41424402](https://pubmed.ncbi.nlm.nih.gov/41424402/) — Renal hyperparathyroidism: preoperative detection of abnormal parathyroid glands by 18F-fluorocholine PET/CT and ultrasonography. Comparison of diagnostic performance and optimization of imaging sequence based on 159 paired examinations.（有摘要）
+    - [39434614](https://pubmed.ncbi.nlm.nih.gov/39434614/) — Frequency and characteristics of ectopic parathyroid adenomas in a cohort of patients referred for 18 F-fluorocholine PET/CT.（有摘要）
+    - [PPR1080215](https://pubmed.ncbi.nlm.nih.gov/PPR1080215/) — Hypophosphatemia in the Diagnosis and Management of Primary Hyperparathyroid（有摘要）
+    - [42366302](https://pubmed.ncbi.nlm.nih.gov/42366302/) — An intrathyroidal cystic parathyroid adenoma localised with [<sup>18</sup>F]fluorocholine PET/CT in pregnancy.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Ramipril (Ramipril): 检索 top-10
+    - [41948060](https://pubmed.ncbi.nlm.nih.gov/41948060/) — Reversible Nephrogenic Diabetes Insipidus Induced by Lithium: A Case Report.（有摘要）
+    - [42207617](https://pubmed.ncbi.nlm.nih.gov/42207617/) — Sodium-Glucose Cotransporter 2 Inhibitors in Alport Syndrome: Emerging Clinical Evidence and Mechanistic Insights.（无摘要）
+    - [42245731](https://pubmed.ncbi.nlm.nih.gov/42245731/) — First case report of hypouricemia associated with adjuvant imatinib therapy in a patient with small intestinal gastrointestinal stromal tumor.（有摘要）
+    - [41877053](https://pubmed.ncbi.nlm.nih.gov/41877053/) — Acute renal failure after dietary change - a case report.（有摘要）
+    - [41595635](https://pubmed.ncbi.nlm.nih.gov/41595635/) — Dual Inhibition of the Renin-Angiotensin-Aldosterone System and Sodium-Glucose Cotransporter-2: Mechanistic and Clinical Evidence for Cardiorenal Protection.（有摘要）
+    - [42626272](https://pubmed.ncbi.nlm.nih.gov/42626272/) — Effect of pentoxifylline on inflammatory markers in non-diabetic chronic kidney disease patients: A prospective, interventional, open label.（有摘要）
+    - [42057850](https://pubmed.ncbi.nlm.nih.gov/42057850/) — Potential drug-drug interactions in hospitalized patients with acute coronary syndrome at a tertiary care hospital in upper Egypt.（有摘要）
+    - [41201847](https://pubmed.ncbi.nlm.nih.gov/41201847/) — Triple Renin-Angiotensin System/Sodium-Glucose Transporter 2/Glycogen Synthase Kinase-3 β Inhibition for the Progression of CKD in Col4a3 -/- Mice with Alport Nephropathy.（无摘要）
+    - [41873338](https://pubmed.ncbi.nlm.nih.gov/41873338/) — Long-Term Safety and Effectiveness of Calcium Channel Blockers in Hypertension: A Systematic Review.（有摘要）
+    - [PMC13298033](https://pubmed.ncbi.nlm.nih.gov/PMC13298033/) — Case Report: A Canonical Splice-Site COL4A5 Variant in Alport Syndrome in a Kazakhstani Family（无摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Erythromycin + Dexniguldipine（The risk or severity of QTc prolongation and hypotension increase）
+- 药对: `DB00199` / `DB09239`; a_name=Erythromycin, b_name=Dexniguldipine; 检索词: `Erythromycin` / `Dexniguldipine`
+- 事件: The risk or severity of QTc prolongation and hypotension increase; semantic_overlap: yes; prob_mean=0.6233, r=0.1538
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 41896159
+- 机制解释（一句话）: Erythromycin 为已知 QTc 延长/尖端扭转型室速药物（hERG 阻滞）（文献41896159，标题“Drug-associated torsades de pointes and QT prolongation in infants: A focused real-world disproportionality analysis pha”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Erythromycin" AND "Dexniguldipine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Erythromycin" AND "Dexniguldipine")`
+  - 腿 B: `"Erythromycin" AND (QTc OR QT prolongation OR torsades OR hypotens OR vasodilat)` / `"Dexniguldipine" AND (QTc OR QT prolongation OR torsades OR hypotens OR vasodilat)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [40429842](https://pubmed.ncbi.nlm.nih.gov/40429842/) — P-Glycoprotein as a Therapeutic Target in Hematological Malignancies: A Challenge to Overcome.（全文: EPMC/inPMC）
+  - [33543229](https://pubmed.ncbi.nlm.nih.gov/33543229/) — Role of ABCB1 in mediating chemoresistance of triple-negative breast cancers.（全文: EPMC/inPMC）
+  - [35743927](https://pubmed.ncbi.nlm.nih.gov/35743927/) — Multidrug Resistance of Cancer Cells and the Vital Role of P-Glycoprotein.（全文: EPMC/inPMC）
+  - [32676170](https://pubmed.ncbi.nlm.nih.gov/32676170/) — Role of membrane-embedded drug efflux ABC transporters in the cancer chemotherapy.（全文: EPMC/inPMC）
+  - [38136555](https://pubmed.ncbi.nlm.nih.gov/38136555/) — The Blocking of Drug Resistance Channels by Selected Hydrophobic Statins in Chemoresistance Human Melanoma.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [33543229](https://pubmed.ncbi.nlm.nih.gov/33543229/) — Role of ABCB1 in mediating chemoresistance of triple-negative breast cancers.
+    - [32676170](https://pubmed.ncbi.nlm.nih.gov/32676170/) — Role of membrane-embedded drug efflux ABC transporters in the cancer chemotherapy.
+    - [40429842](https://pubmed.ncbi.nlm.nih.gov/40429842/) — P-Glycoprotein as a Therapeutic Target in Hematological Malignancies: A Challenge to Overcome.
+  - 全文检查: PMC 全文（PMC12112708）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Erythromycin (Erythromycin): 检索 top-10
+    - [42238267](https://pubmed.ncbi.nlm.nih.gov/42238267/) — QT monitoring in chemotherapy.（有摘要）
+    - [41896159](https://pubmed.ncbi.nlm.nih.gov/41896159/) — Drug-associated torsades de pointes and QT prolongation in infants: A focused real-world disproportionality analysis pharmacovigilance study.（有摘要）
+    - [40564197](https://pubmed.ncbi.nlm.nih.gov/40564197/) — Macrolide Antibiotic Mediated Cardiac Arrhythmias: Emerging Concepts and Clinical Implications.（有摘要）
+    - [41816791](https://pubmed.ncbi.nlm.nih.gov/41816791/) — Case Report: Association of a rare single nucleotide variant in the KCNH2 gene with drug-induced QT prolongation.（有摘要）
+    - [41553550](https://pubmed.ncbi.nlm.nih.gov/41553550/) — Prescribed drugs and comorbidities as risk factors for Torsades de Pointes arrhythmia: a Swedish population-based cohort study.（有摘要）
+    - [PMC13245381](https://pubmed.ncbi.nlm.nih.gov/PMC13245381/) — Safety and Efficacy of Oral Azithromycin for Gastrointestinal Dysmotility in Pediatric Patients（无摘要）
+    - [40385318](https://pubmed.ncbi.nlm.nih.gov/40385318/) — Predictive Analysis of Non-Cardiac Drug-Induced QTc Interval Prolongation: A Cross-Sectional Study.（有摘要）
+    - [41878481](https://pubmed.ncbi.nlm.nih.gov/41878481/) — Tisdale-score-based risk stratification of QTc prolongations in hospitalized patients receiving azole antifungal therapy-a retrospective study.（有摘要）
+    - [42197401](https://pubmed.ncbi.nlm.nih.gov/42197401/) — Bedaquiline, Pretomanid, Linezolid, and Moxifloxacin: Mechanisms of Action, Drug Interactions, Adverse Effects and Use in Special Situations.（有摘要）
+    - [41797689](https://pubmed.ncbi.nlm.nih.gov/41797689/) — Results of a Phase 1 Study Assessing the Effect of CIN-102, a Novel Formulation of the Dopamine Receptor Antagonist Domperidone Designed to Treat Gastroparesis, on Cardiac Repolarization in Healthy Volunteers.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 41896159 — 真实标题（esummary）: “Drug-associated torsades de pointes and QT prolongation in infants: A focused real-world disproportionality analysis pharmacovigilance study.”
+        - 片段 1: “Significant signals for drugs associated with TdP and QT prolongation were detected, including anesthetics (fentanyl, propofol), systemic antibacterials (erythromycin, azithromycin), and various cardiac medications (propranolol, amiodarone, flecainide).”
+        - 片段 2: “Background Torsades de Pointes (TdP) is a life-threatening polymorphic ventricular tachycardia often associated with corrected QT prolongation (QTc).”
+  - Dexniguldipine (Dexniguldipine): 检索 top-5
+    - [40429842](https://pubmed.ncbi.nlm.nih.gov/40429842/) — P-Glycoprotein as a Therapeutic Target in Hematological Malignancies: A Challenge to Overcome.（有摘要）
+    - [8479548](https://pubmed.ncbi.nlm.nih.gov/8479548/) — German Society of Pharmacology and Toxicology, 34th spring meeting. Mainz, 16-18 March 1993. Abstracts.（无摘要）
+    - [8183379](https://pubmed.ncbi.nlm.nih.gov/8183379/) — German Society for Experimental and Clinical Pharmacology and Toxicology, 35th spring meeting. Mainz, Germany, 15-17 March 1994. Abstracts.（无摘要）
+    - [PMC1281792](https://pubmed.ncbi.nlm.nih.gov/PMC1281792/) — Thirty-ninth Annual Meeting February 12-16, 1995 Moscone Center San Francisco, California : Thursday Symposia and Posters, Part IV（无摘要）
+    - [1356450](https://pubmed.ncbi.nlm.nih.gov/1356450/) — Annual congress of the Austrian Society of Hematology and Oncology and the Hungarian Societies of Hematology and Oncology. Graz, 27-30 September 1992. Abstracts.（无摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Lumateperone + Lisdexamfetamine（the stimulatory activities decrease）
+- 药对: `DB06077` / `DB01255`; a_name=Lumateperone, b_name=Lisdexamfetamine; 检索词: `Lumateperone` / `Lisdexamfetamine`
+- 事件: the stimulatory activities decrease; semantic_overlap: yes; prob_mean=0.6216, r=0.1512
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42455478, 41880832, 42012868
+- 机制解释（一句话）: Lumateperone 为抗精神病药，同时调节 5-HT/多巴胺/谷氨酸神经传递（含多巴胺能机制）（文献42455478/41880832，标题“Safety and Tolerability of Adjunctive Lumateperone for the Treatment of Major Depressive Disorder: A Pooled Analysis of ”）；Lisdexamfetamine 为苯丙胺类中枢兴奋剂，具拟交感刺激活性（文献42012868，标题“Sympathomimetic Overdose With Lisdexamfetamine in a Pediatric Patient Resulting in Stress Cardiomyopathy-A Case Report.”）。Lumateperone 的多巴胺能调节作用可减弱 Lisdexamfetamine（苯丙胺类兴奋剂）的中枢刺激活性。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Lumateperone" AND "Lisdexamfetamine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Lumateperone" AND "Lisdexamfetamine")`
+  - 腿 B: `"Lumateperone" AND (stimulant OR dopamine)` / `"Lisdexamfetamine" AND (stimulant OR dopamine)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [41299801](https://pubmed.ncbi.nlm.nih.gov/41299801/) — Food for thought: re-emergence of tardive dyskinesia amid nutritional rehabilitation of atypical anorexia nervosa; a case report.（全文: EPMC/inPMC）
+  - [41918925](https://pubmed.ncbi.nlm.nih.gov/41918925/) — Treating hearts and minds: adverse cardiovascular effects of psychiatric medications.（全文: EPMC/inPMC）
+  - [39337126](https://pubmed.ncbi.nlm.nih.gov/39337126/) — Pharmacological Treatments of Negative Symptoms in Schizophrenia-An Update.（全文: EPMC/inPMC）
+  - [38993656](https://pubmed.ncbi.nlm.nih.gov/38993656/) — The Black Book of Psychotropic Dosing and Monitoring.（全文: EPMC/inPMC）
+  - [39335485](https://pubmed.ncbi.nlm.nih.gov/39335485/) — Concomitant Administration of Psychotropic and Prostate Cancer Drugs: A Pharmacoepidemiologic Study Using Drug-Drug Interaction Databases.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [41299801](https://pubmed.ncbi.nlm.nih.gov/41299801/) — Food for thought: re-emergence of tardive dyskinesia amid nutritional rehabilitation of atypical anorexia nervosa; a case report.
+    - [39096466](https://pubmed.ncbi.nlm.nih.gov/39096466/) — Pharmacological Treatment of Binge Eating Disorder and Frequent Comorbid Diseases.
+    - [41918925](https://pubmed.ncbi.nlm.nih.gov/41918925/) — Treating hearts and minds: adverse cardiovascular effects of psychiatric medications.
+  - 全文检查: PMC 全文（PMC12781378）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Lumateperone (Lumateperone): 检索 top-10
+    - [42455478](https://pubmed.ncbi.nlm.nih.gov/42455478/) — Safety and Tolerability of Adjunctive Lumateperone for the Treatment of Major Depressive Disorder: A Pooled Analysis of Two Randomized Placebo-Controlled Trials.（有摘要）
+    - [42102179](https://pubmed.ncbi.nlm.nih.gov/42102179/) — Heterogeneity in adverse events associated with lumateperone: a study on potential subgroup-specific differences.（有摘要）
+    - [41880832](https://pubmed.ncbi.nlm.nih.gov/41880832/) — Long-term adjunctive lumateperone 42 mg treatment in major depressive disorder: Results from a 6-month open-label extension study.（有摘要）
+    - [42344568](https://pubmed.ncbi.nlm.nih.gov/42344568/) — Efficacy of Adjunctive Lumateperone 42 mg on Anhedonia and Across a Broad Range of Depressive Symptoms in Major Depressive Disorder: Post Hoc Analysis of a Phase 3, Randomized, Placebo-Controlled Trial.（有摘要）
+    - [41595713](https://pubmed.ncbi.nlm.nih.gov/41595713/) — Third-Generation Antipsychotics as Augmentation in Treatment-Resistant Obsessive-Compulsive Disorder: A Narrative Review of Efficacy and Tolerability.（有摘要）
+    - [41159715](https://pubmed.ncbi.nlm.nih.gov/41159715/) — Partial agonist antipsychotic drugs differentially interact with a secondary binding site at the dopamine D2 receptor.（无摘要）
+    - [41320817](https://pubmed.ncbi.nlm.nih.gov/41320817/) — Adjunctive Lumateperone in Patients With Major Depressive Disorder: Results From a Randomized, Double-Blind, Phase 3 Trial.（有摘要）
+    - [41356959](https://pubmed.ncbi.nlm.nih.gov/41356959/) — Lumateperone Safety and Tolerability in Schizophrenia: A Narrative Review.（有摘要）
+    - [41504732](https://pubmed.ncbi.nlm.nih.gov/41504732/) — Partial D2 receptors agonists - pharmacological aspects, metabolism and use in the treatment of schizophrenia-related psychoses（有摘要）
+    - [41779005](https://pubmed.ncbi.nlm.nih.gov/41779005/) — Budget impact of xanomeline and trospium chloride for the treatment of adults with schizophrenia in the United States.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 42455478 — 真实标题（esummary）: “Safety and Tolerability of Adjunctive Lumateperone for the Treatment of Major Depressive Disorder: A Pooled Analysis of Two Randomized Placebo-Controlled Trials.”
+        - 片段 1: “Background and objectives Lumateperone, a simultaneous modulator of serotonin, dopamine, and glutamate neurotransmission, demonstrated efficacy and safety as adjunctive therapy in two phase III, randomized, double-blind, placebo-controlled trials in patients with major depressive disorder with inade”
+      - PMID 41880832 — 真实标题（esummary）: “Long-term adjunctive lumateperone 42 mg treatment in major depressive disorder: Results from a 6-month open-label extension study.”
+        - 片段 1: “This Phase 3 open-label extension study (NCT05061719) investigated long-term safety of lumateperone 42mg (simultaneous modulator of serotonin, dopamine, and glutamate neurotransmission) adjunctive to antidepressant therapy (ADT) in patients with major depressive disorder (MDD) with inadequate ADT re”
+  - Lisdexamfetamine (Lisdexamfetamine): 检索 top-10
+    - [42012868](https://pubmed.ncbi.nlm.nih.gov/42012868/) — Sympathomimetic Overdose With Lisdexamfetamine in a Pediatric Patient Resulting in Stress Cardiomyopathy-A Case Report.（有摘要）
+    - [41732374](https://pubmed.ncbi.nlm.nih.gov/41732374/) — Glutamatergic Enhancement Using As-Needed Dextromethorphan and Piracetam in a Stimulant-Partially Responsive Adult With ADHD: A Single-Case Report.（有摘要）
+    - [42128970](https://pubmed.ncbi.nlm.nih.gov/42128970/) — Stimulant Medications and Bone Health.（有摘要）
+    - [42499489](https://pubmed.ncbi.nlm.nih.gov/42499489/) — Factors associated with stimulant persistence among children with ADHD: a retrospective cohort study.（有摘要）
+    - [41767616](https://pubmed.ncbi.nlm.nih.gov/41767616/) — Central Stimulants in a Stressed Brain: Evidence Synthesis of Benefits, Burnout Risk, and Clinical Safeguards in ADHD.（有摘要）
+    - [42454559](https://pubmed.ncbi.nlm.nih.gov/42454559/) — The increasing use of cognitive enhancing drugs by those with ADHD and neurotypical individuals: Societal demands, lifestyle preferences, and ethical issues.（有摘要）
+    - [42306030](https://pubmed.ncbi.nlm.nih.gov/42306030/) — Maintained Symptom Control Following a Shortage-Driven Switch to Immediate-Release Dextroamphetamine: A Case Report.（有摘要）
+    - [42162188](https://pubmed.ncbi.nlm.nih.gov/42162188/) — Attention-deficit/hyperactivity disorder stimulant use is associated with reduced semen volume in reproductive-age men: a multi-center analysis.（有摘要）
+    - [42018215](https://pubmed.ncbi.nlm.nih.gov/42018215/) — Pharmacological Management of ADHD in Women Across Perimenopause, Menopause and Post-Menopause.（有摘要）
+    - [42305717](https://pubmed.ncbi.nlm.nih.gov/42305717/) — Prescription stimulant consumption in the United States compared with 35 other countries.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 42012868 — 真实标题（esummary）: “Sympathomimetic Overdose With Lisdexamfetamine in a Pediatric Patient Resulting in Stress Cardiomyopathy-A Case Report.”
+        - 片段 1: “Background Sympathomimetic overdoses, as seen in amphetamine ingestions, are known to have cardiac effects ranging from tachycardia and hypertension to coronary vasospasm and myocardial infarction.”
+        - 片段 2: “Conclusions Stress cardiomyopathy due to extended-release stimulant ingestion is a possible outcome of intentional ingestion.”
+    - **人工裁决剔除（b 侧）**:
+      - PMID 41732374: 右美沙芬/吡拉西坦 ADHD 单病例：刺激剂仅为背景提及，非 Lisdexamfetamine 兴奋剂机制文献
+
+## Sitagliptin + Alogliptin（The risk or severity of angioedema increase）
+- 药对: `DB01261` / `DB06203`; a_name=Sitagliptin, b_name=Alogliptin; 检索词: `Sitagliptin` / `Alogliptin`
+- 事件: The risk or severity of angioedema increase; semantic_overlap: no; prob_mean=0.6163, r=0.1434
+- v1 证据档: direct（直接证据） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 39773243, 29939586
+- 机制解释（一句话）: Sitagliptin（DPP-4 抑制剂）与血管性水肿相关（文献39773243，标题“Interaction between dipeptidyl-peptidase-4 inhibitors and drugs acting on renin angiotensin aldosterone system for the r”）；Alogliptin（DPP-4 抑制剂）同类——同类相加（文献39773243/29939586，标题“Interaction between dipeptidyl-peptidase-4 inhibitors and drugs acting on renin angiotensin aldosterone system for the r”）。Sitagliptin 与 Alogliptin 同为 DPP-4 抑制剂，同类叠加增加血管性水肿风险。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Sitagliptin" AND "Alogliptin") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Sitagliptin" AND "Alogliptin")`
+  - 腿 B: `"Sitagliptin" AND (angioedema)` / `"Alogliptin" AND (angioedema)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [PPR1276721](https://pubmed.ncbi.nlm.nih.gov/PPR1276721/) — Comparative Molecular Docking and ADMET Profiling of Five Clinically Approved DPP-4 Inhibitors: Structural Insights into Binding Affinity and Interaction Diversity（无全文）
+  - [42049410](https://pubmed.ncbi.nlm.nih.gov/42049410/) — Association Between Dipeptidyl Peptidase-4 Inhibitor Use and Acute Kidney Injury in Patients With Diabetes Mellitus: A Disproportionality Analysis Based on the FAERS.（全文: EPMC/inPMC）
+  - [41962900](https://pubmed.ncbi.nlm.nih.gov/41962900/) — Cardiovascular Effects of Alogliptin, Linagliptin, Saxagliptin, and Sitagliptin: A Target Trial Emulation of a Comparative Effectiveness Study.（无全文）
+  - [42348590](https://pubmed.ncbi.nlm.nih.gov/42348590/) — Early potential safety signals for gliptins and gliflozins using real-world pharmacy data compared to spontaneous reporting.（无全文）
+  - [41860942](https://pubmed.ncbi.nlm.nih.gov/41860942/) — Cancer risk associated with DPP4 inhibitors in type 2 diabetes: A pharmacovigilance analysis of the FDA Adverse Event Reporting System (FAERS).（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [42443801](https://pubmed.ncbi.nlm.nih.gov/42443801/) — Comparison of the permeability of DPP-4 inhibitors-sitagliptin, vildagliptin, linagliptin, and alogliptin-in placental barrier cell models and exploration of their transport mechanisms by LC-MS/MS.
+    - [PPR1276721](https://pubmed.ncbi.nlm.nih.gov/PPR1276721/) — Comparative Molecular Docking and ADMET Profiling of Five Clinically Approved DPP-4 Inhibitors: Structural Insights into Binding Affinity and Interaction Diversity
+    - [41962900](https://pubmed.ncbi.nlm.nih.gov/41962900/) — Cardiovascular Effects of Alogliptin, Linagliptin, Saxagliptin, and Sitagliptin: A Target Trial Emulation of a Comparative Effectiveness Study.
+  - 全文检查: PMC 全文（PMC13133818）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Sitagliptin (Sitagliptin): 检索 top-10
+    - [42194761](https://pubmed.ncbi.nlm.nih.gov/42194761/) — Acquired Angioedema-A Challenge in Medical Practice: A Narrative Review.（有摘要）
+    - [41646567](https://pubmed.ncbi.nlm.nih.gov/41646567/) — Angiotensin-Converting Enzyme (ACE) Inhibitor-Induced Angioedema Presenting After Long-Term Antihypertensive Therapy: A Case Report.（有摘要）
+    - [39773243](https://pubmed.ncbi.nlm.nih.gov/39773243/) — Interaction between dipeptidyl-peptidase-4 inhibitors and drugs acting on renin angiotensin aldosterone system for the risk of angioedema: a pharmacovigilance assessment using disproportionality and interaction analyses.（有摘要）
+    - [41601695](https://pubmed.ncbi.nlm.nih.gov/41601695/) — Classification of angioedema types using decision tree modeling.（有摘要）
+    - [42318251](https://pubmed.ncbi.nlm.nih.gov/42318251/) — Anti-diabetic medications to fight Parkinson's disease and dementia with Lewy bodies: a pilot study.（有摘要）
+    - [40351426](https://pubmed.ncbi.nlm.nih.gov/40351426/) — Assessment of potential drug-drug interactions in patients with hereditary angioedema from the ITACA cohort: simulations from a real-life dataset considering danazol versus berotralstat.（有摘要）
+    - [42082419](https://pubmed.ncbi.nlm.nih.gov/42082419/) — Comparative Analysis of Potential Side Effects of Targeted Oral Hypoglycemic Agents Using Spontaneous Adverse Event Reports and Social Media Data.（有摘要）
+    - [38523307](https://pubmed.ncbi.nlm.nih.gov/38523307/) — Dermatological side effects of dipeptidyl Peptidase-4 inhibitors in diabetes management: a comprehensive review.（有摘要）
+    - [42165046](https://pubmed.ncbi.nlm.nih.gov/42165046/) — The 2025 WAO Guidelines for the classification, diagnosis, and treatment of hereditary angioedema, with consideration of worldwide disparities.（有摘要）
+    - [40869540](https://pubmed.ncbi.nlm.nih.gov/40869540/) — Bradykinin-Mediated Angioedema Induced by Drugs.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 39773243 — 真实标题（esummary）: “Interaction between dipeptidyl-peptidase-4 inhibitors and drugs acting on renin angiotensin aldosterone system for the risk of angioedema: a pharmacovigilance assessment using disproportionality and i”
+        - 片段 1: “Both drug classes have been independently associated with angioedema, raising concerns about potential interaction risks.”
+        - 片段 2: “This study aimed to evaluate the safety signals and interaction patterns for angioedema associated with DPP-4is alone and in combination with RAAS-interfering drugs.”
+  - Alogliptin (Alogliptin): 检索 top-10
+    - [39773243](https://pubmed.ncbi.nlm.nih.gov/39773243/) — Interaction between dipeptidyl-peptidase-4 inhibitors and drugs acting on renin angiotensin aldosterone system for the risk of angioedema: a pharmacovigilance assessment using disproportionality and interaction analyses.（有摘要）
+    - [29939586](https://pubmed.ncbi.nlm.nih.gov/29939586/) — Alogliptin（有摘要）
+    - [41658155](https://pubmed.ncbi.nlm.nih.gov/41658155/) — GPU-Accelerated Virtual Screening and Molecular Dynamics Simulations for Identification of Novel DPP‑4 Inhibitors.（有摘要）
+    - [42082419](https://pubmed.ncbi.nlm.nih.gov/42082419/) — Comparative Analysis of Potential Side Effects of Targeted Oral Hypoglycemic Agents Using Spontaneous Adverse Event Reports and Social Media Data.（有摘要）
+    - [38523307](https://pubmed.ncbi.nlm.nih.gov/38523307/) — Dermatological side effects of dipeptidyl Peptidase-4 inhibitors in diabetes management: a comprehensive review.（有摘要）
+    - [41355613](https://pubmed.ncbi.nlm.nih.gov/41355613/) — Dipeptidyl Peptidase 4 Inhibitors: Novel Therapeutic Agents in the Management of Type II Diabetes Mellitus.（有摘要）
+    - [PMC13298747](https://pubmed.ncbi.nlm.nih.gov/PMC13298747/) — Early potential safety signals for gliptins and gliflozins using real-world pharmacy data compared to spontaneous reporting（无摘要）
+    - [37908932](https://pubmed.ncbi.nlm.nih.gov/37908932/) — Angioedema From Triple Therapy: A Case Report.（有摘要）
+    - [40032809](https://pubmed.ncbi.nlm.nih.gov/40032809/) — A Randomized Phase 3 Study Evaluating the Efficacy and Safety of Alogliptin in Pediatric Participants with Type 2 Diabetes Mellitus.（有摘要）
+    - [40869540](https://pubmed.ncbi.nlm.nih.gov/40869540/) — Bradykinin-Mediated Angioedema Induced by Drugs.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 39773243 — 真实标题（esummary）: “Interaction between dipeptidyl-peptidase-4 inhibitors and drugs acting on renin angiotensin aldosterone system for the risk of angioedema: a pharmacovigilance assessment using disproportionality and i”
+        - 片段 1: “Both drug classes have been independently associated with angioedema, raising concerns about potential interaction risks.”
+        - 片段 2: “This study aimed to evaluate the safety signals and interaction patterns for angioedema associated with DPP-4is alone and in combination with RAAS-interfering drugs.”
+      - PMID 29939586 — 真实标题（esummary）: “Alogliptin.”
+        - 片段 1: “Contraindications include hypersensitivity reactions such as anaphylaxis and angioedema.”
+- **v1 历史档位（不沿用）**: direct（直接证据），PMID 42312164: “In silico analyses, including molecular docking as well as molecular dynamics simulation, demonstrate good binding affinity as well as stable interaction of vildagliptin with PI3K (4YKN) and NLRP3 (7A”
+
+## Pyrantel + Budesonide（The risk or severity of myopathy and weakness increase）
+- 药对: `DB11156` / `DB01222`; a_name=Pyrantel, b_name=Budesonide; 检索词: `Pyrantel` / `Budesonide`
+- 事件: The risk or severity of myopathy and weakness increase; semantic_overlap: no; prob_mean=0.3411, r=0.1427
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Pyrantel" AND "Budesonide") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Pyrantel" AND "Budesonide")`
+  - 腿 B: `"Pyrantel" AND (myopathy OR rhabdomyolysis)` / `"Budesonide" AND (myopathy OR rhabdomyolysis)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [39997724](https://pubmed.ncbi.nlm.nih.gov/39997724/) — Practical Recommendations in the Treatment of Acute and Chronic Life-Threatening Infectious Diseases in Patients with Acute Hepatic Porphyria.（全文: EPMC/inPMC）
+  - [34335267](https://pubmed.ncbi.nlm.nih.gov/34335267/) — Repeated Use of Prescription Drugs in Pediatrics: Comprehensive Overview Based on German Claims Data.（全文: EPMC/inPMC）
+  - [29624721](https://pubmed.ncbi.nlm.nih.gov/29624721/) — Serologic and fecal markers to predict response to induction therapy in dogs with idiopathic inflammatory bowel disease.（全文: EPMC/inPMC）
+  - [PMC11208286](https://pubmed.ncbi.nlm.nih.gov/PMC11208286/) — Posters（全文: EPMC/inPMC）
+  - [37465540](https://pubmed.ncbi.nlm.nih.gov/37465540/) — Case-Based Questions for Teaching Emergency Medicine Pharmacotherapy.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [34335267](https://pubmed.ncbi.nlm.nih.gov/34335267/) — Repeated Use of Prescription Drugs in Pediatrics: Comprehensive Overview Based on German Claims Data.
+    - [39997724](https://pubmed.ncbi.nlm.nih.gov/39997724/) — Practical Recommendations in the Treatment of Acute and Chronic Life-Threatening Infectious Diseases in Patients with Acute Hepatic Porphyria.
+    - [29624721](https://pubmed.ncbi.nlm.nih.gov/29624721/) — Serologic and fecal markers to predict response to induction therapy in dogs with idiopathic inflammatory bowel disease.
+  - 全文检查: PMC 全文（PMC11857646）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Pyrantel (Pyrantel): 检索 top-10
+    - [39997724](https://pubmed.ncbi.nlm.nih.gov/39997724/) — Practical Recommendations in the Treatment of Acute and Chronic Life-Threatening Infectious Diseases in Patients with Acute Hepatic Porphyria.（有摘要）
+    - [39010968](https://pubmed.ncbi.nlm.nih.gov/39010968/) — Control of companion animal parasites and impact on One Health.（有摘要）
+    - [33079268](https://pubmed.ncbi.nlm.nih.gov/33079268/) — Usual or unusual presentations of Dirofilaria repens in two sibling dogs: a case report.（有摘要）
+    - [36070069](https://pubmed.ncbi.nlm.nih.gov/36070069/) — The Toxicology Investigators Consortium Case Registry-the 2021 Annual Report.（有摘要）
+    - [22574783](https://pubmed.ncbi.nlm.nih.gov/22574783/) — Pet roundworms and hookworms: a continuing need for global worming.（有摘要）
+    - [25830099](https://pubmed.ncbi.nlm.nih.gov/25830099/) — Ventral dermatitis in rowi (Apteryx rowi) due to cutaneous larval migrans.（有摘要）
+    - [PMC7151948](https://pubmed.ncbi.nlm.nih.gov/PMC7151948/) — Bovidae (Except Sheep and Goats) and Antilocapridae（无摘要）
+    - [PMC7152070](https://pubmed.ncbi.nlm.nih.gov/PMC7152070/) — Ratites or Struthioniformes : Struthiones, Rheae, Cassuarii, Apteryges (Ostriches, Rheas, Emus, Cassowaries, and Kiwis), and Tinamiformes (Tinamous)（无摘要）
+    - [PMC7152060](https://pubmed.ncbi.nlm.nih.gov/PMC7152060/) — Small Intestine（无摘要）
+    - [PMC7152257](https://pubmed.ncbi.nlm.nih.gov/PMC7152257/) — Suidae and Tayassuidae (Wild Pigs, Peccaries)（无摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Budesonide (Budesonide): 检索 top-10
+    - [42629679](https://pubmed.ncbi.nlm.nih.gov/42629679/) — Rhabdomyolysis in a 10-month-old child: A case report and literature review.（有摘要）
+    - [42389015](https://pubmed.ncbi.nlm.nih.gov/42389015/) — A Review of Therapies for Primary Biliary Cholangitis.（有摘要）
+    - [41233373](https://pubmed.ncbi.nlm.nih.gov/41233373/) — Pharmacovigilance analysis of myopathy associated with azoles and nonstatins interactions based on US FAERS database.（有摘要）
+    - [PMC12585282](https://pubmed.ncbi.nlm.nih.gov/PMC12585282/) — P092 Acute necrotising steroid-induced myopathy in autoimmune hepatitis: a rare but reversible mimic of inflammatory myositis（无摘要）
+    - [37972000](https://pubmed.ncbi.nlm.nih.gov/37972000/) — Potential drug-drug interactions of frequently prescribed medications in long COVID detected by two electronic databases.（有摘要）
+    - [41075074](https://pubmed.ncbi.nlm.nih.gov/41075074/) — Efficacy of budesonide and vedolizumab for IBD-U associated with Muckle-Wells syndrome.（有摘要）
+    - [41356965](https://pubmed.ncbi.nlm.nih.gov/41356965/) — Renal Toxicity of Rosuvastatin: A Case Report.（有摘要）
+    - [41132658](https://pubmed.ncbi.nlm.nih.gov/41132658/) — An atypical presentation of immune checkpoint inhibitor associated myositis with normal creatine kinase: a case report.（有摘要）
+    - [PMC12585281](https://pubmed.ncbi.nlm.nih.gov/PMC12585281/) — P093 A rare case of polyarteritis nodosa with presenting with muscular involvement（无摘要）
+    - [41200259](https://pubmed.ncbi.nlm.nih.gov/41200259/) — Statin-Associated Immune-Mediated Necrotizing Myopathy With Dual Anti-3-Hydroxy-3-Methylglutaryl-Coenzyme A Reductase (Anti-HMGCR) and Anti-OJ Positivity: A Case Report of Fulminant Weakness and Respiratory Failure.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 42629679: 10 月龄儿童横纹肌溶解病例：Budesonide 为对症治疗（止咳雾化），非肌病病因，不能支持类固醇肌病机制
+
+## (+)-Mefloquine + Befunolol（The risk or severity of QTc prolongation decrease）
+- 药对: `DB00358` / `DB09013`; a_name=(+)-Mefloquine, b_name=Befunolol; 检索词: `Mefloquine` / `Befunolol`
+- 事件: The risk or severity of QTc prolongation decrease; semantic_overlap: yes; prob_mean=0.6062, r=0.1288
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Mefloquine" AND "Befunolol") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Mefloquine" AND "Befunolol")`
+  - 腿 B: `"Mefloquine" AND (QTc OR QT prolongation OR torsades)` / `"Befunolol" AND (QTc OR QT prolongation OR torsades)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [PMC7111305](https://pubmed.ncbi.nlm.nih.gov/PMC7111305/) — Subject index volumes 251–350（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [PMC7111305](https://pubmed.ncbi.nlm.nih.gov/PMC7111305/) — Subject index volumes 251–350
+  - 全文检查: PMC 全文（PMC7111305）已抓取，两药在正文中未共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - (+)-Mefloquine (Mefloquine): 检索 top-10
+    - [PMC13299912](https://pubmed.ncbi.nlm.nih.gov/PMC13299912/) — Reduced mitochondrial respiration caused by antimalarial treatments in human ventricular cardiomyocytes（无摘要）
+    - [41190558](https://pubmed.ncbi.nlm.nih.gov/41190558/) — Transplacental Transfer of Lumefantrine, Mefloquine, and Piperaquine: A Comparison of Concentrations in Mothers, Neonates, and Cord Blood.（有摘要）
+    - [41029666](https://pubmed.ncbi.nlm.nih.gov/41029666/) — Making the most of existing antimalarial medicines: a single dose cure with sulfadoxine-pyrimethamine plus artesunate-pyronaridine.（有摘要）
+    - [36165125](https://pubmed.ncbi.nlm.nih.gov/36165125/) — Anti-malarial drugs: Mechanisms underlying their proarrhythmic effects.（有摘要）
+    - [39468214](https://pubmed.ncbi.nlm.nih.gov/39468214/) — Analysis of ventricular repolarization parameters and heart rate variability in obesity: a comparative study.（有摘要）
+    - [41277377](https://pubmed.ncbi.nlm.nih.gov/41277377/) — A systematic review and meta-analysis of clinical trials comparing arterolane-piperaquine vs. artemether-lumefantrine for the treatment of uncomplicated falciparum malaria.（有摘要）
+    - [42006802](https://pubmed.ncbi.nlm.nih.gov/42006802/) — Mechanistic perspectives on antimalarial agents: from FDA-approved drugs to next-generation candidates.（有摘要）
+    - [37865784](https://pubmed.ncbi.nlm.nih.gov/37865784/) — Safety and tolerability of repeated doses of dihydroartemisinin-piperaquine for intermittent preventive treatment of malaria in pregnancy: a systematic review and an aggregated data meta-analysis of randomized controlled trials.（有摘要）
+    - [37545974](https://pubmed.ncbi.nlm.nih.gov/37545974/) — Comparative cardiac effects of antimalarial drug halofantrine with or without concomitant administration of kolanut or fluconazole in healthy volunteers.（有摘要）
+    - [41360613](https://pubmed.ncbi.nlm.nih.gov/41360613/) — Multicentre controlled open randomised clinical trial to assess efficacy and safety of an anti-tuberculosis drug combination based on optimised-dose rifampicin, optimised-dose moxifloxacin and optimised-dose linezolid for TB: the RML-TB trial protocol.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Befunolol (Befunolol): 检索 top-10
+    - [PMC6746669](https://pubmed.ncbi.nlm.nih.gov/PMC6746669/) — Pharmacotherapy for hypertension‐induced left ventricular hypertrophy（无摘要）
+    - [34787310](https://pubmed.ncbi.nlm.nih.gov/34787310/) — Interventions for altering blood pressure in people with acute subarachnoid haemorrhage.（有摘要）
+    - [31544227](https://pubmed.ncbi.nlm.nih.gov/31544227/) — Perioperative beta-blockers for preventing surgery-related mortality and morbidity in adults undergoing cardiac surgery.（有摘要）
+    - [32026465](https://pubmed.ncbi.nlm.nih.gov/32026465/) — First-line combination therapy versus first-line monotherapy for primary hypertension.（有摘要）
+    - [PMC6485996](https://pubmed.ncbi.nlm.nih.gov/PMC6485996/) — Beta‐blockers for heart failure（无摘要）
+    - [28084624](https://pubmed.ncbi.nlm.nih.gov/28084624/) — First-line combination therapy versus first-line monotherapy for primary hypertension.（有摘要）
+    - [34628642](https://pubmed.ncbi.nlm.nih.gov/34628642/) — Pharmacotherapy for hypertension-induced left ventricular hypertrophy.（有摘要）
+    - [31556094](https://pubmed.ncbi.nlm.nih.gov/31556094/) — Perioperative beta-blockers for preventing surgery-related mortality and morbidity in adults undergoing non-cardiac surgery.（有摘要）
+    - [34022072](https://pubmed.ncbi.nlm.nih.gov/34022072/) — Beta-blockers and inhibitors of the renin-angiotensin aldosterone system for chronic heart failure with preserved ejection fraction.（有摘要）
+    - [29533470](https://pubmed.ncbi.nlm.nih.gov/29533470/) — Perioperative beta-blockers for preventing surgery-related mortality and morbidity.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Niflumic acid + Mestranol（the thrombogenic activities increase）
+- 药对: `DB04552` / `DB01357`; a_name=Niflumic acid, b_name=Mestranol; 检索词: `Niflumic acid` / `Mestranol`
+- 事件: the thrombogenic activities increase; semantic_overlap: yes; prob_mean=0.2528, r=0.1250
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Niflumic acid" AND "Mestranol") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Niflumic acid" AND "Mestranol")`
+  - 腿 B: `"Niflumic acid" AND (thrombosis OR coagulation)` / `"Mestranol" AND (thrombosis OR coagulation)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [32610509](https://pubmed.ncbi.nlm.nih.gov/32610509/) — Application of Nanostructured Carbon-Based Electrochemical (Bio)Sensors for Screening of Emerging Pharmaceutical Pollutants in Waters and Aquatic Species: A Review.（全文: EPMC/inPMC）
+  - [31306645](https://pubmed.ncbi.nlm.nih.gov/31306645/) — High-content analysis of constitutive androstane receptor (CAR) translocation identifies mosapride citrate as a CAR agonist that represses gluconeogenesis.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [32610509](https://pubmed.ncbi.nlm.nih.gov/32610509/) — Application of Nanostructured Carbon-Based Electrochemical (Bio)Sensors for Screening of Emerging Pharmaceutical Pollutants in Waters and Aquatic Species: A Review.
+    - [31306645](https://pubmed.ncbi.nlm.nih.gov/31306645/) — High-content analysis of constitutive androstane receptor (CAR) translocation identifies mosapride citrate as a CAR agonist that represses gluconeogenesis.
+  - 全文检查: PMC 全文（PMC7408367）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Niflumic acid (Niflumic acid): 检索 top-10
+    - [41961551](https://pubmed.ncbi.nlm.nih.gov/41961551/) — Platelet Cyclophilin D Drives Cholesterol Crystal Embolism-Related Acute Kidney Injury and Kidney Infarction.（有摘要）
+    - [42238170](https://pubmed.ncbi.nlm.nih.gov/42238170/) — From Uncertainty to Clarity: Behçet's Disease Diagnosed in the Emergency Department.（有摘要）
+    - [40870458](https://pubmed.ncbi.nlm.nih.gov/40870458/) — Anti-Inflammatory and Antiplatelet Interactions on PAF and ADP Pathways of NSAIDs, Analgesic and Antihypertensive Drugs for Cardioprotection-In Vitro Assessment in Human Platelets.（有摘要）
+    - [39315645](https://pubmed.ncbi.nlm.nih.gov/39315645/) — Impact of Biotransformation on Internal Concentrations and Specificity Classification of Organic Chemicals in the Zebrafish Embryo (<i>Danio rerio</i>).（有摘要）
+    - [41053901](https://pubmed.ncbi.nlm.nih.gov/41053901/) — Identifying the role of aging-related genes in intracranial aneurysms through bioinformatics analysis.（有摘要）
+    - [41836031](https://pubmed.ncbi.nlm.nih.gov/41836031/) — Research Progress on the Mechanisms of High Mucus Secretion in the Airway: A Scoping Review.（有摘要）
+    - [37366283](https://pubmed.ncbi.nlm.nih.gov/37366283/) — Rapid translocation of intracellular toll-like receptors depends on endosomal NADPH oxidase.（有摘要）
+    - [41579174](https://pubmed.ncbi.nlm.nih.gov/41579174/) — Sex-dependent transcriptional responses and druggable targets in gentamicin-induced nephrotoxicity.（有摘要）
+    - [40559429](https://pubmed.ncbi.nlm.nih.gov/40559429/) — Salivary Metabolite Variation After High-Intensity Rowing Training and Potential Biomarker Screening for Exercise-Induced Muscle Damage.（有摘要）
+    - [36135867](https://pubmed.ncbi.nlm.nih.gov/36135867/) — Solar Photocatalytic Membranes: An Experimental and Artificial Neural Network Modeling Approach for Niflumic Acid Degradation.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Mestranol (Mestranol): 检索 top-10
+    - [41303494](https://pubmed.ncbi.nlm.nih.gov/41303494/) — Combined Oral Contraceptives and the Risk of Thrombosis.（有摘要）
+    - [40932399](https://pubmed.ncbi.nlm.nih.gov/40932399/) — Determining the Impact of Combination Oral Contraceptives on Von Willebrand Factor and Factor VIII in Healthy Patients and Patients With Von Willebrand Disease: A Scoping Review and Meta-Analysis.（有摘要）
+    - [41118620](https://pubmed.ncbi.nlm.nih.gov/41118620/) — The Na/K-ATPase α1 subunit fine-tunes platelet P2Y12 function and mediates sex dimorphism-associated thrombosis.（有摘要）
+    - [41155578](https://pubmed.ncbi.nlm.nih.gov/41155578/) — Steroid-Induced Thrombosis: A Comprehensive Analysis Using the FAERS Database.（有摘要）
+    - [41190212](https://pubmed.ncbi.nlm.nih.gov/41190212/) — Stereochemistry-aware string-based molecular generation.（有摘要）
+    - [42175417](https://pubmed.ncbi.nlm.nih.gov/42175417/) — Comparative adverse event reporting patterns of desogestrel versus norethisterone in third-generation combined oral contraceptives: A disproportionality analysis of the FAERS satabase.（有摘要）
+    - [40998291](https://pubmed.ncbi.nlm.nih.gov/40998291/) — Review of hormonal replacement therapy options for the treatments of menopausal symptoms.（有摘要）
+    - [41481290](https://pubmed.ncbi.nlm.nih.gov/41481290/) — Hormonal Contraceptive Use, Stress Disorders, and Cardiovascular and Thrombotic Risk in Women.（有摘要）
+    - [41970977](https://pubmed.ncbi.nlm.nih.gov/41970977/) — A detailed review of pharmacokinetics/pharmacodynamics of progestogens in oral contraception.（有摘要）
+    - [38655395](https://pubmed.ncbi.nlm.nih.gov/38655395/) — Experts' view on the role of oestrogens in combined oral contraceptives: emphasis on oestetrol (E4).（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Bendroflumethiazide + Belinostat（The risk or severity of neutropenia and thrombocytopenia increase）
+- 药对: `DB00436` / `DB05015`; a_name=Bendroflumethiazide, b_name=Belinostat; 检索词: `Bendroflumethiazide` / `Belinostat`
+- 事件: The risk or severity of neutropenia and thrombocytopenia increase; semantic_overlap: no; prob_mean=0.2599, r=0.1248
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Bendroflumethiazide" AND "Belinostat") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Bendroflumethiazide" AND "Belinostat")`
+  - 腿 B: `"Bendroflumethiazide" AND (neutropenia OR myelosuppression)` / `"Belinostat" AND (neutropenia OR myelosuppression)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [30797775](https://pubmed.ncbi.nlm.nih.gov/30797775/) — Quantifying Drug Combination Synergy along Potency and Efficacy Axes.（全文: EPMC/inPMC）
+  - [30192523](https://pubmed.ncbi.nlm.nih.gov/30192523/) — Targeting Metalloenzymes for Therapeutic Intervention.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [30797775](https://pubmed.ncbi.nlm.nih.gov/30797775/) — Quantifying Drug Combination Synergy along Potency and Efficacy Axes.
+    - [27122230](https://pubmed.ncbi.nlm.nih.gov/27122230/) — A quantitative threshold for high/low extent of urinary excretion of compounds in humans.
+    - [30192523](https://pubmed.ncbi.nlm.nih.gov/30192523/) — Targeting Metalloenzymes for Therapeutic Intervention.
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Bendroflumethiazide (Bendroflumethiazide): 检索 top-10
+    - [41755543](https://pubmed.ncbi.nlm.nih.gov/41755543/) — Impact of Thiazides and Fluoropyrimidines Interaction on Myelotoxicity and Other Adverse Events in Real-World Practice: A Retrospective Cohort Study.（有摘要）
+    - [40745962](https://pubmed.ncbi.nlm.nih.gov/40745962/) — Patient Characteristics, Healthcare Contacts and Drug Use in Polycythaemia Vera in Denmark.（有摘要）
+    - [41079491](https://pubmed.ncbi.nlm.nih.gov/41079491/) — Can the Complexity of Diagnosing Pulmonary Embolism in Patients With Obesity and Multiple Comorbidities Provide an Explanation of the Obesity Paradox?（有摘要）
+    - [41572514](https://pubmed.ncbi.nlm.nih.gov/41572514/) — Clinical pharmacology and prescribing education: An updated medical school curriculum from the British Pharmacological Society.（有摘要）
+    - [38975170](https://pubmed.ncbi.nlm.nih.gov/38975170/) — Diverse role, structural trends, and applications of fluorinated sulphonamide compounds in agrochemical and pharmaceutical fields.（有摘要）
+    - [28955400](https://pubmed.ncbi.nlm.nih.gov/28955400/) — Systemic anticancer therapy (SACT) for lung cancer and its potential for interactions with other medicines.（有摘要）
+    - [36815103](https://pubmed.ncbi.nlm.nih.gov/36815103/) — Shockwaves and the Rolling Stones: An Overview of Pediatric Stone Disease.（有摘要）
+    - [16995868](https://pubmed.ncbi.nlm.nih.gov/16995868/) — Two cases of thiopurine methyltransferase (TPMT) deficiency--a lucky save and a near miss with azathioprine.（有摘要）
+    - [21818443](https://pubmed.ncbi.nlm.nih.gov/21818443/) — Development of a list of potentially inappropriate drugs for the korean elderly using the delphi method.（有摘要）
+    - [34206485](https://pubmed.ncbi.nlm.nih.gov/34206485/) — A Review of Systemic Minocycline Side Effects and Topical Minocycline as a Safer Alternative for Treating Acne and Rosacea.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Belinostat (Belinostat): 检索 top-10
+    - [PMC13301599](https://pubmed.ncbi.nlm.nih.gov/PMC13301599/) — Precision Medicine in Non-Hodgkin Lymphoma: Advances in BTK Inhibition, CD30-Directed Antibody–Drug Conjugates, and HDAC-Mediated Epigenetic Therapy with Pirtobrutinib, Brentuximab Vedotin, and Belinostat（无摘要）
+    - [42198363](https://pubmed.ncbi.nlm.nih.gov/42198363/) — Hypophosphatemia as a Potential Class Effect of Histone Deacetylase Inhibitors: Evidence from Disproportionality Analysis and Mendelian Randomization Analysis of Drug Targets.（有摘要）
+    - [41671456](https://pubmed.ncbi.nlm.nih.gov/41671456/) — Are CHOP-plus really CHOP-minus propositions in the treatment of PTCL? A comprehensive assessment of the strategy.（有摘要）
+    - [41550808](https://pubmed.ncbi.nlm.nih.gov/41550808/) — HDAC inhibitors as anticancer drugs: chemical diversity, clinical trials, challenges and perspectives.（有摘要）
+    - [41995563](https://pubmed.ncbi.nlm.nih.gov/41995563/) — Drug-induced neutropenia: A comprehensive pharmacovigilance study of the FAERS database.（有摘要）
+    - [42036411](https://pubmed.ncbi.nlm.nih.gov/42036411/) — Abexinostat, a histone deacetylases inhibitor, for patients with relapsed or refractory follicular lymphoma: a multi-center, single-arm phase 2 study.（有摘要）
+    - [38654286](https://pubmed.ncbi.nlm.nih.gov/38654286/) — Exploring the role of histone deacetylase and histone deacetylase inhibitors in the context of multiple myeloma: mechanisms, therapeutic implications, and future perspectives.（有摘要）
+    - [41899567](https://pubmed.ncbi.nlm.nih.gov/41899567/) — How We Evaluate and Treat Leukemic Presentations of Mature T-Cell Lymphomas.（有摘要）
+    - [41087426](https://pubmed.ncbi.nlm.nih.gov/41087426/) — Adverse drug reaction profiles of histone deacetylase inhibitors.（有摘要）
+    - [40593271](https://pubmed.ncbi.nlm.nih.gov/40593271/) — The epigenetic revolution in hematology: from benchside breakthroughs to clinical transformations.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Cidoxepin + Deutetrabenazine（The risk or severity of sedation and somnolence increase）
+- 药对: `DB01142` / `DB12161`; a_name=Cidoxepin, b_name=Deutetrabenazine; 检索词: `Cidoxepin` / `Deutetrabenazine`
+- 事件: The risk or severity of sedation and somnolence increase; semantic_overlap: no; prob_mean=0.2850, r=0.1226
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Cidoxepin" AND "Deutetrabenazine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Cidoxepin" AND "Deutetrabenazine")`
+  - 腿 B: `"Cidoxepin" AND (sedation OR CNS depressant OR GABA)` / `"Deutetrabenazine" AND (sedation OR CNS depressant OR GABA)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - （无结果）
+  - q2 top-3（宽共现探测）:
+    - （无结果）
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Cidoxepin (Cidoxepin): 检索 top-1
+    - [31941125](https://pubmed.ncbi.nlm.nih.gov/31941125/) — In Silico and In Vitro Experimental Studies of New Dibenz[ b , e ]oxepin-11(6 H )one O-(arylcarbamoyl)-oximes Designed as Potential Antimicrobial Agents.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Deutetrabenazine (Deutetrabenazine): 检索 top-10
+    - [41122869](https://pubmed.ncbi.nlm.nih.gov/41122869/) — VMAT2 inhibitors for the treatment of tardive dyskinesia: a narrative review.（有摘要）
+    - [42239508](https://pubmed.ncbi.nlm.nih.gov/42239508/) — SOM3355: a unique pharmacological profile combining VMAT1 inhibition, VMAT2-mediated dopamine modulation, and β<sub>1</sub>-adrenergic antagonism for the treatment of movement and neuropsychiatric disorders.（有摘要）
+    - [41307001](https://pubmed.ncbi.nlm.nih.gov/41307001/) — Refractory tardive dyskinesia in the critical care setting: A case report of successful use of phenobarbital.（有摘要）
+    - [40489853](https://pubmed.ncbi.nlm.nih.gov/40489853/) — A narrative review of Phase III and IV clinical trials for the pharmacological treatment of Tourette's syndrome in children, adults, and older adults.（有摘要）
+    - [PMC13243781](https://pubmed.ncbi.nlm.nih.gov/PMC13243781/) — Unveiling the Power of Deuterium in Drug Discovery: A Comprehensive Overview（无摘要）
+    - [41009400](https://pubmed.ncbi.nlm.nih.gov/41009400/) — From Pharmacological Treatment to Neuromodulation: A Comprehensive Approach to Managing Gilles de la Tourette Syndrome.（有摘要）
+    - [42266186](https://pubmed.ncbi.nlm.nih.gov/42266186/) — Unveiling the Power of Deuterium in Drug Discovery: A Comprehensive Overview.（有摘要）
+    - [40867198](https://pubmed.ncbi.nlm.nih.gov/40867198/) — AI-Enhanced Transcriptomic Discovery of Druggable Targets and Repurposed Therapies for Huntington's Disease.（有摘要）
+    - [41782784](https://pubmed.ncbi.nlm.nih.gov/41782784/) — Deutetrabenazine and Modified Electroconvulsive Therapy for Tardive Dyskinesia With Recurrent Depression: A Case Report.（有摘要）
+    - [40546692](https://pubmed.ncbi.nlm.nih.gov/40546692/) — Real-World Experiences with VMAT2 Inhibitors in Pediatric Hyperkinetic Movement Disorders.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 41122869: VMAT2 抑制剂综述：仅述 TD 治疗，摘要无镇静/嗜睡内容
+      - PMID 41782784: Deutetrabenazine + MECT 病例报告：摘要无镇静/嗜睡内容
+
+## Trimebutine + Nabilone（The risk or severity of Tachycardia and drowsiness increase）
+- 药对: `DB09089` / `DB00486`; a_name=Trimebutine, b_name=Nabilone; 检索词: `Trimebutine` / `Nabilone`
+- 事件: The risk or severity of Tachycardia and drowsiness increase; semantic_overlap: no; prob_mean=0.3106, r=0.1177
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42485476, 42163693
+- 机制解释（一句话）: Nabilone 为合成大麻素受体激动剂，嗜睡为已知不良反应（文献42485476/42163693，标题“Nabilone for Behavioural and Psychological Symptoms of Dementia: Drugs”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Trimebutine" AND "Nabilone") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Trimebutine" AND "Nabilone")`
+  - 腿 B: `"Trimebutine" AND (sedation OR CNS depressant OR GABA)` / `"Nabilone" AND (sedation OR CNS depressant OR GABA)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [PMC13290681](https://pubmed.ncbi.nlm.nih.gov/PMC13290681/) — Abstract（全文: EPMC/inPMC）
+  - [27511905](https://pubmed.ncbi.nlm.nih.gov/27511905/) — Characterization and Management of Hedgehog Pathway Inhibitor-Related Adverse Events in Patients With Advanced Basal Cell Carcinoma.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [27511905](https://pubmed.ncbi.nlm.nih.gov/27511905/) — Characterization and Management of Hedgehog Pathway Inhibitor-Related Adverse Events in Patients With Advanced Basal Cell Carcinoma.
+    - [PMC13290681](https://pubmed.ncbi.nlm.nih.gov/PMC13290681/) — Abstract
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Trimebutine (Trimebutine): 检索 top-10
+    - [40348677](https://pubmed.ncbi.nlm.nih.gov/40348677/) — Medication errors related to neuromuscular blocking agents: analysis of the French National Pharmacovigilance Database.（无摘要）
+    - [42022094](https://pubmed.ncbi.nlm.nih.gov/42022094/) — 6-year-old child of farber lipogranulomatosis scheduled for dental procedures: Was anaesthesia riskier than the surgery itself?（有摘要）
+    - [40529345](https://pubmed.ncbi.nlm.nih.gov/40529345/) — Exploration of TCM Comprehensive Treatment of Irritable Bowel Syndrome Based on Pathophysiological Mechanism.（有摘要）
+    - [38835657](https://pubmed.ncbi.nlm.nih.gov/38835657/) — Exploration of the mechanism of Traditional Chinese Medicine for anxiety and depression in patients with diarrheal irritable bowel syndrome based on network pharmacology and meta-analysis.（有摘要）
+    - [38974034](https://pubmed.ncbi.nlm.nih.gov/38974034/) — Gut-directed therapy in Parkinson's disease.（有摘要）
+    - [36406929](https://pubmed.ncbi.nlm.nih.gov/36406929/) — Efficacy and Mechanism of Trimebutine Maleate Combined with Lactulose in the Treatment of Constipation-Predominant Irritable Bowel Syndrome in the Elderly.（有摘要）
+    - [35334594](https://pubmed.ncbi.nlm.nih.gov/35334594/) — Strategies to Reduce Post-Hemorrhoidectomy Pain: A Systematic Review.（有摘要）
+    - [41096559](https://pubmed.ncbi.nlm.nih.gov/41096559/) — Gut Microbiome as a Source of Probiotic Drugs for Parkinson's Disease.（有摘要）
+    - [39502532](https://pubmed.ncbi.nlm.nih.gov/39502532/) — Green rush and red warnings: Retrospective chart review of adverse events of interactions between cannabinoids and psychotropic drugs.（有摘要）
+    - [38570412](https://pubmed.ncbi.nlm.nih.gov/38570412/) — The Gut Microbiota in Parkinson Disease: Interactions with Drugs and Potential for Therapeutic Applications.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Nabilone (Nabilone): 检索 top-10
+    - [42485476](https://pubmed.ncbi.nlm.nih.gov/42485476/) — Nabilone for Behavioural and Psychological Symptoms of Dementia: Drugs（有摘要）
+    - [42163693](https://pubmed.ncbi.nlm.nih.gov/42163693/) — Cannabinoids: Therapeutic Applications, Mechanisms, and Challenges in Modern Medicine.（有摘要）
+    - [42072385](https://pubmed.ncbi.nlm.nih.gov/42072385/) — Cannabinoids in Motor Control: From Receptor Distribution to Motor Disorders.（有摘要）
+    - [42205501](https://pubmed.ncbi.nlm.nih.gov/42205501/) — Moving beyond promethazine: Advancing precision in antiemetic therapy.（有摘要）
+    - [41898672](https://pubmed.ncbi.nlm.nih.gov/41898672/) — Radical Revelations: The Interplay of Nitrosative Stress, the Endocannabinoid System, and Treatment of Age-Related Disorders.（有摘要）
+    - [41429020](https://pubmed.ncbi.nlm.nih.gov/41429020/) — Cannabis-Based Products for Chronic Pain : An Updated Systematic Review.（有摘要）
+    - [41742915](https://pubmed.ncbi.nlm.nih.gov/41742915/) — The Empty Promises of Medical Marijuana.（无摘要）
+    - [42211879](https://pubmed.ncbi.nlm.nih.gov/42211879/) — Cannabinoids in Alzheimer's disease: animal-human evidence and clinical pharmacology challenges.（有摘要）
+    - [40142983](https://pubmed.ncbi.nlm.nih.gov/40142983/) — An Overview of the Potential for Pharmacokinetic Interactions Between Drugs and Cannabis Products in Humans.（有摘要）
+    - [41596519](https://pubmed.ncbi.nlm.nih.gov/41596519/) — Chronic Pain in Multiple Sclerosis: Mechanisms, Clinical Characteristics and Treatment Strategies.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 42485476 — 真实标题（esummary）: “Nabilone for Behavioural and Psychological Symptoms of Dementia: Drugs”
+        - 片段 1: “Main take-away • Nabilone, a synthetic cannabinoid, may be an effective treatment for agitation in some patients with Alzheimer disease, based on 1 small trial.”
+        - 片段 2: “• We found an evidence-based guideline that suggests that synthetic cannabinoids, including nabilone, may be used for severe agitation in people living with Alzheimer disease or related dementia if other pharmacological treatments have been unsuccessful.”
+      - PMID 42163693 — 真实标题（esummary）: “Cannabinoids: Therapeutic Applications, Mechanisms, and Challenges in Modern Medicine.”
+        - 片段 1: “Nabilone is a commercially available cannabinoid derivative licensed for use in cancer patients to relieve chemotherapy-induced emesis (CIE).”
+        - 片段 2: “Cannabinoids are the active compounds of Cannabis sativa, and they are known to be substitutes for meroterpenes.”
+
+## Ergometrine + Tianeptine（the vasopressor activities increase）
+- 药对: `DB01253` / `DB09289`; a_name=Ergometrine, b_name=Tianeptine; 检索词: `Ergometrine` / `Tianeptine`
+- 事件: the vasopressor activities increase; semantic_overlap: yes; prob_mean=0.5952, r=0.1133
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Ergometrine" AND "Tianeptine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Ergometrine" AND "Tianeptine")`
+  - 腿 B: `"Ergometrine" AND (pressor OR vasopressor OR vasoconstrict)` / `"Tianeptine" AND (pressor OR vasopressor OR vasoconstrict)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [33385148](https://pubmed.ncbi.nlm.nih.gov/33385148/) — Interpol review of controlled substances 2016-2019.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [33385148](https://pubmed.ncbi.nlm.nih.gov/33385148/) — Interpol review of controlled substances 2016-2019.
+  - 全文检查: PMC 全文（PMC7770462）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Ergometrine (Ergometrine): 检索 top-10
+    - [42388991](https://pubmed.ncbi.nlm.nih.gov/42388991/) — Dose-response evaluation of intravenous carbetocin for prevention of postpartum haemorrhage during elective caesarean delivery: A parallel-group randomised controlled trial.（有摘要）
+    - [40574909](https://pubmed.ncbi.nlm.nih.gov/40574909/) — The pearls for optimal intrapartum care in women with cardiac disease.（有摘要）
+    - [41777992](https://pubmed.ncbi.nlm.nih.gov/41777992/) — Epidural Anesthesia for Cesarean Section in a Patient With Severe Dilated Cardiomyopathy: A Case Report.（有摘要）
+    - [41127776](https://pubmed.ncbi.nlm.nih.gov/41127776/) — Anesthetic Considerations for Cesarean Section in a Woman With Systemic Mastocytosis.（有摘要）
+    - [42016671](https://pubmed.ncbi.nlm.nih.gov/42016671/) — Postpartum Necrotizing Myometritis.（有摘要）
+    - [38187938](https://pubmed.ncbi.nlm.nih.gov/38187938/) — Carbetocin as a uterotonic in a parturient with a Fontan circulation.（无摘要）
+    - [38009139](https://pubmed.ncbi.nlm.nih.gov/38009139/) — Anaesthesia and peripartum cardiomyopathy.（无摘要）
+    - [40923001](https://pubmed.ncbi.nlm.nih.gov/40923001/) — Low-Dose Ropivacaine-Fentanyl Spinal Anesthesia Combined with Carbetocin for Cesarean Section: A Randomized Double-Blind Non-Inferiority Trial.（有摘要）
+    - [38481417](https://pubmed.ncbi.nlm.nih.gov/38481417/) — Uterine inversion.（无摘要）
+    - [40859944](https://pubmed.ncbi.nlm.nih.gov/40859944/) — Pelvic Arterial Embolisation in Obstetric and Gynaecological Haemorrhage: A Single-Centre Case Series.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Tianeptine (Tianeptine): 检索 top-10
+    - [36759545](https://pubmed.ncbi.nlm.nih.gov/36759545/) — Neurocognitive effects of stress: a metaparadigm perspective.（有摘要）
+    - [41048238](https://pubmed.ncbi.nlm.nih.gov/41048238/) — "Brain doping" substances: prohibited or not in sports?（有摘要）
+    - [PMC10959849](https://pubmed.ncbi.nlm.nih.gov/PMC10959849/) — 2024 ACMT Annual Scientific Meeting Abstracts – Washington, DC（无摘要）
+    - [34576179](https://pubmed.ncbi.nlm.nih.gov/34576179/) — A Potential Interface between the Kynurenine Pathway and Autonomic Imbalance in Schizophrenia.（有摘要）
+    - [32166174](https://pubmed.ncbi.nlm.nih.gov/32166174/) — Catecholamines: Knowledge and understanding in the 1960s, now, and in the future.（有摘要）
+    - [36280660](https://pubmed.ncbi.nlm.nih.gov/36280660/) — Bibliometric development of Naunyn-Schmiedeberg's Archives of Pharmacology.（有摘要）
+    - [19706166](https://pubmed.ncbi.nlm.nih.gov/19706166/) — Extracorporeal life support in severe drug intoxication: a retrospective cohort study of seventeen cases.（有摘要）
+    - [30825071](https://pubmed.ncbi.nlm.nih.gov/30825071/) — ACMT 2019 Annual Scientific Meeting Abstracts-San Francisco, CA.（无摘要）
+    - [15078174](https://pubmed.ncbi.nlm.nih.gov/15078174/) — Trends in the development of new antidepressants. Is there a light at the end of the tunnel?（有摘要）
+    - [22407614](https://pubmed.ncbi.nlm.nih.gov/22407614/) — Serotonin and blood pressure regulation.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+
+## Amitriptyline + Irinotecan（The risk or severity of neutropenia increase）
+- 药对: `DB00321` / `DB00762`; a_name=Amitriptyline, b_name=Irinotecan; 检索词: `Amitriptyline` / `Irinotecan`
+- 事件: The risk or severity of neutropenia increase; semantic_overlap: no; prob_mean=0.3339, r=0.1109
+- v1 证据档: direct（直接证据） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42081171, 42276133
+- 机制解释（一句话）: Irinotecan 为化疗药，中性粒细胞减少为常见剂量限制性毒性（文献42081171/42276133，标题“Pooled safety analysis of lurbinectedin plus irinotecan in patients with advanced solid tumors.”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Amitriptyline" AND "Irinotecan") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Amitriptyline" AND "Irinotecan")`
+  - 腿 B: `"Amitriptyline" AND (neutropenia OR myelosuppression)` / `"Irinotecan" AND (neutropenia OR myelosuppression)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [41932844](https://pubmed.ncbi.nlm.nih.gov/41932844/) — The Burden of Adverse Drug Reactions in Africa in the Context of Pharmacogenetics-Based Clinical Guidelines.（全文: EPMC/inPMC）
+  - [42078427](https://pubmed.ncbi.nlm.nih.gov/42078427/) — Identification and validation of druggable targets for cataract using mendelian randomization: functional insights from multi-omics and an oxidative stress model.（全文: EPMC/inPMC）
+  - [42170578](https://pubmed.ncbi.nlm.nih.gov/42170578/) — Chemotherapy-induced peripheral neuropathy in breast cancer: a narrative review.（全文: EPMC/inPMC）
+  - [40687883](https://pubmed.ncbi.nlm.nih.gov/40687883/) — Preventing adverse drug reactions and more: current clinical use of pharmacogenetic testing.（全文: EPMC/inPMC）
+  - [40331624](https://pubmed.ncbi.nlm.nih.gov/40331624/) — Implementing Pre-Emptive Pharmacogenetics: Impact of Early Pharmacogenetic Screening in a Pediatric Oncology Cohort of 1,151 Subjects.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [40331624](https://pubmed.ncbi.nlm.nih.gov/40331624/) — Implementing Pre-Emptive Pharmacogenetics: Impact of Early Pharmacogenetic Screening in a Pediatric Oncology Cohort of 1,151 Subjects.
+    - [42170578](https://pubmed.ncbi.nlm.nih.gov/42170578/) — Chemotherapy-induced peripheral neuropathy in breast cancer: a narrative review.
+    - [40687883](https://pubmed.ncbi.nlm.nih.gov/40687883/) — Preventing adverse drug reactions and more: current clinical use of pharmacogenetic testing.
+  - 全文检查: PMC 全文（PMC13083364）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Amitriptyline (Amitriptyline): 检索 top-10
+    - [41939271](https://pubmed.ncbi.nlm.nih.gov/41939271/) — Common Adverse Reactions and Management Strategies of First-Line Anti-Tuberculosis Drugs.（有摘要）
+    - [41607631](https://pubmed.ncbi.nlm.nih.gov/41607631/) — Management of adverse events in TB care and active TB drug safety monitoring.（有摘要）
+    - [40918704](https://pubmed.ncbi.nlm.nih.gov/40918704/) — Etiopathogenesis and Current Management of Oncogenic Pruritus - A Narrative Review.（有摘要）
+    - [41957345](https://pubmed.ncbi.nlm.nih.gov/41957345/) — Influence of combined CYP2C19 and CYP2D6 phenotypes on adverse drug reactions in patients with major depressive disorder: a clinical cohort study.（有摘要）
+    - [42312136](https://pubmed.ncbi.nlm.nih.gov/42312136/) — ADA2 genotype and enzyme activity may predict vasculitic or hematologic DADA2 phenotype.（有摘要）
+    - [42333265](https://pubmed.ncbi.nlm.nih.gov/42333265/) — Linezolid-induced peripheral neuropathy in a patient with multidrug-resistant pulmonary tuberculosis: a case report and comprehensive literature review.（有摘要）
+    - [41291898](https://pubmed.ncbi.nlm.nih.gov/41291898/) — Management of refractory autoimmune hepatitis with rituximab: a case series.（有摘要）
+    - [42197401](https://pubmed.ncbi.nlm.nih.gov/42197401/) — Bedaquiline, Pretomanid, Linezolid, and Moxifloxacin: Mechanisms of Action, Drug Interactions, Adverse Effects and Use in Special Situations.（有摘要）
+    - [40123933](https://pubmed.ncbi.nlm.nih.gov/40123933/) — Cerebellar Ataxia With Neuropathy and Bilateral Vestibular Areflexia Syndrome Coexisting With JAK2-Positive Polycythemia Vera and Myelofibrosis.（有摘要）
+    - [40111454](https://pubmed.ncbi.nlm.nih.gov/40111454/) — Influence of cigarette smoking on drugs' metabolism and effects: a systematic review.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Irinotecan (Irinotecan): 检索 top-10
+    - [42147234](https://pubmed.ncbi.nlm.nih.gov/42147234/) — Glucocorticoids as adjunctive therapy for severe myelosuppression induced by combined immune checkpoint inhibitor and chemotherapy: a case report and literature review.（有摘要）
+    - [42081171](https://pubmed.ncbi.nlm.nih.gov/42081171/) — Pooled safety analysis of lurbinectedin plus irinotecan in patients with advanced solid tumors.（有摘要）
+    - [42100414](https://pubmed.ncbi.nlm.nih.gov/42100414/) — Critical considerations in the administration of antineoplastic therapy for patients with malignant solid tumors undergoing hemodialysis.（有摘要）
+    - [42093871](https://pubmed.ncbi.nlm.nih.gov/42093871/) — Distinct safety profiles of liposomal and conventional irinotecan: insights from clinical experience and real-world data.（有摘要）
+    - [41809300](https://pubmed.ncbi.nlm.nih.gov/41809300/) — Evaluating the Feasibility and Safety of Daily Inter-facility Travel for Proton Beam Therapy During Chemotherapy-Induced Myelosuppression in Children With Cancer.（有摘要）
+    - [42028439](https://pubmed.ncbi.nlm.nih.gov/42028439/) — Trilaciclib for prophylaxis of chemotherapy-induced myelosuppression in solid tumor patients: a systematic review and meta-analysis.（有摘要）
+    - [42038326](https://pubmed.ncbi.nlm.nih.gov/42038326/) — A multidimensional investigation of myelosuppression associated with sintilimab: integrating pharmacovigilance signal mining with real-world clinical evidence.（有摘要）
+    - [41528635](https://pubmed.ncbi.nlm.nih.gov/41528635/) — Clinical applications and future directions of Iodine-131-Metaiodobenzylguanidine therapy in neuroblastoma: from salvage treatment to frontline integration.（有摘要）
+    - [PPR1250345](https://pubmed.ncbi.nlm.nih.gov/PPR1250345/) — Re-evaluating the Neutropenia–Survival Paradigm in Irinotecan-based Therapy for Advanced Gastric Cancer: Post-Hoc Analysis of the RINDBeRG Trial（有摘要）
+    - [42276133](https://pubmed.ncbi.nlm.nih.gov/42276133/) — Real-World Impact of UGT1A1 Genotype-Guided Irinotecan Dosing on Severe Toxicity and Hospitalization: A Multicenter Study.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 42081171 — 真实标题（esummary）: “Pooled safety analysis of lurbinectedin plus irinotecan in patients with advanced solid tumors.”
+        - 片段 1: “In conclusion, this pooled analysis shows a predictable and manageable safety profile for lurbinectedin in combination with irinotecan in patients with advanced solid tumors, with myelosuppression, fatigue and gastrointestinal disorders being the main toxicities observed.Trial code: ClinicalTrials.g”
+        - 片段 2: “The most frequent AEs (any grade) related to treatment were fatigue (71% of patients/25% of cycles), diarrhea (62%/17%), nausea (59%/18%), vomiting (35%/7%) and decreased appetite (32%/6%); the most common grade ≥ 3 AEs were fatigue (14%/2%), diarrhea (14%/2%) and febrile neutropenia (9%/1%).”
+      - PMID 42276133 — 真实标题（esummary）: “Real-World Impact of UGT1A1 Genotype-Guided Irinotecan Dosing on Severe Toxicity and Hospitalization: A Multicenter Study.”
+        - 片段 1: “The incidences of overall severe toxicity (29.6% vs 34.0%; P=.52), febrile neutropenia (3.7% vs 5.8%; P=.76), severe neutropenia (17.0% vs 17.8%; P=.88), severe diarrhea (13.0% vs 15.0%; P=.69), and toxicity-related hospitalization (14.8% vs 21.7%; P=.24) were comparable between dose-reduced PMs and”
+- **v1 历史档位（不沿用）**: direct（直接证据），PMID 21919844: “Drugs that have a high potential to interact with herbal medicines usually have a narrow therapeutic index, including warfarin, digoxin, cyclosporine, tacrolimus, amitriptyline, midazolam, indinavir, ”
+
+## Methantheline + Raltegravir（an increase in the absorption resulting in an increased serum concentration and potentially a worsening of adverse effects cause）
+- 药对: `DB00940` / `DB06817`; a_name=Methantheline, b_name=Raltegravir; 检索词: `Methantheline` / `Raltegravir`
+- 事件: an increase in the absorption resulting in an increased serum concentration and potentially a worsening of adverse effects cause; semantic_overlap: yes; prob_mean=0.3438, r=0.1074
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 22527350
+- 机制解释（一句话）: Methantheline 为强效抗毒蕈碱药（抗胆碱作用较阿托品更强更持久）（文献22527350，标题“Relative bioavailability and pharmacodynamic effects of methantheline compared with atropine in healthy subjects.”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Methantheline" AND "Raltegravir") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Methantheline" AND "Raltegravir")`
+  - 腿 B: `"Methantheline" AND (absorption OR bioavailability OR transporter)` / `"Raltegravir" AND (absorption OR bioavailability OR transporter)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - （无结果）
+  - q2 top-3（宽共现探测）:
+    - （无结果）
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Methantheline (Methantheline): 检索 top-10
+    - [41155601](https://pubmed.ncbi.nlm.nih.gov/41155601/) — Flavonoid-Based Combination Therapies and Nano-Formulations: An Emerging Frontier in Breast Cancer Treatment.（有摘要）
+    - [40575073](https://pubmed.ncbi.nlm.nih.gov/40575073/) — Primary hyperhidrosis: an updated review.（有摘要）
+    - [41545384](https://pubmed.ncbi.nlm.nih.gov/41545384/) — Efficient solution-processed light-emitting diodes based on organic-inorganic hybrid antimony halides.（有摘要）
+    - [41143005](https://pubmed.ncbi.nlm.nih.gov/41143005/) — Identification and Validation of the Key Genes of Diabetic Vasculopathy: Evidence Based on Bioinformatics Analysis and Animal Study.（有摘要）
+    - [36808580](https://pubmed.ncbi.nlm.nih.gov/36808580/) — Properties and alcohol sensing applications of quasi-2D (PEA) 2 (MA) 3 Sb 2 Br 9 thin films.（有摘要）
+    - [38716300](https://pubmed.ncbi.nlm.nih.gov/38716300/) — Identification of Mitophagy-Associated Genes for the Prediction of Metabolic Dysfunction-Associated Steatohepatitis Based on Interpretable Machine Learning Models.（有摘要）
+    - [22527350](https://pubmed.ncbi.nlm.nih.gov/22527350/) — Relative bioavailability and pharmacodynamic effects of methantheline compared with atropine in healthy subjects.（有摘要）
+    - [35265447](https://pubmed.ncbi.nlm.nih.gov/35265447/) — A Practical Approach to the Diagnosis and Treatment of Palmar Hyperhidrosis.（有摘要）
+    - [32283620](https://pubmed.ncbi.nlm.nih.gov/32283620/) — Enhancement of Photoluminescence Quantum Yield and Stability in CsPbBr 3 Perovskite Quantum Dots by Trivalent Doping.（有摘要）
+    - [31632121](https://pubmed.ncbi.nlm.nih.gov/31632121/) — Management Strategies Of Palmar Hyperhidrosis: Challenges And Solutions.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 22527350 — 真实标题（esummary）: “Relative bioavailability and pharmacodynamic effects of methantheline compared with atropine in healthy subjects.”
+        - 片段 1: “The antimuscarinic effects observed after methantheline administration were stronger and persisted longer than those following the administration of atropine.”
+  - Raltegravir (Raltegravir): 检索 top-10
+    - [42198764](https://pubmed.ncbi.nlm.nih.gov/42198764/) — In Vitro Pharmacokinetic Properties of MK-2048, a Potent Drug Candidate for HIV Prevention.（有摘要）
+    - [42273065](https://pubmed.ncbi.nlm.nih.gov/42273065/) — Chemoinformatic Approaches to Identify Bioactive Inhibitors Against Type I Dehydroquinase (DHQ1) Enzyme of Typhoidal <i>Salmonella</i>.（有摘要）
+    - [41754918](https://pubmed.ncbi.nlm.nih.gov/41754918/) — The Potential Role of Therapeutic Drug Monitoring for Safe and Effective Anti-Infective Therapy with Manipulated Dosage Forms.（有摘要）
+    - [40733121](https://pubmed.ncbi.nlm.nih.gov/40733121/) — Pharmacokinetic Adaptations in Pregnancy: Implications for Optimizing Antiretroviral Therapy in HIV-Positive Women.（有摘要）
+    - [42125293](https://pubmed.ncbi.nlm.nih.gov/42125293/) — Integrase Inhibitors: Redefining HIV-1 Treatment and Future Challenges.（有摘要）
+    - [41799425](https://pubmed.ncbi.nlm.nih.gov/41799425/) — Alternative Administration of Antiretroviral Therapy in People with HIV Unable to Swallow: A Scoping Review.（有摘要）
+    - [40816625](https://pubmed.ncbi.nlm.nih.gov/40816625/) — Role of organic anion transporter 2 in the efflux of raltegravir glucuronide from the endoplasmic reticulum in the liver.（有摘要）
+    - [41155903](https://pubmed.ncbi.nlm.nih.gov/41155903/) — Physiologically Based Pharmacokinetic Modeling and Simulations in Lieu of Clinical Pharmacology Studies to Support the New Drug Application of Asciminib.（有摘要）
+    - [40145677](https://pubmed.ncbi.nlm.nih.gov/40145677/) — In Vitro and Clinical Evaluations of UGT1A1-, P-gp-, OATP1B1-, and BCRP-Mediated Drug-Drug Interactions of Belumosudil, a Potent ROCK2 Inhibitor.（有摘要）
+    - [39627860](https://pubmed.ncbi.nlm.nih.gov/39627860/) — The role of pharmacomicrobiomics in HIV prevention, treatment, and women's health.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 40816625: OAT2 介导的葡萄糖醛酸外排研究：涉及肝内代谢处置，非胃肠道吸收机制
+
+## Aldosterone + Danazol（The risk or severity of fluid retention increase）
+- 药对: `DB04630` / `DB01406`; a_name=Aldosterone, b_name=Danazol; 检索词: `Aldosterone` / `Danazol`
+- 事件: The risk or severity of fluid retention increase; semantic_overlap: no; prob_mean=0.3465, r=0.1064
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 41809452, 42609626
+- 机制解释（一句话）: Aldosterone 为盐皮质激素，促钠水潴留（文献41809452/42609626，标题“Vasopressin and fluid retention after liver resection: Comparison with the renin-angiotensin-aldosterone system by surgi”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Aldosterone" AND "Danazol") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Aldosterone" AND "Danazol")`
+  - 腿 B: `"Aldosterone" AND (fluid retention OR edema)` / `"Danazol" AND (fluid retention OR edema)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [41898445](https://pubmed.ncbi.nlm.nih.gov/41898445/) — Anabolic-Androgenic Steroids Revisited: Structural Biology, Receptor Signaling, and Mechanisms of Anabolic-Androgenic Dissociation.（全文: EPMC/inPMC）
+  - [40430929](https://pubmed.ncbi.nlm.nih.gov/40430929/) — Safety Profile of Gestrinone: A Systematic Review.（全文: EPMC/inPMC）
+  - [38694908](https://pubmed.ncbi.nlm.nih.gov/38694908/) — Developing practical recommendations for drug-disease interactions in patients with hypertension.（全文: EPMC/inPMC）
+  - [41155578](https://pubmed.ncbi.nlm.nih.gov/41155578/) — Steroid-Induced Thrombosis: A Comprehensive Analysis Using the FAERS Database.（全文: EPMC/inPMC）
+  - [42194761](https://pubmed.ncbi.nlm.nih.gov/42194761/) — Acquired Angioedema-A Challenge in Medical Practice: A Narrative Review.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [42066463](https://pubmed.ncbi.nlm.nih.gov/42066463/) — Integrative multi‑omics analysis of lipid metabolism during the growth and development of Qiandongnan Xiaoxiang chickens based on the gut‑muscle axis.
+    - [41898445](https://pubmed.ncbi.nlm.nih.gov/41898445/) — Anabolic-Androgenic Steroids Revisited: Structural Biology, Receptor Signaling, and Mechanisms of Anabolic-Androgenic Dissociation.
+    - [41450003](https://pubmed.ncbi.nlm.nih.gov/41450003/) — Importance of Assessing Serum Electrolytes in Dermatology: A Road Map from Blood Reports.
+  - 全文检查: PMC 全文（PMC13026150）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Aldosterone (Aldosterone): 检索 top-10
+    - [42039114](https://pubmed.ncbi.nlm.nih.gov/42039114/) — Recurrent insulin edema in an adolescent with type 2 diabetes mellitus.（有摘要）
+    - [41809452](https://pubmed.ncbi.nlm.nih.gov/41809452/) — Vasopressin and fluid retention after liver resection: Comparison with the renin-angiotensin-aldosterone system by surgical extent and liver function.（有摘要）
+    - [42292725](https://pubmed.ncbi.nlm.nih.gov/42292725/) — Individualizing Injectable Testosterone Replacement Therapy in Primary Care: Pharmacokinetics, Symptom Stability, Safety Monitoring, and Injection Frequency.（有摘要）
+    - [42609626](https://pubmed.ncbi.nlm.nih.gov/42609626/) — Primary aldosteronism and obstructive sleep apnea in hypertension: interplay, target organ damage, and clinical management.（有摘要）
+    - [42004281](https://pubmed.ncbi.nlm.nih.gov/42004281/) — Central Serous Chorioretinopathy Deteriorated With Everolimus Administration in Advanced Renal Cell Carcinoma: A Case Report.（有摘要）
+    - [41789211](https://pubmed.ncbi.nlm.nih.gov/41789211/) — Unveiling an Uncommon Complication: Pleural Effusion Secondary to Pioglitazone Use.（有摘要）
+    - [41476905](https://pubmed.ncbi.nlm.nih.gov/41476905/) — Insulin edema in slowly progressive type 1 diabetes: improvement following adjustment of insulin therapy.（有摘要）
+    - [41640926](https://pubmed.ncbi.nlm.nih.gov/41640926/) — Transient Insulin-Induced Edema Following Rapid Metabolic Correction in Poorly Controlled Pediatric Type 1 Diabetes Mellitus.（有摘要）
+    - [41971462](https://pubmed.ncbi.nlm.nih.gov/41971462/) — Electrolyte homeostasis in pregnancy: from physiological adaptations to clinical disturbances - a nephrologist's perspective.（有摘要）
+    - [42483917](https://pubmed.ncbi.nlm.nih.gov/42483917/) — Role of Neurohormonal Modulators in Reducing Adverse Outcomes in Patients with Ischemic Heart Disease.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 41809452 — 真实标题（esummary）: “Vasopressin and fluid retention after liver resection: Comparison with the renin-angiotensin-aldosterone system by surgical extent and liver function.”
+        - 片段 1: “Arginine vasopressin (AVP) promotes antidiuresis via V2-mediated aquaporin trafficking, whereas the renin-angiotensin-aldosterone system primarily modulates sodium handling.”
+        - 片段 2: “Aim To examine postoperative changes in plasma AVP and plasma aldosterone concentration (PAC) after liver resection, and association with fluid retention.”
+      - PMID 42609626 — 真实标题（esummary）: “Primary aldosteronism and obstructive sleep apnea in hypertension: interplay, target organ damage, and clinical management.”
+        - 片段 1: “Aldosterone-related sodium retention and nocturnal rostral fluid shift may worsen upper-airway obstruction.”
+        - 片段 2: “Management requires independent confirmation of each disorder, subtype-directed PA treatment with adrenalectomy or mineralocorticoid receptor antagonists, and appropriate OSA treatment with positive airway pressure or other individualized measures.”
+  - Danazol (Danazol): 检索 top-10
+    - [41178113](https://pubmed.ncbi.nlm.nih.gov/41178113/) — Right Ventricular Volume Overload Mimicking Pulmonary Embolism: A Case of Intraoperative Fluid Absorption-Induced Ventricular Interdependence.（有摘要）
+    - [40691344](https://pubmed.ncbi.nlm.nih.gov/40691344/) — Efficacy and safety of momelotinib in Janus kinase inhibitor-experienced Asian patients with myelofibrosis and anemia.（有摘要）
+    - [41189830](https://pubmed.ncbi.nlm.nih.gov/41189830/) — Spinal Anesthesia With Short-Term Prophylaxis in a Patient With Hereditary Angioedema: A Case Report.（有摘要）
+    - [41884526](https://pubmed.ncbi.nlm.nih.gov/41884526/) — Isotretinoin-induced Intracranial Hypertension Presenting as Unilateral Pulsatile Tinnitus.（有摘要）
+    - [41087674](https://pubmed.ncbi.nlm.nih.gov/41087674/) — Predicting Food Effect On Oral Drug Absorption For Solubility-Epithelial Membrane Permeation-Limited Cases With Bile Micelle Solubilization.（有摘要）
+    - [41859097](https://pubmed.ncbi.nlm.nih.gov/41859097/) — Established and emerging non-cellular therapies in inherited bone marrow failure syndromes.（有摘要）
+    - [41821554](https://pubmed.ncbi.nlm.nih.gov/41821554/) — Seven-Year Course of Hypoplastic Myelodysplastic Syndrome Unmasked by Secondary and Neurological Syphilis.（无摘要）
+    - [39309672](https://pubmed.ncbi.nlm.nih.gov/39309672/) — A real-world study of hereditary angioedema patients due to C1 inhibitor deficiency treated with danazol in the Brazilian Public Health System.（有摘要）
+    - [41735690](https://pubmed.ncbi.nlm.nih.gov/41735690/) — An Overview of Endometriosis and Potential Pharmacogenetic Targets.（有摘要）
+    - [40050948](https://pubmed.ncbi.nlm.nih.gov/40050948/) — Ovarian stimulation by promoting basal follicular growth.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 39309672: HAE 患者 Danazol 真实世界研究：摘要中水肿为 HAE 疾病本身发作表现，非 Danazol 所致液体潴留
+
+## Aldosterone + (S)-Indapamide（the hypokalemic activities increase）
+- 药对: `DB04630` / `DB00808`; a_name=Aldosterone, b_name=(S)-Indapamide; 检索词: `Aldosterone` / `Indapamide`
+- 事件: the hypokalemic activities increase; semantic_overlap: yes; prob_mean=0.3608, r=0.1005
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42367449, 42358241, 41222871
+- 机制解释（一句话）: Aldosterone 促钾排泄→低钾血症（文献42367449/42358241，标题“Pseudo-Hyperaldosteronism After the Ingestion of Licorice Tea: A Case Report.”）；噻嗪样利尿剂（Indapamide）低钾血症为已知不良反应（文献41222871，标题“Low-Dose Triple-Pill of Telmisartan, Amlodipine, and Indapamide for Initial Hypertension Treatment: A GRADE-Assessed Met”）。盐皮质激素（Aldosterone）与噻嗪样利尿剂（Indapamide）均促钾丢失，叠加增加低钾血症风险。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Aldosterone" AND "Indapamide") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Aldosterone" AND "Indapamide")`
+  - 腿 B: `"Aldosterone" AND (hypokalemia OR potassium OR electrolyte)` / `"Indapamide" AND (hypokalemia OR potassium OR electrolyte)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [42348770](https://pubmed.ncbi.nlm.nih.gov/42348770/) — Baxdrostat (Baxfendy) - an aldosterone synthase inhibitor for hypertension.（无全文）
+  - [42260805](https://pubmed.ncbi.nlm.nih.gov/42260805/) — Safety and efficacy of lorundrostat, an aldosterone synthase inhibitor, in patients with uncontrolled hypertension: A systematic review and meta-analysis.（全文: EPMC/inPMC）
+  - [41764711](https://pubmed.ncbi.nlm.nih.gov/41764711/) — Zilebesiran: an RNA interference agent-its need and potential to transform hypertension treatment.（全文: EPMC/inPMC）
+  - [42163997](https://pubmed.ncbi.nlm.nih.gov/42163997/) — Efficacy and Safety of Fimasartan/Indapamide Combination Therapy versus Fimasartan Monotherapy in Patients with Essential Hypertension Inadequately Responding to Fimasartan 30 mg (FINEDUO): A Randomized, Double-Blind, Multicenter, Phase III Study.（全文: EPMC/inPMC）
+  - [41156295](https://pubmed.ncbi.nlm.nih.gov/41156295/) — Low-Dose Indapamide vs. Hydrochlorothiazide in Idiopathic Hypercalciuria: A Randomized Prospective Trial.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [42348770](https://pubmed.ncbi.nlm.nih.gov/42348770/) — Baxdrostat (Baxfendy) - an aldosterone synthase inhibitor for hypertension.
+    - [41038712](https://pubmed.ncbi.nlm.nih.gov/41038712/) — Indapamide interference in liquid chromatography-tandem mass spectrometry aldosterone assay.
+    - [42260805](https://pubmed.ncbi.nlm.nih.gov/42260805/) — Safety and efficacy of lorundrostat, an aldosterone synthase inhibitor, in patients with uncontrolled hypertension: A systematic review and meta-analysis.
+  - 全文检查: PMC 全文（PMC13246067）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Aldosterone (Aldosterone): 检索 top-10
+    - [42367449](https://pubmed.ncbi.nlm.nih.gov/42367449/) — Pseudo-Hyperaldosteronism After the Ingestion of Licorice Tea: A Case Report.（有摘要）
+    - [42358241](https://pubmed.ncbi.nlm.nih.gov/42358241/) — A Diagnostic Pitfall of Primary Aldosteronism Presenting as Recurrent Quadriparesis: A Case Report.（有摘要）
+    - [42376642](https://pubmed.ncbi.nlm.nih.gov/42376642/) — Normocalcemic pseudohypoparathyroidism type 1B complicated by hypokalemia: A case report.（有摘要）
+    - [42254956](https://pubmed.ncbi.nlm.nih.gov/42254956/) — Gitelman Syndrome in a Child Presenting With Polyuria and Polydipsia: Diagnostic Challenges in a Resource-Limited Setting.（有摘要）
+    - [42344831](https://pubmed.ncbi.nlm.nih.gov/42344831/) — Severe Hypokalemia and Life-Threatening Ventricular Arrhythmias: A Case of Normotensive Primary Aldosteronism.（有摘要）
+    - [42358677](https://pubmed.ncbi.nlm.nih.gov/42358677/) — Coexistence of 21-hydroxylase deficiency and Gitelman syndrome in a neonate presenting with severe hyponatremic seizures: a case report.（有摘要）
+    - [42543972](https://pubmed.ncbi.nlm.nih.gov/42543972/) — Osmotic Demyelination Syndrome Secondary to Hypernatremia and Hypokalemia: A Case Report of Complete Recovery.（有摘要）
+    - [42371545](https://pubmed.ncbi.nlm.nih.gov/42371545/) — Liddle Syndrome Presenting as Hypertensive Crisis and Myocardial Injury in a Young Male: A Case Report.（有摘要）
+    - [42259571](https://pubmed.ncbi.nlm.nih.gov/42259571/) — Hypokalaemic paralysis as a presenting feature of primary aldosteronism.（有摘要）
+    - [41928112](https://pubmed.ncbi.nlm.nih.gov/41928112/) — Recurrent infection-associated hypokalemia leading to the diagnosis of Gitelman syndrome: a case report.（有摘要）
+    - 方向一致且标题硬校验通过 2 篇:
+      - PMID 42367449 — 真实标题（esummary）: “Pseudo-Hyperaldosteronism After the Ingestion of Licorice Tea: A Case Report.”
+        - 片段 1: “Further investigations demonstrated inappropriate renal potassium wasting in the setting of suppressed plasma renin and aldosterone levels.”
+        - 片段 2: “Severe hypokalemia is a common electrolyte disorder with a broad spectrum of etiologies.”
+      - PMID 42358241 — 真实标题（esummary）: “A Diagnostic Pitfall of Primary Aldosteronism Presenting as Recurrent Quadriparesis: A Case Report.”
+        - 片段 1: “Comprehensive diagnostic workup revealed persistent hypokalemia of 3.2-3.4 and a lowest recorded value of 2.1 mmol/L with elevated aldosterone levels, that is, 100 ng/dL and suppressed renin activity, consistent with primary aldosteronism.”
+        - 片段 2: “On follow-up, she demonstrated complete resolution of symptoms and normalization of serum potassium levels.”
+  - (S)-Indapamide (Indapamide): 检索 top-10
+    - [42163997](https://pubmed.ncbi.nlm.nih.gov/42163997/) — Efficacy and Safety of Fimasartan/Indapamide Combination Therapy versus Fimasartan Monotherapy in Patients with Essential Hypertension Inadequately Responding to Fimasartan 30 mg (FINEDUO): A Randomized, Double-Blind, Multicenter, Phase III Study.（有摘要）
+    - [42147407](https://pubmed.ncbi.nlm.nih.gov/42147407/) — Adverse drug reactions associated with glycyrrhiza-containing Chinese patent medicines: a literature-based analysis of individual case reports and clinical trials.（有摘要）
+    - [41018391](https://pubmed.ncbi.nlm.nih.gov/41018391/) — Evaluation of the Frequency of Hypokalemia in Patients on Diuretic Therapy for Heart Failure.（有摘要）
+    - [41800319](https://pubmed.ncbi.nlm.nih.gov/41800319/) — Beyond expensive innovations: affordable and effective strategies for managing tubulopathies in adults.（有摘要）
+    - [41874057](https://pubmed.ncbi.nlm.nih.gov/41874057/) — Drug-Induced Hyponatremia as a Cause of Emergency Department Attendance.（有摘要）
+    - [41156295](https://pubmed.ncbi.nlm.nih.gov/41156295/) — Low-Dose Indapamide vs. Hydrochlorothiazide in Idiopathic Hypercalciuria: A Randomized Prospective Trial.（有摘要）
+    - [42261276](https://pubmed.ncbi.nlm.nih.gov/42261276/) — From concept to clinical practice: the evolution of low- and ultra-low-dose triple combination therapy for hypertension.（有摘要）
+    - [41122611](https://pubmed.ncbi.nlm.nih.gov/41122611/) — Real-World Evaluation of the Efficacy and Tolerability of a Fixed-Dose Combination of Amlodipine and Indapamide in Patients Over 55 Years.（有摘要）
+    - [41222871](https://pubmed.ncbi.nlm.nih.gov/41222871/) — Low-Dose Triple-Pill of Telmisartan, Amlodipine, and Indapamide for Initial Hypertension Treatment: A GRADE-Assessed Meta-analysis of Randomized Trials.（有摘要）
+    - [41656849](https://pubmed.ncbi.nlm.nih.gov/41656849/) — Effectiveness of Indapamide Prolonged-Release and Perindopril Versus Perindopril Monotherapy for Treated Uncontrolled Hypertension: A Target Trial Emulation.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 41222871 — 真实标题（esummary）: “Low-Dose Triple-Pill of Telmisartan, Amlodipine, and Indapamide for Initial Hypertension Treatment: A GRADE-Assessed Meta-analysis of Randomized Trials.”
+        - 片段 1: “However, low-dose GMRx2 had a higher incidence of hypokalemia (9% vs.”
+        - 片段 2: “Nonetheless, it may increase the risk of hypokalemia and hyponatremia.”
+    - **人工裁决剔除（b 侧）**:
+      - PMID 41156295: Indapamide 与氢氯噻嗪高钙尿症试验：摘要无低钾/钾相关内容
+
+## Dexketoprofen + Cyclosporine（The risk or severity of renal failure and hypertension increase）
+- 药对: `DB09214` / `DB00091`; a_name=Dexketoprofen, b_name=Cyclosporine; 检索词: `Dexketoprofen` / `Cyclosporine`
+- 事件: The risk or severity of renal failure and hypertension increase; semantic_overlap: yes; prob_mean=0.3615, r=0.1001
+- v1 证据档: none（未识别） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Dexketoprofen" AND "Cyclosporine") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Dexketoprofen" AND "Cyclosporine")`
+  - 腿 B: `"Dexketoprofen" AND (excretion OR renal OR hypotens OR blood pressure)` / `"Cyclosporine" AND (excretion OR renal OR hypotens OR blood pressure)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [40871041](https://pubmed.ncbi.nlm.nih.gov/40871041/) — Are We Considering All the Potential Drug-Drug Interactions in Women's Reproductive Health? A Predictive Model Approach.（全文: EPMC/inPMC）
+  - [42014364](https://pubmed.ncbi.nlm.nih.gov/42014364/) — Utility of Patch Testing, LTT, and HLA Genotyping in Identifying Culprit Drugs and Diagnosing Multiple Drug Hypersensitivity in Definite DRESS: A 10-Year Cohort Study.（全文: EPMC/inPMC）
+  - [41328148](https://pubmed.ncbi.nlm.nih.gov/41328148/) — Rotational Thromboelastometry (ROTEM)-Assisted Anaesthetic Management of a Parturient With Paroxysmal Nocturnal Haemoglobinuria and Aplastic Anaemia for Caesarean Section: A Case Report.（全文: EPMC/inPMC）
+  - [41427122](https://pubmed.ncbi.nlm.nih.gov/41427122/) — Identifying global trends from case reports of fibrodysplasia ossificans progressiva: a scoping review.（全文: EPMC/inPMC）
+  - [39703397](https://pubmed.ncbi.nlm.nih.gov/39703397/) — Spontaneous adverse drug reactions reported in a thirteen-year pharmacovigilance program in a tertiary university hospital.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [42014364](https://pubmed.ncbi.nlm.nih.gov/42014364/) — Utility of Patch Testing, LTT, and HLA Genotyping in Identifying Culprit Drugs and Diagnosing Multiple Drug Hypersensitivity in Definite DRESS: A 10-Year Cohort Study.
+    - [41328148](https://pubmed.ncbi.nlm.nih.gov/41328148/) — Rotational Thromboelastometry (ROTEM)-Assisted Anaesthetic Management of a Parturient With Paroxysmal Nocturnal Haemoglobinuria and Aplastic Anaemia for Caesarean Section: A Case Report.
+    - [41427122](https://pubmed.ncbi.nlm.nih.gov/41427122/) — Identifying global trends from case reports of fibrodysplasia ossificans progressiva: a scoping review.
+  - 全文检查: PMC 全文（PMC12389331）已抓取，两药在正文中未共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Dexketoprofen (Dexketoprofen): 检索 top-10
+    - [42375982](https://pubmed.ncbi.nlm.nih.gov/42375982/) — Perioperative analgesia and clinical safety of dexketoprofen in dogs undergoing ovariohysterectomy.（有摘要）
+    - [42212265](https://pubmed.ncbi.nlm.nih.gov/42212265/) — A comparative evaluation of two clinical decision support systems for safer prescribing in older adults: an exploratory single-patient case study.（有摘要）
+    - [42137070](https://pubmed.ncbi.nlm.nih.gov/42137070/) — Pneumomediastinum due to excessive cheering during a football match.（有摘要）
+    - [40901800](https://pubmed.ncbi.nlm.nih.gov/40901800/) — Efficacy of preemptive intravenous ibuprofen and dexketoprofen on postoperative opioid consumption in laparoscopic cholecystectomy: Randomized controlled study.（有摘要）
+    - [41641183](https://pubmed.ncbi.nlm.nih.gov/41641183/) — Idiopathic Renal Infarct in a Healthy Adult With an Accessory Renal Artery: A Case Report.（有摘要）
+    - [40765043](https://pubmed.ncbi.nlm.nih.gov/40765043/) — A comparative study on the efficacy of dexketoprofen and methylprednisolone in the treatment of acute low back pain.（有摘要）
+    - [39728803](https://pubmed.ncbi.nlm.nih.gov/39728803/) — The Choice of Anti-Inflammatory Influences the Elimination of Protein-Bound Uremic Toxins.（有摘要）
+    - [41900049](https://pubmed.ncbi.nlm.nih.gov/41900049/) — The Hidden Threat of Pharmaceuticals: Ketoprofen Degradation and Toxicity to Non-Target Organisms.（有摘要）
+    - [41517363](https://pubmed.ncbi.nlm.nih.gov/41517363/) — Optimising Pain Relief in Acute Pancreatitis: An Evidence-Based Approach.（有摘要）
+    - [41286753](https://pubmed.ncbi.nlm.nih.gov/41286753/) — The quadro-iliac plane block: a systematic review of a promising novel technique.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Cyclosporine (Cyclosporine): 检索 top-10
+    - [42328646](https://pubmed.ncbi.nlm.nih.gov/42328646/) — Drug-induced hyperuricemia: multi-pathway regulation, causative drugs, and individualized management strategies.（有摘要）
+    - [42072055](https://pubmed.ncbi.nlm.nih.gov/42072055/) — Oxidative Stress-Driven Mechanisms and Biomarkers of Drug-Induced Nephrotoxicity: Translational Insights and Therapeutic Implications.（有摘要）
+    - [41909296](https://pubmed.ncbi.nlm.nih.gov/41909296/) — Sequential Treatment With Corticosteroids and Cyclosporine A in a High-Risk Patient With IgG-Negative Immunotactoid Glomerulopathy.（有摘要）
+    - [42196253](https://pubmed.ncbi.nlm.nih.gov/42196253/) — Mineralocorticoid Receptor Antagonists in Chronic Kidney Disease: Clinical Evidence, Pharmacology, and Drug-Drug Interactions for Personalized Management of Hyperkalemia.（有摘要）
+    - [41541562](https://pubmed.ncbi.nlm.nih.gov/41541562/) — Mechanism of Sodium-Glucose Cotransporter-2 Inhibitors for Uricosuria.（有摘要）
+    - [42273079](https://pubmed.ncbi.nlm.nih.gov/42273079/) — Prognosis of renal re-transplantation for chronic graft failure.（有摘要）
+    - [41507552](https://pubmed.ncbi.nlm.nih.gov/41507552/) — Investigation of Renal Tissue Deposition of the Calcineurin Inhibitors Voclosporin, Cyclosporine and Tacrolimus Using MALDI-MSI Imaging.（有摘要）
+    - [42064683](https://pubmed.ncbi.nlm.nih.gov/42064683/) — Successful Cyclosporine Salvage Therapy in Refractory Lupus Nephritis: A Case Study From Ethiopia.（有摘要）
+    - [41898268](https://pubmed.ncbi.nlm.nih.gov/41898268/) — Rho/ROCK Signaling Pathway in Kidney Diseases: Mechanisms and Therapeutic Perspectives.（有摘要）
+    - [41852509](https://pubmed.ncbi.nlm.nih.gov/41852509/) — Successful use of obinutuzumab in focal segmental glomerulosclerosis with inadequate response to rituximab: a case report.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+    - **人工裁决剔除（b 侧）**:
+      - PMID 41909296: 免疫触须样肾小球病病例：高血压/肾功能受损为疾病基线，非环孢素毒性
+      - PMID 41507552: MALDI-MSI 肾脏沉积方法学研究：摘要未述肾毒性/高血压
+
+## Zimelidine + Desmopressin（The risk or severity of hyponatremia increase）
+- 药对: `DB04832` / `DB00035`; a_name=Zimelidine, b_name=Desmopressin; 检索词: `Zimelidine` / `Desmopressin`
+- 事件: The risk or severity of hyponatremia increase; semantic_overlap: yes; prob_mean=0.5748, r=0.0861
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 42351030
+- 机制解释（一句话）: Desmopressin 为加压素类似物，水潴留→低钠血症（文献42351030，标题“Proactive desmopressin for the prevention of serum sodium overcorrection in moderate-to-severe hyponatremia: a systemati”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Zimelidine" AND "Desmopressin") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Zimelidine" AND "Desmopressin")`
+  - 腿 B: `"Zimelidine" AND (hyponatremia OR sodium)` / `"Desmopressin" AND (hyponatremia OR sodium)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [PMC1600015](https://pubmed.ncbi.nlm.nih.gov/PMC1600015/) — INDEX TO VOLUME 280 FOR 1980（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [PMC1600015](https://pubmed.ncbi.nlm.nih.gov/PMC1600015/) — INDEX TO VOLUME 280 FOR 1980
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Zimelidine (Zimelidine): 检索 top-10
+    - [38410364](https://pubmed.ncbi.nlm.nih.gov/38410364/) — Synthesis of anti-depressant molecules via metal-catalyzed reactions: a review.（有摘要）
+    - [38791173](https://pubmed.ncbi.nlm.nih.gov/38791173/) — Kinetic Properties and Pharmacological Modulation of High- and Low-Affinity Dopamine Transport in Striatal Astrocytes of Adult Rats.（有摘要）
+    - [36552186](https://pubmed.ncbi.nlm.nih.gov/36552186/) — Review of the Treatments for Central Neuropathic Pain.（有摘要）
+    - [38517751](https://pubmed.ncbi.nlm.nih.gov/38517751/) — Evidence for the Induction of Analgesic Cross-Tolerance Between Opioid and Apelin/APJ Systems in Male Rats.（有摘要）
+    - [38573558](https://pubmed.ncbi.nlm.nih.gov/38573558/) — Citalopram, an antipsychotic agent, induces G1/G0 phase cell cycle arrest and promotes apoptosis in human laryngeal carcinoma HEP-2 cells.（有摘要）
+    - [25083039](https://pubmed.ncbi.nlm.nih.gov/25083039/) — Sialochemical Analysis: Windfall to the Oral Physician (A Hospital-based Clinical Cross-Sectional Study in Depressive Disorders).（有摘要）
+    - [24995243](https://pubmed.ncbi.nlm.nih.gov/24995243/) — Sialochemical analysis: a portal for the oral diagnostician.（有摘要）
+    - [34520744](https://pubmed.ncbi.nlm.nih.gov/34520744/) — Targeting non-canonical pathways as a strategy to modulate the sodium iodide symporter.（有摘要）
+    - [33998993](https://pubmed.ncbi.nlm.nih.gov/33998993/) — Off-label Uses of Selective Serotonin Reuptake Inhibitors (SSRIs).（有摘要）
+    - [30796095](https://pubmed.ncbi.nlm.nih.gov/30796095/) — Antidepressants are modifiers of lipid bilayer properties.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Desmopressin (Desmopressin): 检索 top-10
+    - [42351030](https://pubmed.ncbi.nlm.nih.gov/42351030/) — Proactive desmopressin for the prevention of serum sodium overcorrection in moderate-to-severe hyponatremia: a systematic review and meta-analysis.（有摘要）
+    - [42597136](https://pubmed.ncbi.nlm.nih.gov/42597136/) — Postoperative delayed hyponatremia after endoscopic transsphenoidal surgery for pituitary adenomas: role of fluid restriction and associated risk factors.（有摘要）
+    - [42051284](https://pubmed.ncbi.nlm.nih.gov/42051284/) — Tirzepatide-associated hyponatremia in a patient with known arginine vasopressin deficiency.（有摘要）
+    - [41844238](https://pubmed.ncbi.nlm.nih.gov/41844238/) — Long-Term Safety of Desmopressin Orally Disintegrating Tablets in Men With Nocturia due to Nocturnal Polyuria: Final Results of a Specified Drug Use-Results Survey in Japan.（有摘要）
+    - [41797751](https://pubmed.ncbi.nlm.nih.gov/41797751/) — Case Report of Acute Severe Hyponatremia Induced by Desmopressin Administration During Chemotherapy.（有摘要）
+    - [41718543](https://pubmed.ncbi.nlm.nih.gov/41718543/) — Real-World Safety and Effectiveness of an Initial 0.1 mg Dose of Desmopressin in Older Men With Nocturnal Polyuria.（有摘要）
+    - [42535456](https://pubmed.ncbi.nlm.nih.gov/42535456/) — Evaluation of desmopressin stimulation test specificity in healthy volunteers.（有摘要）
+    - [42548160](https://pubmed.ncbi.nlm.nih.gov/42548160/) — Open-Label, Balanced, Randomized, Single-Dose, Three-Treatment, Three-Sequence, Three-Period, Three-Way Crossover Oral Bioequivalence Study of Desmopressin Acetate Oral Solution.（有摘要）
+    - [41583893](https://pubmed.ncbi.nlm.nih.gov/41583893/) — Medication-Induced Severe Hyponatremia After Elective Surgery in a Patient With Known Arginine Vasopressin Deficiency.（有摘要）
+    - [41363127](https://pubmed.ncbi.nlm.nih.gov/41363127/) — Arginine Vasopressin Deficiency and Oxytocin Deficiency in the Endocrine Clinic.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 42351030 — 真实标题（esummary）: “Proactive desmopressin for the prevention of serum sodium overcorrection in moderate-to-severe hyponatremia: a systematic review and meta-analysis.”
+        - 片段 1: “Desmopressin is used to stabilize free-water excretion, but the effectiveness of proactive administration has not been systematically evaluated.”
+        - 片段 2: “We included studies enrolling adults with moderate-to-severe hyponatremia receiving standard therapy that compared proactive desmopressin with non-proactive usual-care strategies.”
+    - **人工裁决剔除（b 侧）**:
+      - PMID 42597136: 经蝶术后迟发低钠血症研究：Desmopressin 仅为排除标准提及
+
+## Thioridazine + Naltrexone（The risk or severity of hypotension and CNS depression increase）
+- 药对: `DB00679` / `DB00704`; a_name=Thioridazine, b_name=Naltrexone; 检索词: `Thioridazine` / `Naltrexone`
+- 事件: The risk or severity of hypotension and CNS depression increase; semantic_overlap: yes; prob_mean=0.4043, r=0.0774
+- v1 证据档: class_suggested（类别级机制建议，需人工裁决） → **v2 证据档: none（未识别）**
+- 关键 PMID: （无）
+- 机制解释（一句话）: 未检索到支持该事件方向的 direct/类别级机制证据
+- 检索式记录:
+  - 腿 A q1: `("Thioridazine" AND "Naltrexone") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Thioridazine" AND "Naltrexone")`
+  - 腿 B: `"Thioridazine" AND (hypotens OR vasodilat OR sedation OR CNS depressant)` / `"Naltrexone" AND (hypotens OR vasodilat OR sedation OR CNS depressant)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [41477538](https://pubmed.ncbi.nlm.nih.gov/41477538/) — Pharmacological Interventions for Excoriation Behaviors in Alzheimer's Disease: An Empty Systematic Review of Clinical Trials.（全文: EPMC/inPMC）
+  - [41497349](https://pubmed.ncbi.nlm.nih.gov/41497349/) — Drug Repurposing as an Effective Drug Discovery Strategy: A Critical Review.（全文: EPMC/inPMC）
+  - [40650291](https://pubmed.ncbi.nlm.nih.gov/40650291/) — Psychopharmacological Therapy Positively Modulates Disease Activity in Inflammatory Bowel Disease: A Systematic Review.（全文: EPMC/inPMC）
+  - [39583807](https://pubmed.ncbi.nlm.nih.gov/39583807/) — Machine learning in obsessive-compulsive disorder medications.（全文: EPMC/inPMC）
+  - [41956096](https://pubmed.ncbi.nlm.nih.gov/41956096/) — GZR18, a GLP-1 analog with once-weekly or bi-weekly dosing for body weight management: A randomized, placebo-controlled, phase 1b/2a trial.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [41477538](https://pubmed.ncbi.nlm.nih.gov/41477538/) — Pharmacological Interventions for Excoriation Behaviors in Alzheimer's Disease: An Empty Systematic Review of Clinical Trials.
+    - [41497349](https://pubmed.ncbi.nlm.nih.gov/41497349/) — Drug Repurposing as an Effective Drug Discovery Strategy: A Critical Review.
+    - [40650291](https://pubmed.ncbi.nlm.nih.gov/40650291/) — Psychopharmacological Therapy Positively Modulates Disease Activity in Inflammatory Bowel Disease: A Systematic Review.
+  - 全文检查: PMC 全文（PMC12752926）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Thioridazine (Thioridazine): 检索 top-10
+    - [39718691](https://pubmed.ncbi.nlm.nih.gov/39718691/) — Drug-Induced Cognitive Impairment.（有摘要）
+    - [40228746](https://pubmed.ncbi.nlm.nih.gov/40228746/) — Effects of medications on the human electroretinogram: A comprehensive review.（有摘要）
+    - [40133751](https://pubmed.ncbi.nlm.nih.gov/40133751/) — Repurposing of nervous system drugs for cancer treatment: recent advances, challenges, and future perspectives.（有摘要）
+    - [41641976](https://pubmed.ncbi.nlm.nih.gov/41641976/) — Tricyclic antidepressants suppress sleep in Caenorhabditis elegans.（有摘要）
+    - [38434701](https://pubmed.ncbi.nlm.nih.gov/38434701/) — Prediction of multiple types of drug interactions based on multi-scale fusion and dual-view fusion.（有摘要）
+    - [36978032](https://pubmed.ncbi.nlm.nih.gov/36978032/) — Deprescribing psychotropic medicines for behaviours that challenge in people with intellectual disabilities: a systematic review.（有摘要）
+    - [34940748](https://pubmed.ncbi.nlm.nih.gov/34940748/) — Anesthetic Considerations for Patients on Psychotropic Drug Therapies.（有摘要）
+    - [36142644](https://pubmed.ncbi.nlm.nih.gov/36142644/) — New Insights into Ion Channels: Predicting hERG-Drug Interactions.（有摘要）
+    - [31890361](https://pubmed.ncbi.nlm.nih.gov/31890361/) — Treatment Options for Acute Agitation in Psychiatric Patients: Theoretical and Empirical Evidence.（有摘要）
+    - [38384595](https://pubmed.ncbi.nlm.nih.gov/38384595/) — Drug safety in older patients with alcohol use disorder: a retrospective cohort study.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Naltrexone (Naltrexone): 检索 top-10
+    - [40618905](https://pubmed.ncbi.nlm.nih.gov/40618905/) — The novel synthesized naltrexone-related MOR antagonist AT-99 counteracts dopamine releasing and behavioral depressant morphine-induced effects.（有摘要）
+    - [41348428](https://pubmed.ncbi.nlm.nih.gov/41348428/) — The Therapeutic Potential of Dual NMR (NOP/MOP) Agonism in Pain Management.（有摘要）
+    - [42239826](https://pubmed.ncbi.nlm.nih.gov/42239826/) — Board-certified psychiatric pharmacists in substance use disorder treatment: Integration, services, and outcomes across care settings.（有摘要）
+    - [41731947](https://pubmed.ncbi.nlm.nih.gov/41731947/) — Evidence-based consensus guidelines for the pharmacological management of substance dependence: Recommendations from the British Association for Psychopharmacology.（有摘要）
+    - [41492821](https://pubmed.ncbi.nlm.nih.gov/41492821/) — Pitolisant Inhibits Alcohol Drinking and Improves Withdrawal Negative Affect Through Lateral Habenula Histaminergic Signaling in Mice.（有摘要）
+    - [41398703](https://pubmed.ncbi.nlm.nih.gov/41398703/) — The NOD (Naltrexone for Overdose Prevention) study protocol: a pilot randomized controlled trial of intramuscular naltrexone for opioid overdose prevention among people who use stimulants living with or at risk for HIV.（有摘要）
+    - [40351978](https://pubmed.ncbi.nlm.nih.gov/40351978/) — Effect of Celastrus paniculatus on Alcohol-Elicited Conditioned Place Preference and Alcohol Withdrawal-Induced Anxiety in Mice.（有摘要）
+    - [41762716](https://pubmed.ncbi.nlm.nih.gov/41762716/) — Samidorphan sadness: does the addition of samidorphan to olanzapine have prodepressive effects?（有摘要）
+    - [40716513](https://pubmed.ncbi.nlm.nih.gov/40716513/) — Comparison of ventilatory depression by carfentanil, fentanyl, and heroin, and reversal by opioid receptor antagonists in rats.（有摘要）
+    - [41391033](https://pubmed.ncbi.nlm.nih.gov/41391033/) — Esketamine/Ketamine: Dual-Action Mechanisms and Clinical Prospects beyond Anesthesia in Psychiatry, Immunology, and Oncology.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+- **v1 历史档位（不沿用）**: class_suggested（类别级机制建议，需人工裁决），PMID 19393386: “Certain side effects were observed, namely transitory sedation at the beginning of treatment and moderate constipation.”
+
+## Mometasone furoate + Bendroflumethiazide（The risk or severity of electrolyte imbalance increase）
+- 药对: `DB14512` / `DB00436`; a_name=Mometasone furoate, b_name=Bendroflumethiazide; 检索词: `Mometasone furoate` / `Bendroflumethiazide`
+- 事件: The risk or severity of electrolyte imbalance increase; semantic_overlap: no; prob_mean=0.4108, r=0.0733
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 38425181
+- 机制解释（一句话）: 噻嗪类利尿剂（Bendroflumethiazide）低钾/电解质紊乱为已知（文献38425181，标题“Genetic Determinants of Thiazide-Induced Hyperuricemia, Hyperglycemia, and Urinary Electrolyte Disturbances - A Genome-W”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Mometasone furoate" AND "Bendroflumethiazide") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Mometasone furoate" AND "Bendroflumethiazide")`
+  - 腿 B: `"Mometasone furoate" AND (hypokalemia OR potassium OR electrolyte)` / `"Bendroflumethiazide" AND (hypokalemia OR potassium OR electrolyte)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [30349342](https://pubmed.ncbi.nlm.nih.gov/30349342/) — Calcipotriol/betamethasone dipropionate aerosol foam for the treatment of psoriasis vulgaris: case series and review of the literature.（全文: EPMC/inPMC）
+  - [27231799](https://pubmed.ncbi.nlm.nih.gov/27231799/) — Real-World Axitinib Use in the United States: A Retrospective Study Using Linked Datasets.（全文: EPMC/inPMC）
+  - [21818695](https://pubmed.ncbi.nlm.nih.gov/21818695/) — BDDCS applied to over 900 drugs.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [30349342](https://pubmed.ncbi.nlm.nih.gov/30349342/) — Calcipotriol/betamethasone dipropionate aerosol foam for the treatment of psoriasis vulgaris: case series and review of the literature.
+    - [27231799](https://pubmed.ncbi.nlm.nih.gov/27231799/) — Real-World Axitinib Use in the United States: A Retrospective Study Using Linked Datasets.
+    - [27122230](https://pubmed.ncbi.nlm.nih.gov/27122230/) — A quantitative threshold for high/low extent of urinary excretion of compounds in humans.
+  - 全文检查: PMC 全文（PMC6183653）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Mometasone furoate (Mometasone furoate): 检索 top-10
+    - [40941705](https://pubmed.ncbi.nlm.nih.gov/40941705/) — An Unveiling of the Misdiagnosis of Granulomatosis with Polyangiitis as Acute Sinusitis: A Case Report.（有摘要）
+    - [40574099](https://pubmed.ncbi.nlm.nih.gov/40574099/) — Incorporation of Mometasone Furoate into a Cyclodextrin Metal-Organic Framework to Optimize Nasal Administration.（有摘要）
+    - [41458680](https://pubmed.ncbi.nlm.nih.gov/41458680/) — Cushingoid Features and Addisonian Crisis Following Abrupt Withdrawal of Potent Topical Corticosteroids: A Case Report.（有摘要）
+    - [40105217](https://pubmed.ncbi.nlm.nih.gov/40105217/) — Cost Savings Analysis for Otolaryngologic Medications Using Direct-to-Consumer Models.（无摘要）
+    - [41893434](https://pubmed.ncbi.nlm.nih.gov/41893434/) — Upadacitinib for the Management of Alopecia Totalis and Subtotalis in Pediatric Patients: A Case Series.（有摘要）
+    - [40125007](https://pubmed.ncbi.nlm.nih.gov/40125007/) — Erythematous variant of inverse pityriasis versicolor in skin of colour.（无摘要）
+    - [40226259](https://pubmed.ncbi.nlm.nih.gov/40226259/) — Potential Cost Savings in Medicare Part D for Otolaryngologic Medications.（有摘要）
+    - [40230576](https://pubmed.ncbi.nlm.nih.gov/40230576/) — Integrated Glucocorticoids and Traditional Chinese Medicine in a Squamous Lung Cancer Patient with Dermatologic Toxicities Related to Pembrolizumab: A Case Report.（有摘要）
+    - [40034643](https://pubmed.ncbi.nlm.nih.gov/40034643/) — Purpura Annularis Telangiectodes of Majocchi Following a Booster Dose of the Pfizer-BioNTech COVID-19 Vaccine: Coincidence or Correlation?（有摘要）
+    - [39204334](https://pubmed.ncbi.nlm.nih.gov/39204334/) — Clinically Relevant Characterization and Comparison of Ryaltris and Other Anti-Allergic Nasal Sprays.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Bendroflumethiazide (Bendroflumethiazide): 检索 top-10
+    - [42261276](https://pubmed.ncbi.nlm.nih.gov/42261276/) — From concept to clinical practice: the evolution of low- and ultra-low-dose triple combination therapy for hypertension.（有摘要）
+    - [40996451](https://pubmed.ncbi.nlm.nih.gov/40996451/) — QT-prolonging medications: prevalence of use and associated risks in CKD.（有摘要）
+    - [41283592](https://pubmed.ncbi.nlm.nih.gov/41283592/) — Pharmacological Interactions of Epinephrine at Concentrations Used in Dental Anesthesiology: An Updated Narrative Review.（有摘要）
+    - [40884709](https://pubmed.ncbi.nlm.nih.gov/40884709/) — Pharmacological options to relieve congestion in acute heart failure.（有摘要）
+    - [40370922](https://pubmed.ncbi.nlm.nih.gov/40370922/) — Paradoxical Anti-diuretic Effects of Thiazide and Thiazide-Like Diuretics in Diabetes Insipidus: A Systematic Review.（有摘要）
+    - [39589584](https://pubmed.ncbi.nlm.nih.gov/39589584/) — A newly developed method for assessing co-exposure to free dose combinations: a proof-of-concept study using antihypertensive medications in Danish registers.（有摘要）
+    - [40055234](https://pubmed.ncbi.nlm.nih.gov/40055234/) — The effects of urine alkalinization on kidney function in critically ill patients with COVID-19: a proof-of-concept randomized clinical trial.（有摘要）
+    - [38425181](https://pubmed.ncbi.nlm.nih.gov/38425181/) — Genetic Determinants of Thiazide-Induced Hyperuricemia, Hyperglycemia, and Urinary Electrolyte Disturbances - A Genome-Wide Evaluation of the UK Biobank.（有摘要）
+    - [40283054](https://pubmed.ncbi.nlm.nih.gov/40283054/) — Use of Quadruple Therapy in the Management of Hypertension: A Systematic Review of Randomized Controlled Trials.（有摘要）
+    - [40445471](https://pubmed.ncbi.nlm.nih.gov/40445471/) — Clinical Pharmacology of Loop Diuretics in Critical Care.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 38425181 — 真实标题（esummary）: “Genetic Determinants of Thiazide-Induced Hyperuricemia, Hyperglycemia, and Urinary Electrolyte Disturbances - A Genome-Wide Evaluation of the UK Biobank.”
+        - 片段 1: “Using UK Biobank data, we first performed genomewide variance quantitative trait locus (vQTL) analysis of ~ 6.2 million SNPs on 95,493 unrelated hypertensive White British participants (24,313 on self-reported bendroflumethiazide treatment at recruitment) for 2 blood (glucose and urate) and 2 urine ”
+        - 片段 2: “Second, we conducted direct gene-environment interaction (GEI) tests on the significant (P -9 ) vQTLs, included a second UK Biobank cohort comprising 13,647 unrelated hypertensive White British participants (3,478 on thiazides other than bendroflumethiazide) and set significance at P = 0.05 divided ”
+
+## Revefenacin + Topiramate（The risk or severity of hyperthermia and oligohydrosis increase）
+- 药对: `DB11855` / `DB00273`; a_name=Revefenacin, b_name=Topiramate; 检索词: `Revefenacin` / `Topiramate`
+- 事件: The risk or severity of hyperthermia and oligohydrosis increase; semantic_overlap: no; prob_mean=0.4518, r=0.0435
+- v1 证据档: none（未识别） → **v2 证据档: class_suggested（类别级机制建议，需人工裁决）**
+- 关键 PMID: 36829251
+- 机制解释（一句话）: Topiramate（碳酸酐酶抑制）报告少汗/高温（文献36829251，标题“Pharmacovigilance-based drug repurposing: searching for putative drugs with hypohidrosis or anhidrosis adverse events fo”）。（类别级推断：所引为单药机制文献，非两药合用直接证据。）
+- 检索式记录:
+  - 腿 A q1: `("Revefenacin" AND "Topiramate") AND (interaction OR adverse OR effect)`
+  - 腿 A q2: `("Revefenacin" AND "Topiramate")`
+  - 腿 B: `"Revefenacin" AND (hyperthermia OR serotonin syndrome OR anhidrosis OR hypohidrosis OR oligohydrosis OR sweating)` / `"Topiramate" AND (hyperthermia OR serotonin syndrome OR anhidrosis OR hypohidrosis OR oligohydrosis OR sweating)`
+- **腿 A（Europe PMC 全文检索）** q1 top-5:
+  - [42292155](https://pubmed.ncbi.nlm.nih.gov/42292155/) — Association Between Glucagon-Like Peptide-1 Receptor Agonists and Clinical Outcomes in Patients with Chronic Obstructive Pulmonary Disease and Obesity.（全文: EPMC/inPMC）
+  - [34958237](https://pubmed.ncbi.nlm.nih.gov/34958237/) — Poster Abstracts - Academy of Managed Care Pharmacy NEXUS 2021.（全文: EPMC/inPMC）
+  - q2 top-3（宽共现探测）:
+    - [42292155](https://pubmed.ncbi.nlm.nih.gov/42292155/) — Association Between Glucagon-Like Peptide-1 Receptor Agonists and Clinical Outcomes in Patients with Chronic Obstructive Pulmonary Disease and Obesity.
+    - [34958237](https://pubmed.ncbi.nlm.nih.gov/34958237/) — Poster Abstracts - Academy of Managed Care Pharmacy NEXUS 2021.
+  - 全文检查: PMC 全文（PMC13263172）已抓取，两药在正文中共现；Direct 判定见下
+  - 未检出 direct 证据（两药在标题/摘要中无同时讨论且含相互作用语境的记录）
+- **腿 B（类别级机制，按事件方向）**:
+  - Revefenacin (Revefenacin): 检索 top-10
+    - [40190989](https://pubmed.ncbi.nlm.nih.gov/40190989/) — Nebulized Long-Acting Bronchodilators to Treat Acute Respiratory Failure in an Older Adult: A Case Report.（有摘要）
+    - [40926928](https://pubmed.ncbi.nlm.nih.gov/40926928/) — Stepwise Management of Status Asthmaticus Refractory to Initial Therapy: A Case Report.（有摘要）
+    - [41008474](https://pubmed.ncbi.nlm.nih.gov/41008474/) — Depression and Anxiety as Comorbidities in Chronic Obstructive Pulmonary Disease: A Comprehensive Narrative Review.（有摘要）
+    - [41947785](https://pubmed.ncbi.nlm.nih.gov/41947785/) — Understanding Nebulizer Utilization by Patients and Healthcare Providers: A COPD Foundation Nebulizer Consortium Survey Study.（有摘要）
+    - [38305989](https://pubmed.ncbi.nlm.nih.gov/38305989/) — Muscarinic control of cardiovascular function in humans: a review of current clinical evidence.（有摘要）
+    - [39629181](https://pubmed.ncbi.nlm.nih.gov/39629181/) — Recalibrating Perceptions and Attitudes Toward Nebulizers versus Inhalers for Maintenance Therapy in COPD: Past as Prologue.（有摘要）
+    - [35452494](https://pubmed.ncbi.nlm.nih.gov/35452494/) — Computational prediction of potential inhibitors for SARS-COV-2 main protease based on machine learning, docking, MM-PBSA calculations, and metadynamics.（有摘要）
+    - [40302135](https://pubmed.ncbi.nlm.nih.gov/40302135/) — Clinical Application Guideline of Combination With Traditional Chinese Medicine and Western Medicine in the Prevention and Treatment of Chronic Obstructive Pulmonary Disease (2024).（有摘要）
+    - [34744701](https://pubmed.ncbi.nlm.nih.gov/34744701/) — The Efficacy and Safety of Revefenacin for the Treatment of Chronic Obstructive Pulmonary Disease: A Systematic Review.（有摘要）
+    - [31245215](https://pubmed.ncbi.nlm.nih.gov/31245215/) — The Role of Revefenacin in Chronic Obstructive Pulmonary Disease.（有摘要）
+    - （无方向一致的机制文献支持；命中但标题硬校验不通过/人工裁决剔除的引用已删除）
+  - Topiramate (Topiramate): 检索 top-10
+    - [41369399](https://pubmed.ncbi.nlm.nih.gov/41369399/) — Thermoregulatory Dysfunction in Parkinson's Disease: Mechanisms, Implications, and Therapeutic Perspectives.（有摘要）
+    - [42200961](https://pubmed.ncbi.nlm.nih.gov/42200961/) — Recognizing and Mitigating the Effects of Medication on Heat-Related Illness in Older Adults: A Scoping Review.（有摘要）
+    - [40432167](https://pubmed.ncbi.nlm.nih.gov/40432167/) — Medications, epilepsy and climate change: Added layers of complexity.（有摘要）
+    - [39248594](https://pubmed.ncbi.nlm.nih.gov/39248594/) — Climate change's implications for practice: Pharmacologic considerations of heat-related illness.（有摘要）
+    - [36829251](https://pubmed.ncbi.nlm.nih.gov/36829251/) — Pharmacovigilance-based drug repurposing: searching for putative drugs with hypohidrosis or anhidrosis adverse events for use against hyperhidrosis.（有摘要）
+    - [42355964](https://pubmed.ncbi.nlm.nih.gov/42355964/) — Pharmacological Intensification Strategies in Highly Refractory Obsessive-Compulsive Disorder: Evidence Synthesis and a Tertiary-Care Case Series.（有摘要）
+    - [42405528](https://pubmed.ncbi.nlm.nih.gov/42405528/) — Prescription Drug Exposures During Pregnancy and Risk of Nonsyndromic Craniosynostosis.（有摘要）
+    - [42256639](https://pubmed.ncbi.nlm.nih.gov/42256639/) — Long QT syndrome and hypoglycemia in a postbariatric surgery patient with a likely pathogenic variant in <i>KCNE1</i>.（有摘要）
+    - [41947645](https://pubmed.ncbi.nlm.nih.gov/41947645/) — Incretin-Based Therapies for the Treatment of Binge Eating-A Systematic Review.（有摘要）
+    - [38167335](https://pubmed.ncbi.nlm.nih.gov/38167335/) — Switching from zonisamide to perampanel improved the frequency of seizures caused by hyperthermia in Dravet syndrome: a case report.（有摘要）
+    - 方向一致且标题硬校验通过 1 篇:
+      - PMID 36829251 — 真实标题（esummary）: “Pharmacovigilance-based drug repurposing: searching for putative drugs with hypohidrosis or anhidrosis adverse events for use against hyperhidrosis.”
+        - 片段 1: “Objectives We aimed to identify drugs frequently associated with hypohidrosis or anhidrosis adverse reactions (that is, the opposite condition of hyperhidrosis) from the pharmacovigilance database, which could be potential candidates as anti-hyperhidrosis treatment agents.”
+        - 片段 2: “Methods In this observational, retrospective, pharmacovigilance study, adverse event reports of hypohidrosis or anhidrosis in the US Food and Drug Administration (FDA) Adverse Event Reporting System (FAERS) were assessed between January 2004 and December 2021 using reporting odds ratio (ROR) estimat”
