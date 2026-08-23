@@ -1,0 +1,26 @@
+rank,event,drug_a,drug_b,a_name,b_name,prob_mean,u_mean,r,semantic_overlap,evidence_auto
+1,The risk or severity of hypertension decrease,DB09239,DB00388,Dexniguldipine,Phenylephrine,0.685225402,0.629549076,0.25384238331917147,yes,none
+1,The absorption decrease,DB01235,DB09089,Levodopa,Trimebutine,0.6672557259999999,0.665488256,0.22320487659824617,no,none
+1,The serum concentration of the active metabolites increase,DB01151,DB01151,Desipramine,Desipramine,0.662912512,0.674174772,0.21599362036645275,yes,class_suggested
+1,the neuromuscular blocking activities decrease,DB00871,DB01338,Terbutaline,Pipecuronium,0.6517028220000001,0.6965942380000001,0.19773039130646033,yes,none
+1,The risk or severity of renal failure hypotension and hyperkalemia increase,DB11827,DB00881,Ertugliflozin,Quinapril,0.6513082640000001,0.697382086,0.19709754822264136,yes,none
+1,The risk or severity of renal failure increase,DB14006,DB00178,,Ramipril,0.644961488,0.710058848,0.1870008768263542,yes,none
+1,The risk or severity of QTc prolongation and hypotension increase,DB00199,DB09239,Erythromycin,Dexniguldipine,0.623343384,0.753309988,0.15377258687908057,yes,none
+1,the stimulatory activities decrease,DB06077,DB01255,Lumateperone,Lisdexamfetamine,0.621579934,0.756820322,0.15115560820138121,yes,none
+1,The risk or severity of angioedema increase,DB01261,DB06203,Sitagliptin,Alogliptin,0.616319894,0.76735518,0.14338363080204905,no,direct
+1,The risk or severity of myopathy and weakness increase,DB11156,DB01222,Pyrantel,Budesonide,0.341088566,0.5817095560000001,0.14267408771546328,no,none
+1,The risk or severity of QTc prolongation decrease,DB00358,DB09013,(+)-Mefloquine,Befunolol,0.606201014,0.787587726,0.12876453588484582,yes,none
+1,the thrombogenic activities increase,DB04552,DB01357,Niflumic acid,Mestranol,0.252799496,0.505439962,0.12502452834814087,yes,none
+1,The risk or severity of neutropenia and thrombocytopenia increase,DB00436,DB05015,Bendroflumethiazide,Belinostat,0.259868116,0.5197361519999999,0.12480526136267038,no,none
+1,The risk or severity of sedation and somnolence increase,DB01142,DB12161,Cidoxepin,Deutetrabenazine,0.28496679399999997,0.5699334979999999,0.1225546722817346,no,none
+1,The risk or severity of Tachycardia and drowsiness increase,DB09089,DB00486,Trimebutine,Nabilone,0.310572804,0.621145106,0.11766202673870278,no,none
+1,the vasopressor activities increase,DB01253,DB09289,Ergometrine,Tianeptine,0.595202838,0.809593774,0.11333032608806938,yes,none
+1,The risk or severity of neutropenia increase,DB00321,DB00762,Amitriptyline,Irinotecan,0.33390477599999996,0.667806572,0.1109209721650121,no,direct
+1,an increase in the absorption resulting in an increased serum concentration and potentially a worsening of adverse effects cause,DB00940,DB06817,Methantheline,Raltegravir,0.343834838,0.687668704,0.10739038056249003,yes,none
+1,The risk or severity of fluid retention increase,DB04630,DB01406,Aldosterone,Danazol,0.346549532,0.693088288,0.10636011015891879,no,none
+1,the hypokalemic activities increase,DB04630,DB00808,Aldosterone,(S)-Indapamide,0.36079387,0.721488058,0.10048540139539552,yes,none
+1,The risk or severity of renal failure and hypertension increase,DB09214,DB00091,Dexketoprofen,Cyclosporine,0.361469776,0.7229392539999999,0.10014908579501293,yes,none
+1,The risk or severity of hyponatremia increase,DB04832,DB00035,Zimelidine,Desmopressin,0.574755204,0.850259578,0.08606408679365611,yes,none
+1,The risk or severity of hypotension and CNS depression increase,DB00679,DB00704,Thioridazine,Naltrexone,0.40427601199999996,0.808551742,0.07739793824858708,yes,class_suggested
+1,The risk or severity of electrolyte imbalance increase,DB14512,DB00436,Mometasone furoate,Bendroflumethiazide,0.410778976,0.8215576880000001,0.07330035019843249,no,none
+1,The risk or severity of hyperthermia and oligohydrosis increase,DB11855,DB00273,Revefenacin,Topiramate,0.451849098,0.903695918,0.043514912585418015,no,none
