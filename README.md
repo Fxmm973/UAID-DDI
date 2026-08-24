@@ -1,6 +1,6 @@
-# UAID-DDI: Few-Shot and Zero-Shot Drug–Drug Interaction Event Prediction
+# UAID-DDI:Few-shot and unseen-event prediction of drug-drug interaction events with probability-quality evaluation
 
-Official implementation of the paper *"Few-Shot and Zero-Shot Drug–Drug Interaction Event Prediction: Representation Learning and Probability Reliability"*.
+Official implementation of the paper *"Few-shot and unseen-event prediction of drug-drug interaction events with probability-quality evaluation"*.
 
 ## Overview
 
