@@ -1,8 +1,6 @@
 # RESULTS_MAP.md — Paper Results Source Audit Trail
 
 ## Version Info
-- Last updated: 2026-08-24
-- Paper: `fyx8_23.tex` (reviewer revision; Table 4 = Case Study on Dataset 2)
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI) — all values below
   are reproduced by the scripts listed here, from the per-sample prediction CSVs shipped
   in this repository.
