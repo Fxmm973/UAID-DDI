@@ -2,11 +2,13 @@
 
 Integrity record for the per-training-seed checkpoints behind the shipped
 per-sample prediction CSVs: `results/predictions/predictions_dataset1_PharDDIE.csv`
-(PharDDIE, 5 training seeds; the source of the paper's Table 2/3/4 rows) and the
-EviDDIE per-seed checkpoints recorded during the P0-7 protocol. The paper's
-Table 3 zero-shot rows themselves use the fixed-checkpoint CSV with three
-negative-sampling replicates (seeds 2024, 2025, 2026) — see
-`EviDDIE/results/predictions/predictions_dataset1_zero_shot_variants.csv` and
+(PharDDIE, 5 training seeds; the source of the paper's Table 2 rows and the
+PharDDIE rows of Table 3) and the EviDDIE per-seed checkpoints recorded during
+the P0-7 protocol. The paper's Table 3 zero-shot rows come from five
+independently trained checkpoints
+(seeds 19940419, 20230801, 20240115, 20240520, 20240910), each evaluated on
+the one fixed negative-sampling manifest (eval seed 19940419) — see
+`EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` and
 RESULTS_MAP.md. Binary checkpoints are not stored in this repository (16-33 MB
 each); they are regenerable with the provided training scripts or available from
 the authors. The SHA256 values below allow independent verification of the
