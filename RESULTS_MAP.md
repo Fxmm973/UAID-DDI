@@ -1,7 +1,7 @@
 # RESULTS_MAP.md — Paper Results Source Audit Trail
 
 ## Version Info
-- Last updated: 2026-08-23
+- Last updated: 2026-08-24
 - Paper: `fyx8_23.tex` (reviewer revision; Table 4 = Case Study on Dataset 2)
 - Code: GitHub [`Fxmm973/UAID-DDI`](https://github.com/Fxmm973/UAID-DDI) — all values below
   are reproduced by the scripts listed here, from the per-sample prediction CSVs shipped
@@ -30,7 +30,7 @@
 ## Main Results (Few-Shot DDI Prediction) — Table 2
 
 ### PharDDIE
-- **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` — per-sample
+- **Source**: `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` — per-samp
   predictions of the five independently trained checkpoints
   (`models/dataset1/models_drugbank_{1,5}shot_str_seed{seed}/bestmodel`), evaluated
   with the fixed negative-sampling manifest (eval seed 19940419).
@@ -115,7 +115,7 @@ earlier concatenation-based comparator used by pre-revision drafts.
   `PharDDIE/results/predictions/predictions_dataset1_PharDDIE.csv` (rare setting,
   1/5-shot), pooled AUROC/AUPRC/ACC + event-macro F1, mean ± SD over the five seeds.
 - **Reliability diagram**: `shared/calibration_table.py --fig` →
-  `EviDDIE/reliability_diagram_new.png` (Fewer | Rare panels, 10 equal-width predicted-probability
+  `EviDDIE/reliability_diagram_new.png` (Fewer | Rare panels, 10 equal-width predicted-pr
   bins with per-bin sample counts, native evidential bars + per-seed temperature-scaled
   curves). Equivalent standalone generator: `EviDDIE/eviddie_reliability_figure.py`.
 - **Frozen-head rows (head-only controlled comparison)**: the four frozen heads
@@ -177,7 +177,7 @@ earlier concatenation-based comparator used by pre-revision drafts.
   all-positive predictions; reproducible signature) and were replaced under the
   identical protocol — disclosed in the paper; logs in
   `external/outputs/train_logs_ds2/`.
-- **Predictions**: `external/eviddie_export_ds2.py --seeds 19940419,20230801,20240520,20260201,20260301`
+- **Predictions**: `external/eviddie_export_ds2.py --seeds 19940419,20230801,20240520,202
   → `external/outputs/predictions_ds2_retrained_0shot.csv` (18,720 rows = 1,872 test2
   triples × 2 × 5 seeds; per-row checkpoint/manifest/embedding SHA256 + git commit).
   Held-out test2 AUROC **0.5718 ± 0.0125** (mean ± SD over seeds); the cos<0.7
@@ -235,7 +235,9 @@ earlier concatenation-based comparator used by pre-revision drafts.
    (PharDDIE, 5 training seeds) and
    `EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv`
    (EviDDIE current architecture, 5 training seeds, fixed manifest, 4 provenance-hash
-   columns per row) — the sole data sources of the paper's Tables 2/3/4/5/6.
+   columns per row) — the data sources of the paper's Tables 2/3. Table 4 (Dataset-2
+   case study) is sourced from `external/outputs/predictions_ds2_retrained_0shot.csv`
+   (5 training seeds; see the Case Study section).
 3. **Checkpoint hashes**: `audit/checkpoints_sha256.md` records the SHA256 values of
    the per-seed checkpoints behind the shipped CSVs (binaries not distributed).
 4. **Training logs**: `audit/training_logs/`.
@@ -252,8 +254,8 @@ earlier concatenation-based comparator used by pre-revision drafts.
 | File | Approx. Size | How to Obtain |
 |------|-------------|---------------|
 | `DRKG_TransE_entity.npy` | ~200 MB | Third-party pre-trained artifact from the DRKG release; relation embeddings are included |
-| DrugBank-derived training-task files (`train_tasks.json`) | ~20 MB | License-restricted; regenerate from DrugBank with the provided preprocessing scripts |
-| Trained checkpoints (`.pth`) | 16–33 MB each | Regenerate with the training scripts, or contact authors; SHA256 in `audit/checkpoints_sha256.md`; Zenodo deposit on acceptance |
+| DrugBank-derived training-task files (`train_tasks.json`) | ~20 MB | License-restrictedth the provided preprocessing scripts |
+| Trained checkpoints (`.pth`) | 16–33 MB each | Regenerate with the training scripts, oraudit/checkpoints_sha256.md`; Zenodo deposit on acceptance |
 | BioSentVec encoder weights | ~1 GB | Download from the official BioSentVec release (precomputed event embeddings are included) |
 
 ---
