@@ -43,11 +43,16 @@ and `EviDDIE/neg_manifests/manifest_hashes.json`.
 
 ## EviDDIE - 0-shot (5 independent training seeds)
 
-- seed 19940419: main `56606b15d2b731af30344a33ca6a11986ff650ae53432c98fbcf22f64c67d7e6` (16445317 bytes); generator `06ff84c1718d58cc52a84fca73fc72fb3c3e8ff6de7a422991a0cd0c4642a3f3` (1379447 bytes)
-- seed 20230801: main `fe0b1e9b4160439ea16a4c1977115a5d1be23db6f9bb65e508e413498830e2ee` (16445317 bytes); generator `f20cf3c2f3c429563da215f80fafa76cf3c9bedd8d14ca22189fd7b1783b02d1` (1379447 bytes)
-- seed 20240115: main `d7bc70db46c9b861d2aaa0fe4040a7b19be4faa14939df384d353558c5f7720d` (16445317 bytes); generator `ce5b5f9bd81e833c936a2197a0ded2994f300be880ec5a6c27a45f7def21f328` (1379447 bytes)
-- seed 20240520: main `cef85baa2df0893bc2964a3d3f36b9277e37b3c2f393a1c5de9d6dd48b09782c` (16445317 bytes); generator `1e32659680926664cb1917af6363a468888ab3e528488320fb4483b48f227380` (1379447 bytes)
-- seed 20240910: main `f35e02ba46327c8eeae98a7dc4c30e07cf11ace88ec8cff9f275a5102ef402a0` (16445317 bytes); generator `3c5c5538a3d2ebc7efe9ef463e93476ef413646e4adb72165e00f367aeea5757` (1379447 bytes)
+Files: `EviDDIE/models/eviddie_new_s{1..5}_seed{seed}bestmodel` (main) and
+`...bestmodel_G` (generator). Main hashes equal the `checkpoint_sha256` column of
+`EviDDIE/results/predictions/predictions_eviddie_new_ablation.csv` (recomputed
+from disk, byte-identical).
+
+- seed 19940419: main `4cdcec8f60523ffbf1f1ab19740b49fe7451b5d787c2eecf1247c862f18f3b71` (25519841 bytes); generator `bec50cfdad55eebeada9bea1dad48907b2e216333d842ee7fa262d21d02745bb` (1379727 bytes)
+- seed 20230801: main `7430a7d56015e8640e10e7ccf39f6d8eae32ea989ea18f3b94e3cc3a34990704` (25519841 bytes); generator `1b088af16fa350db58a0d576933acf93fee352dd8fba150348edaa3e76d07fe1` (1379727 bytes)
+- seed 20240115: main `b3b99958a3543c6eaa6bdf1a399a8fefa464e2ba49363a9699730e2ede71abb6` (25519841 bytes); generator `636eaa7a49c089583186f52a07f0b4faa6f32de5de02672bbf64594a77f81f45` (1379727 bytes)
+- seed 20240520: main `db92c37ae53be19c5b2edbfdbe40e92e40d38509a61e435fb4b8e6b790c97178` (25519841 bytes); generator `992d78ad275bbba86160141a86839d55b17eb932139fe214c08a0c238a549efb` (1379727 bytes)
+- seed 20240910: main `e118b67129259ad98a30660368b5f2ba4ebb4d1a85029e580e3cddde056a03df` (25519841 bytes); generator `a5084a0acc228444152996977e4a47e103d0e53057c359bc09d191a9a065e472` (1379727 bytes)
 
 ## BioSentVec Event Embedding Files (precomputed; keys are the event description templates)
 
